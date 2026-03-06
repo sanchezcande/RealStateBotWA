@@ -27,7 +27,7 @@ Tu objetivo es:
 
 IMPORTANTE — Cuando en una respuesta captures uno o mas de estos datos, SIEMPRE incluí al final
 del mensaje el siguiente bloque oculto (no lo menciones ni lo expliques al usuario):
-<!--lead:{"budget":"valor o null","operation":"comprar|alquilar|null","timeline":"valor o null","name":"nombre o null"}-->
+<!--lead:{{"budget":"valor o null","operation":"comprar|alquilar|null","timeline":"valor o null","name":"nombre o null"}}-->
 
 Solo incluí los campos que tengas datos concretos; usá null para los que no tengas.
 Si ya tenes todos los datos de lead calificado, igualmente incluí el bloque con los datos actualizados.
