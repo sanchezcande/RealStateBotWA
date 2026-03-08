@@ -46,6 +46,7 @@ SAMPLE_LISTINGS = [
         "orientacion": "Norte",
         "expensas_usd": 80,
         "apto_credito": "Si",
+        "fotos_url": "",
         "descripcion": "Luminoso departamento a estrenar, piso alto con balcón. Edificio con ascensor y portero.",
     },
     {
@@ -81,6 +82,7 @@ SAMPLE_LISTINGS = [
         "orientacion": "Este",
         "expensas_usd": 60,
         "apto_credito": "No",
+        "fotos_url": "",
         "descripcion": "Amplio departamento amoblado con terraza privada. Expensas bajas. Ideal para pareja o familia chica.",
     },
     {
@@ -116,6 +118,7 @@ SAMPLE_LISTINGS = [
         "orientacion": "Sur",
         "expensas_usd": 0,
         "apto_credito": "Si",
+        "fotos_url": "",
         "descripcion": "Hermosa casa familiar con jardín, pileta y quincho. Garage doble. Barrio tranquilo y arbolado.",
     },
     {
@@ -151,6 +154,7 @@ SAMPLE_LISTINGS = [
         "orientacion": "Norte",
         "expensas_usd": 40,
         "apto_credito": "Si",
+        "fotos_url": "",
         "descripcion": "PH reciclado a nuevo con patio privado. Muy luminoso. A pasos del subte B.",
     },
 ]
@@ -239,11 +243,13 @@ def format_listings_for_prompt(listings: list) -> str:
         orientacion = p.get("orientacion", "")
         expensas = p.get("expensas_usd", "")
         apto_credito = _bool_field(p.get("apto_credito"))
+        fotos_url = str(p.get("fotos_url", "") or "").strip()
         descripcion = p.get("descripcion", "")
 
         precio_str = f"USD {precio:,}" if isinstance(precio, (int, float)) else str(precio)
         expensas_str = (f"USD {expensas}/mes" if isinstance(expensas, (int, float)) and expensas > 0
                         else ("Sin expensas" if expensas == 0 else str(expensas)))
+        fotos_str = fotos_url if fotos_url else "Sin fotos cargadas"
 
         block = f"""[{pid}] {titulo}
   Operación: {tipo_op} | Tipo: {tipo_prop} | Barrio: {barrio}
@@ -254,6 +260,7 @@ def format_listings_for_prompt(listings: list) -> str:
   Terraza: {terraza} | Jardín: {jardin} | Pileta: {pileta} | Quincho: {quincho}
   Calefón: {calefon} | Calefacción: {calefaccion} | Aire acond.: {aa} | Gas natural: {gas}
   Ascensor: {ascensor} | Seguridad: {seguridad} | Antigüedad: {antiguedad} años | Estado: {estado}
+  Fotos: {fotos_str}
   Descripción: {descripcion}"""
         lines.append(block)
     return "\n\n".join(lines)
