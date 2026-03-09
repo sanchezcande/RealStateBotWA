@@ -79,6 +79,8 @@ def process(phone: str, ai_text: str) -> str:
 
     if success:
         logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
+        if address:
+            clean_text = clean_text.rstrip() + f"\n\nDirección: {address}"
     else:
         logger.error("Could not create calendar event for %s", phone)
 
