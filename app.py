@@ -4,6 +4,8 @@ Handles Meta WhatsApp webhook verification and incoming message processing.
 """
 import logging
 import json
+import time
+import threading
 from flask import Flask, request, jsonify
 from config import VERIFY_TOKEN
 import conversations
@@ -19,6 +21,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Deduplication: buffer rapid consecutive messages from the same number
+# and combine them into a single AI call.
+_pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}
+_pending_lock = threading.Lock()
+DEBOUNCE_SECONDS = 3
 
 
 # ---------------------------------------------------------------------------
@@ -77,11 +85,38 @@ def _handle_message(msg: dict):
     if msg_type == "text":
         text = msg["text"]["body"].strip()
         logger.info("Incoming message from %s: %s", phone, text)
-        _reply(phone, text)
+        _enqueue(phone, text)
     elif msg_type in ("image", "audio", "video", "document"):
-        _reply(phone, "Recibí tu archivo. Por el momento solo puedo procesar mensajes de texto. ¿En qué te puedo ayudar?")
+        _enqueue(phone, "[archivo recibido — solo proceso texto]")
     else:
         logger.info("Unsupported message type '%s' from %s", msg_type, phone)
+
+
+def _enqueue(phone: str, text: str):
+    """Buffer messages for DEBOUNCE_SECONDS, then fire a single combined reply."""
+    with _pending_lock:
+        if phone in _pending:
+            _pending[phone]["timer"].cancel()
+            _pending[phone]["texts"].append(text)
+        else:
+            _pending[phone] = {"texts": [text]}
+
+        timer = threading.Timer(DEBOUNCE_SECONDS, _flush, args=[phone])
+        _pending[phone]["timer"] = timer
+        timer.start()
+
+
+def _flush(phone: str):
+    """Called after the debounce window — combine buffered texts and reply once."""
+    with _pending_lock:
+        if phone not in _pending:
+            return
+        texts = _pending.pop(phone)["texts"]
+
+    combined = " / ".join(texts) if len(texts) > 1 else texts[0]
+    if len(texts) > 1:
+        logger.info("Combined %d messages from %s: %s", len(texts), phone, combined)
+    _reply(phone, combined)
 
 
 def _reply(phone: str, user_text: str):

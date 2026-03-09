@@ -165,7 +165,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
         if lead.get("timeline"):
             known.append(f"plazo: {lead['timeline']}")
         if known:
-            system_prompt += f"\n\nDATO YA CONFIRMADO — NO volver a preguntar bajo ningún concepto: {', '.join(known)}."
+            system_prompt += f"\n\nCONTEXTO YA ESTABLECIDO — NO preguntar de nuevo bajo ningún concepto: {', '.join(known)}. El próximo mensaje del cliente es una continuación de esta conversación. Leé el historial completo antes de responder y tené en cuenta todo lo que ya se dijo."
 
     full_messages = [{"role": "system", "content": system_prompt}] + messages
 
