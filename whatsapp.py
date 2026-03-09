@@ -22,8 +22,16 @@ def _get_token() -> str:
     return token
 
 
+def _normalize_ar_number(phone: str) -> str:
+    """Meta's API requires Argentine mobile numbers without the '9' (5411... not 5491...)."""
+    if phone.startswith("549") and len(phone) == 13:
+        return "54" + phone[3:]
+    return phone
+
+
 def send_message(to: str, text: str) -> bool:
     """Send a text message to a WhatsApp number. Returns True on success."""
+    to = _normalize_ar_number(to)
     token = _get_token()
     token_preview = token[:20] if token else "(empty)"
     logger.debug("Using WHATSAPP_TOKEN (first 20 chars): %s", token_preview)
