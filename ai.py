@@ -113,6 +113,18 @@ DERIVAR AL ASESOR HUMANO
 - También derivás al asesor si: el cliente negocia condiciones, pregunta por financiación, crédito hipotecario, o algo muy específico que no está en el listado.
 
 ════════════════════════════════════════
+SELECCIÓN DE PROPIEDADES
+════════════════════════════════════════
+- Si el cliente dice "el de [barrio]", "ese", "el primero", "el segundo", "ese último", o cualquier referencia a una opción que vos acabás de presentar, está ELIGIENDO esa propiedad. No le preguntes de nuevo qué busca ni qué tipo de propiedad quiere. Respondé con más detalles de la que eligió.
+- Cuando confirmás una visita, asegurate de que la propiedad mencionada sea la que el cliente eligió en el último intercambio, no una anterior.
+
+════════════════════════════════════════
+SALUDOS Y COMENTARIOS SOCIALES
+════════════════════════════════════════
+- Si el cliente dice "un gusto", "gracias", "ok", "oki", "dale", "buenísimo" o similar sin hacer una pregunta, respondés brevemente y de forma natural. NO presentés propiedades ni hagás preguntas de calificación en esa respuesta.
+- Ejemplos: "un gusto a vos!" / "de nada!" / "cualquier cosa me avisás"
+
+════════════════════════════════════════
 SITUACIONES ESPECIALES
 ════════════════════════════════════════
 - Cliente enojado: respondés con calma. "Entiendo, disculpá. Te ayudo ahora mismo."
@@ -163,33 +175,46 @@ def get_reply(messages: list, lead: dict = None) -> str:
     system_prompt = build_system_prompt()
 
     if messages:
-        system_prompt += "\n\nRECORDATORIO CRÍTICO: Esta conversación ya está en curso. NO te presentes de nuevo. NO saludes. NO digas 'Hola' ni 'Soy Valentina'. Respondé directamente como si ya se conocieran."
+        system_prompt += "\n\nRECORDATORIO: conversación en curso. NO te presentes ni saludes de nuevo."
+
+    # Build a hard reminder injected as a separate system message just before the last user message.
+    # This is much harder for the model to ignore than appending to the main system prompt.
+    reminder_lines = []
 
     if lead:
-        known = []
         if lead.get("name"):
-            known.append(f"nombre del cliente: {lead['name']}")
+            reminder_lines.append(f"- Nombre del cliente: {lead['name']}")
         if lead.get("operation"):
-            known.append(f"operación: {lead['operation']}")
+            reminder_lines.append(f"- Operación YA CONFIRMADA: {lead['operation']} — JAMÁS volver a preguntar esto")
         if lead.get("property_type"):
-            known.append(f"tipo de propiedad: {lead['property_type']}")
+            reminder_lines.append(f"- Tipo de propiedad YA CONFIRMADO: {lead['property_type']} — JAMÁS volver a preguntar esto")
         if lead.get("budget"):
-            known.append(f"presupuesto: {lead['budget']}")
+            reminder_lines.append(f"- Presupuesto YA CONFIRMADO: {lead['budget']} — JAMÁS volver a preguntar esto")
         if lead.get("timeline"):
-            known.append(f"plazo: {lead['timeline']}")
-        if known:
-            system_prompt += f"\n\nCONTEXTO YA ESTABLECIDO — NO preguntar de nuevo bajo ningún concepto: {', '.join(known)}."
+            reminder_lines.append(f"- Plazo YA CONFIRMADO: {lead['timeline']}")
 
-    # Inject last assistant message so the model knows what was just asked
     if messages:
         last_assistant = next(
             (m["content"] for m in reversed(messages) if m["role"] == "assistant"),
             None
         )
         if last_assistant:
-            system_prompt += f"\n\nTU ÚLTIMO MENSAJE FUE: \"{last_assistant[:300]}\"\nEl cliente está respondiendo a ESO. Leé bien qué le preguntaste antes de responder."
+            reminder_lines.append(f"- Tu último mensaje fue: \"{last_assistant[:250]}\" — el cliente está respondiendo a ESO")
 
-    full_messages = [{"role": "system", "content": system_prompt}] + messages
+    if reminder_lines:
+        reminder_msg = "CONTEXTO ACTIVO DE ESTA CONVERSACIÓN:\n" + "\n".join(reminder_lines)
+        # Inject right before the last user message so the model sees it immediately before responding
+        if messages:
+            full_messages = (
+                [{"role": "system", "content": system_prompt}]
+                + messages[:-1]
+                + [{"role": "system", "content": reminder_msg}]
+                + [messages[-1]]
+            )
+        else:
+            full_messages = [{"role": "system", "content": system_prompt}]
+    else:
+        full_messages = [{"role": "system", "content": system_prompt}] + messages
 
     try:
         response = client.chat.completions.create(

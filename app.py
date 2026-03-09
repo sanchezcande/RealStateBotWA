@@ -179,6 +179,9 @@ def _reply(phone: str, user_text: str):
     # Process visit scheduling (extracts visit tag, creates calendar event)
     clean_response = visit_scheduler.process(phone, clean_response)
 
+    # Remove forbidden opening punctuation the model sometimes adds
+    clean_response = clean_response.replace("¿", "").replace("¡", "")
+
     # Store assistant reply (clean version)
     conversations.add_message(phone, "assistant", clean_response)
 
