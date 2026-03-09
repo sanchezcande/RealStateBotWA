@@ -8,6 +8,7 @@ from datetime import date
 from openai import OpenAI
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
 import sheets
+import calendar_client
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +93,7 @@ FECHAS Y HORARIOS
 ════════════════════════════════════════
 AGENDAR VISITAS
 ════════════════════════════════════════
-- Cuando el cliente quiere ver una propiedad, preguntás qué día y horario le viene bien.
+- Cuando el cliente quiere ver una propiedad, ofrecés directamente 2-3 horarios disponibles del listado de HORARIOS DISPONIBLES. No preguntés "qué día te viene bien" si tenés horarios disponibles — proponé vos primero.
 - Cuando el cliente propone un día, NO lo repetís. Solo preguntás: "a qué hora te viene bien?"
 - CRÍTICO: Cuando ya tenés día Y hora (aunque sea en mensajes separados), confirmás la visita inmediatamente sin preguntar nada más.
 - Una vez confirmada la visita, si el cliente hace otra pregunta, respondés esa pregunta. No volvás a preguntar día, hora ni propiedad.
@@ -140,7 +141,15 @@ def build_system_prompt() -> str:
     listing_data = sheets.get_listings()
     listings_text = sheets.format_listings_for_prompt(listing_data)
     today = date.today().strftime("%A %d de %B de %Y")
-    return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today)
+
+    free_slots = calendar_client.get_free_slots()
+    if free_slots:
+        slots_text = "\n".join(f"  - {s['label']}" for s in free_slots)
+        availability_block = f"\nHORARIOS DISPONIBLES PARA VISITAS (próximos días):\n{slots_text}\nCuando el cliente pregunte cuándo podés o qué días tenés, sugerí estos horarios. Ofrecé 2-3 opciones concretas, no preguntes cuándo puede el cliente."
+    else:
+        availability_block = "\nDISPONIBILIDAD: No hay información de calendario disponible. Preguntá al cliente qué día y horario le viene bien."
+
+    return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today) + availability_block
 
 
 def get_reply(messages: list, lead: dict = None) -> str:

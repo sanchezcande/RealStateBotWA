@@ -5,7 +5,7 @@ The calendar must be shared with the service account email.
 """
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import pytz
 
 from config import GOOGLE_CREDENTIALS_JSON, GOOGLE_CALENDAR_ID
@@ -23,6 +23,78 @@ def _get_service():
     creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
     creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
+
+
+def get_free_slots(days_ahead: int = 5, hour_start: int = 9, hour_end: int = 18) -> list:
+    """
+    Return a list of free 1-hour slots over the next `days_ahead` working days.
+    Each slot is a dict: {"date": "YYYY-MM-DD", "time": "HH:MM", "label": "lunes 10/3 a las 10:00"}
+    Returns empty list if calendar is not configured or on error.
+    """
+    if not GOOGLE_CALENDAR_ID:
+        return []
+
+    try:
+        service = _get_service()
+
+        now = datetime.now(AR_TZ)
+        # Start from next hour to avoid suggesting times already past
+        start_window = (now + timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        end_window = start_window + timedelta(days=days_ahead + 1)
+
+        # Fetch busy intervals from Google Calendar
+        body = {
+            "timeMin": start_window.isoformat(),
+            "timeMax": end_window.isoformat(),
+            "timeZone": "America/Argentina/Buenos_Aires",
+            "items": [{"id": GOOGLE_CALENDAR_ID}],
+        }
+        result = service.freebusy().query(body=body).execute()
+        busy_intervals = result["calendars"][GOOGLE_CALENDAR_ID]["busy"]
+
+        busy_ranges = []
+        for interval in busy_intervals:
+            b_start = datetime.fromisoformat(interval["start"]).astimezone(AR_TZ)
+            b_end = datetime.fromisoformat(interval["end"]).astimezone(AR_TZ)
+            busy_ranges.append((b_start, b_end))
+
+        DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+        MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+        free_slots = []
+        check_date = start_window.date()
+
+        while len(free_slots) < 6 and check_date <= end_window.date():
+            weekday = check_date.weekday()
+            if weekday < 6:  # Mon–Sat
+                for hour in range(hour_start, hour_end):
+                    slot_start = AR_TZ.localize(datetime(check_date.year, check_date.month, check_date.day, hour))
+                    slot_end = slot_start + timedelta(hours=1)
+
+                    # Skip slots in the past
+                    if slot_start <= now:
+                        continue
+
+                    # Check if slot overlaps with any busy interval
+                    is_busy = any(b_start < slot_end and b_end > slot_start for b_start, b_end in busy_ranges)
+                    if not is_busy:
+                        day_name = DAYS_ES[weekday]
+                        month_name = MONTHS_ES[check_date.month - 1]
+                        label = f"{day_name} {check_date.day}/{check_date.month} a las {hour:02d}:00"
+                        free_slots.append({
+                            "date": check_date.strftime("%Y-%m-%d"),
+                            "time": f"{hour:02d}:00",
+                            "label": label,
+                        })
+                    if len(free_slots) >= 6:
+                        break
+            check_date += timedelta(days=1)
+
+        return free_slots
+
+    except Exception as e:
+        logger.error("Failed to fetch free slots: %s", e)
+        return []
 
 
 def create_visit_event(
