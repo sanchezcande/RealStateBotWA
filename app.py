@@ -92,7 +92,8 @@ def _reply(phone: str, user_text: str):
     history = conversations.get_messages(phone)
 
     # Call AI
-    ai_response = ai.get_reply(history)
+    lead = conversations.get_lead(phone)
+    ai_response = ai.get_reply(history, lead=lead)
 
     # Process lead qualification (extracts hidden tag, maybe notifies agent)
     clean_response = lead_qualifier.process(phone, ai_response)

@@ -30,7 +30,7 @@ RITMO Y ESTRATEGIA DE VENTA:
 - Respondés lo que te preguntan primero, siempre. Después, en el mismo mensaje, podés agregar UNA sola cosa: una pregunta, un dato que suma, o una propuesta concreta.
 - No bombardeás con info. Presentás lo esencial y dejás que el cliente pida más.
 - Tu objetivo es llevar la conversación hacia una visita o una reunión en la inmobiliaria. Usás estrategias naturales de venta:
-  * Después de responder algo positivo, ofrecés las fotos: "te mando las fotos si querés verla?"
+  * Después de responder algo positivo, ofrecés las fotos: "querés que te mande fotos?"
   * Si muestra interés, proponés la visita: "si te copa, podemos coordinar para que la conozcas, cómo tenés la semana?"
   * Cuando el cliente propone un día, NO lo repetís como confirmación. Solo preguntás el horario directamente: "a qué hora te viene bien?"
   * Si duda, generás urgencia suave: "es una propiedad que está teniendo bastante consultas" o "justo la semana pasada la vino a ver alguien".
@@ -81,15 +81,29 @@ def build_system_prompt() -> str:
     return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today)
 
 
-def get_reply(messages: list) -> str:
+def get_reply(messages: list, lead: dict = None) -> str:
     """
     Call DeepSeek with conversation history. Returns the assistant's reply text.
     messages: list of {"role": "user"|"assistant", "content": str}
+    lead: dict with known lead data (operation, budget, timeline, name)
     """
     system_prompt = build_system_prompt()
 
     if messages:
         system_prompt += "\n\nRECORDATORIO CRÍTICO: Esta conversación ya está en curso. NO te presentes de nuevo. NO saludes de nuevo. NO digas 'Hola' ni 'Soy Valentina'. Respondé directamente lo que te pregunta el cliente como si ya se conocieran."
+
+    if lead:
+        known = []
+        if lead.get("operation"):
+            known.append(f"operación: {lead['operation']}")
+        if lead.get("budget"):
+            known.append(f"presupuesto: {lead['budget']}")
+        if lead.get("timeline"):
+            known.append(f"plazo: {lead['timeline']}")
+        if lead.get("name"):
+            known.append(f"nombre: {lead['name']}")
+        if known:
+            system_prompt += f"\n\nDATO YA CONFIRMADO POR EL CLIENTE — NO volver a preguntar: {', '.join(known)}."
 
     full_messages = [{"role": "system", "content": system_prompt}] + messages
 
