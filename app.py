@@ -119,9 +119,27 @@ def _flush(phone: str):
     _reply(phone, combined)
 
 
+def _extract_operation(text: str):
+    """Detect buying/renting intent directly from user message text."""
+    t = text.lower()
+    if any(w in t for w in ("alquil", "alquilar", "alquiler", "rentar", "renta")):
+        return "alquilar"
+    if any(w in t for w in ("comprar", "compra", "venta", "compro", "comprando")):
+        return "comprar"
+    return None
+
+
 def _reply(phone: str, user_text: str):
     # Store user message
     conversations.add_message(phone, "user", user_text)
+
+    # Extract operation directly from user text (don't rely solely on AI tag)
+    operation = _extract_operation(user_text)
+    if operation:
+        current = conversations.get_lead(phone)
+        if not current.get("operation"):
+            conversations.update_lead(phone, operation=operation)
+            logger.info("Operation extracted from user text for %s: %s", phone, operation)
 
     # Get full history for context
     history = conversations.get_messages(phone)

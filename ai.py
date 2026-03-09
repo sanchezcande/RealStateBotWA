@@ -165,7 +165,16 @@ def get_reply(messages: list, lead: dict = None) -> str:
         if lead.get("timeline"):
             known.append(f"plazo: {lead['timeline']}")
         if known:
-            system_prompt += f"\n\nCONTEXTO YA ESTABLECIDO — NO preguntar de nuevo bajo ningún concepto: {', '.join(known)}. El próximo mensaje del cliente es una continuación de esta conversación. Leé el historial completo antes de responder y tené en cuenta todo lo que ya se dijo."
+            system_prompt += f"\n\nCONTEXTO YA ESTABLECIDO — NO preguntar de nuevo bajo ningún concepto: {', '.join(known)}."
+
+    # Inject last assistant message so the model knows what was just asked
+    if messages:
+        last_assistant = next(
+            (m["content"] for m in reversed(messages) if m["role"] == "assistant"),
+            None
+        )
+        if last_assistant:
+            system_prompt += f"\n\nTU ÚLTIMO MENSAJE FUE: \"{last_assistant[:300]}\"\nEl cliente está respondiendo a ESO. Leé bien qué le preguntaste antes de responder."
 
     full_messages = [{"role": "system", "content": system_prompt}] + messages
 
