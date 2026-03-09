@@ -244,6 +244,7 @@ def format_listings_for_prompt(listings: list) -> str:
         expensas = p.get("expensas_usd", "")
         apto_credito = _bool_field(p.get("apto_credito"))
         fotos_url = str(p.get("fotos_url", "") or "").strip()
+        direccion = str(p.get("direccion", "") or "").strip()
         descripcion = p.get("descripcion", "")
 
         precio_str = f"USD {precio:,}" if isinstance(precio, (int, float)) else str(precio)
@@ -251,8 +252,10 @@ def format_listings_for_prompt(listings: list) -> str:
                         else ("Sin expensas" if expensas == 0 else str(expensas)))
         fotos_str = fotos_url if fotos_url else "Sin fotos cargadas"
 
+        direccion_str = direccion if direccion else "Consultar"
+
         block = f"""[{pid}] {titulo}
-  Operación: {tipo_op} | Tipo: {tipo_prop} | Barrio: {barrio}
+  Operación: {tipo_op} | Tipo: {tipo_prop} | Barrio: {barrio} | Dirección: {direccion_str}
   Precio: {precio_str} | Expensas: {expensas_str} | Apto crédito: {apto_credito}
   Ambientes: {ambientes} | Dormitorios: {dorm} | Baños: {banos} | Suite: {suite}
   m² cubiertos: {mt2_c} | m² totales: {mt2_t} | Piso: {piso} | Orientación: {orientacion}
