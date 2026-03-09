@@ -170,7 +170,7 @@ def _fetch_from_sheets() -> list:
         creds_dict = json.loads(GOOGLE_CREDENTIALS_JSON)
         creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         client = gspread.authorize(creds)
-        sheet = client.open_by_key(GOOGLE_SHEET_ID).sheet1
+        sheet = client.open_by_key(GOOGLE_SHEET_ID).get_worksheet_by_id(567871247)
         rows = sheet.get_all_records()
         logger.info("Loaded %d listings from Google Sheets", len(rows))
         return rows
