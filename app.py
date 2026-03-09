@@ -129,17 +129,42 @@ def _extract_operation(text: str):
     return None
 
 
+def _extract_property_type(text: str):
+    """Detect property type mentioned by the user."""
+    t = text.lower()
+    if any(w in t for w in ("monoambiente", "mono")):
+        return "monoambiente"
+    if any(w in t for w in ("departamento", "depto", "dpto", "dept")):
+        return "departamento"
+    if any(w in t for w in ("casa", "chalet")):
+        return "casa"
+    if any(w in t for w in ("ph ", "p.h")):
+        return "PH"
+    if any(w in t for w in ("local", "comercial")):
+        return "local"
+    if any(w in t for w in ("oficina",)):
+        return "oficina"
+    return None
+
+
 def _reply(phone: str, user_text: str):
     # Store user message
     conversations.add_message(phone, "user", user_text)
 
-    # Extract operation directly from user text (don't rely solely on AI tag)
+    # Extract operation and property type directly from user text
     operation = _extract_operation(user_text)
     if operation:
         current = conversations.get_lead(phone)
         if not current.get("operation"):
             conversations.update_lead(phone, operation=operation)
             logger.info("Operation extracted from user text for %s: %s", phone, operation)
+
+    prop_type = _extract_property_type(user_text)
+    if prop_type:
+        current = conversations.get_lead(phone)
+        if not current.get("property_type"):
+            conversations.update_lead(phone, property_type=prop_type)
+            logger.info("Property type extracted from user text for %s: %s", phone, prop_type)
 
     # Get full history for context
     history = conversations.get_messages(phone)
