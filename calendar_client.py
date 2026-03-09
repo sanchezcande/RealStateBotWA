@@ -25,7 +25,14 @@ def _get_service():
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
 
 
-def create_visit_event(property_title: str, date_str: str, time_str: str, client_phone: str) -> bool:
+def create_visit_event(
+    property_title: str,
+    date_str: str,
+    time_str: str,
+    client_phone: str,
+    client_name: str = "",
+    address: str = "",
+) -> bool:
     """
     Create a property visit event on the calendar.
     date_str: "YYYY-MM-DD"
@@ -42,15 +49,26 @@ def create_visit_event(property_title: str, date_str: str, time_str: str, client
         start_dt = AR_TZ.localize(datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M"))
         end_dt = start_dt + timedelta(hours=1)
 
+        name_str = client_name if client_name else "Sin nombre"
+        address_str = address if address else "Sin dirección cargada"
+        description = (
+            f"Cliente: {name_str}\n"
+            f"Teléfono: +{client_phone}\n"
+            f"Propiedad: {property_title}\n"
+            f"Dirección: {address_str}\n"
+            f"Coordinado por WhatsApp"
+        )
+
         event = {
-            "summary": f"Visita: {property_title}",
-            "description": f"Visita coordinada por WhatsApp con el cliente +{client_phone}",
+            "summary": f"Visita: {property_title} — {name_str}",
+            "description": description,
+            "location": address_str,
             "start": {"dateTime": start_dt.isoformat(), "timeZone": "America/Argentina/Buenos_Aires"},
             "end": {"dateTime": end_dt.isoformat(), "timeZone": "America/Argentina/Buenos_Aires"},
         }
 
         service.events().insert(calendarId=GOOGLE_CALENDAR_ID, body=event).execute()
-        logger.info("Calendar event created: %s on %s %s", property_title, date_str, time_str)
+        logger.info("Calendar event created: %s on %s %s for %s", property_title, date_str, time_str, client_phone)
         return True
 
     except Exception as e:

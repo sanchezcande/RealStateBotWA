@@ -8,7 +8,8 @@ import json
 import logging
 
 import calendar_client
-import whatsapp
+import conversations
+import sheets
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,17 @@ def clean_response(ai_text: str) -> str:
     return VISIT_TAG_RE.sub("", ai_text).strip()
 
 
+def _find_address(property_title: str) -> str:
+    """Look up the address of a property by title from the current listings."""
+    listings = sheets.get_listings()
+    title_lower = property_title.lower()
+    for p in listings:
+        if p.get("titulo", "").lower() == title_lower:
+            addr = str(p.get("direccion", "") or "").strip()
+            return addr if addr and addr != "Consultar" else ""
+    return ""
+
+
 def process(phone: str, ai_text: str) -> str:
     """
     Check AI response for a visit tag. If found, create calendar event.
@@ -51,10 +63,22 @@ def process(phone: str, ai_text: str) -> str:
         logger.warning("Incomplete visit data, skipping calendar event: %s", visit_data)
         return clean_text
 
-    success = calendar_client.create_visit_event(property_title, date_str, time_str, phone)
+    # Get client name and address
+    lead = conversations.get_lead(phone)
+    client_name = lead.get("name", "") or ""
+    address = _find_address(property_title)
+
+    success = calendar_client.create_visit_event(
+        property_title=property_title,
+        date_str=date_str,
+        time_str=time_str,
+        client_phone=phone,
+        client_name=client_name,
+        address=address,
+    )
 
     if success:
-        logger.info("Visit scheduled for %s: %s %s %s", phone, property_title, date_str, time_str)
+        logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
     else:
         logger.error("Could not create calendar event for %s", phone)
 
