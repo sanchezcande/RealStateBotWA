@@ -9,6 +9,7 @@ from config import VERIFY_TOKEN
 import conversations
 import ai
 import lead_qualifier
+import visit_scheduler
 import whatsapp
 
 logging.basicConfig(
@@ -95,6 +96,9 @@ def _reply(phone: str, user_text: str):
 
     # Process lead qualification (extracts hidden tag, maybe notifies agent)
     clean_response = lead_qualifier.process(phone, ai_response)
+
+    # Process visit scheduling (extracts visit tag, creates calendar event)
+    clean_response = visit_scheduler.process(phone, clean_response)
 
     # Store assistant reply (clean version)
     conversations.add_message(phone, "assistant", clean_response)
