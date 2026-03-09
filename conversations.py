@@ -17,7 +17,7 @@ _store = defaultdict(lambda: {
 })
 _lock = Lock()
 
-MAX_HISTORY = 20  # messages kept per conversation
+MAX_HISTORY = 40  # messages kept per conversation (~20 exchanges)
 
 
 def get(phone: str) -> dict:

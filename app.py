@@ -4,6 +4,7 @@ Handles Meta WhatsApp webhook verification and incoming message processing.
 """
 import logging
 import json
+import re
 import time
 import threading
 from flask import Flask, request, jsonify
@@ -26,7 +27,7 @@ app = Flask(__name__)
 # and combine them into a single AI call.
 _pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}
 _pending_lock = threading.Lock()
-DEBOUNCE_SECONDS = 3
+DEBOUNCE_SECONDS = 5
 
 
 # ---------------------------------------------------------------------------
@@ -116,7 +117,14 @@ def _flush(phone: str):
     combined = " / ".join(texts) if len(texts) > 1 else texts[0]
     if len(texts) > 1:
         logger.info("Combined %d messages from %s: %s", len(texts), phone, combined)
-    _reply(phone, combined)
+    try:
+        _reply(phone, combined)
+    except Exception as e:
+        logger.error("Unhandled error in _reply for %s: %s", phone, e, exc_info=True)
+        try:
+            whatsapp.send_message(phone, "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos.")
+        except Exception:
+            pass
 
 
 def _extract_operation(text: str):
@@ -181,6 +189,15 @@ def _reply(phone: str, user_text: str):
 
     # Remove forbidden opening punctuation the model sometimes adds
     clean_response = clean_response.replace("¿", "").replace("¡", "")
+
+    # Safety net: strip re-introduction if conversation is already in progress
+    history_after = conversations.get_messages(phone)
+    if len(history_after) > 2:
+        clean_response = re.sub(
+            r'Hola[!.]?\s*[Ss]oy Valentina[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
+            '',
+            clean_response
+        ).strip()
 
     # Store assistant reply (clean version)
     conversations.add_message(phone, "assistant", clean_response)

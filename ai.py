@@ -14,6 +14,18 @@ logger = logging.getLogger(__name__)
 
 client = OpenAI(api_key=DEEPSEEK_API_KEY, base_url=DEEPSEEK_BASE_URL)
 
+_DAYS_ES = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+_MONTHS_ES = [
+    "enero", "febrero", "marzo", "abril", "mayo", "junio",
+    "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+]
+
+
+def _today_str() -> str:
+    """Return today's date in Spanish, locale-independent."""
+    today = date.today()
+    return f"{_DAYS_ES[today.weekday()]} {today.day} de {_MONTHS_ES[today.month - 1]} de {today.year}"
+
 SYSTEM_PROMPT_TEMPLATE = """Sos Valentina, asesora inmobiliaria virtual de una inmobiliaria argentina. Chateás por WhatsApp.
 
 HOY ES: {today}
@@ -56,6 +68,7 @@ MANEJO DE PROPIEDADES
 - Describís lo esencial en 1-2 oraciones. No bombardeás con todos los datos de golpe.
 - Siempre mencionás para quién es ideal la propiedad.
 - FOTOS: después de presentar cualquier propiedad, ofrecés fotos al final: "querés que te mande fotos?" Si el cliente responde afirmativamente ("sí", "dale", "si dale", "claro", "sí porfa", o similar), mandás el link de fotos_url inmediatamente sin preguntar nada más. Si no hay fotos cargadas, decís "no las tengo cargadas todavía, pero podemos coordinar una visita para que lo veas en persona".
+- CRÍTICO FOTOS: Si presentaste DOS propiedades y el cliente elige una diciendo "el de [barrio]", "del de [barrio]", "ese", "el primero", "el segundo" o cualquier referencia que identifique UNA de las dos propiedades que acabás de mencionar, interpretás eso como: quiere las fotos de ESA propiedad. Mandás el fotos_url de esa propiedad INMEDIATAMENTE. No re-describas la propiedad ni volvás a preguntar si quiere fotos.
 - DIRECCIÓN: usás ÚNICAMENTE el campo "direccion" del listado. Si está vacío o dice "Consultar", decís "la dirección exacta te la confirmo antes de que vayas". JAMÁS inventés una dirección.
 - Nunca inventés datos. Si no está en el listado, no lo decís.
 
@@ -154,7 +167,7 @@ CAPTURA DE LEAD — incluís este bloque cuando tengas algún dato nuevo:
 def build_system_prompt() -> str:
     listing_data = sheets.get_listings()
     listings_text = sheets.format_listings_for_prompt(listing_data)
-    today = date.today().strftime("%A %d de %B de %Y")
+    today = _today_str()
 
     free_slots = calendar_client.get_free_slots()
     if free_slots:
@@ -172,10 +185,17 @@ def get_reply(messages: list, lead: dict = None) -> str:
     messages: list of {"role": "user"|"assistant", "content": str}
     lead: dict with known lead data (operation, budget, timeline, name)
     """
-    system_prompt = build_system_prompt()
+    try:
+        system_prompt = build_system_prompt()
+    except Exception as e:
+        logger.error("Error building system prompt: %s", e)
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
+            listings="(no hay propiedades disponibles en este momento)",
+            today=_today_str(),
+        )
 
     if messages:
-        system_prompt += "\n\nRECORDATORIO: conversación en curso. NO te presentes ni saludes de nuevo."
+        system_prompt += "\n\nRECORDATORIO: conversación en curso. JAMÁS digas 'Hola! Soy Valentina, con quién hablo?' ni ninguna variante. JAMÁS te presentes de nuevo. Respondé directamente al último mensaje del cliente."
 
     # Build a hard reminder injected as a separate system message just before the last user message.
     # This is much harder for the model to ignore than appending to the main system prompt.
@@ -199,7 +219,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
             None
         )
         if last_assistant:
-            reminder_lines.append(f"- Tu último mensaje fue: \"{last_assistant[:250]}\" — el cliente está respondiendo a ESO")
+            reminder_lines.append(f"- Tu último mensaje fue: \"{last_assistant[:500]}\" — el cliente está respondiendo a ESO")
 
     if reminder_lines and messages:
         # Prepend context directly into the last user message — DeepSeek ignores extra system messages
@@ -219,10 +239,17 @@ def get_reply(messages: list, lead: dict = None) -> str:
         response = client.chat.completions.create(
             model=DEEPSEEK_MODEL,
             messages=full_messages,
-            max_tokens=600,
+            max_tokens=900,
             temperature=0.85,
         )
-        return response.choices[0].message.content
+        if not response.choices:
+            logger.error("DeepSeek returned empty choices list")
+            return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
+        content = response.choices[0].message.content
+        if content is None:
+            logger.error("DeepSeek returned null content (finish_reason=%s)", response.choices[0].finish_reason)
+            return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
+        return content
     except Exception as e:
         logger.error("DeepSeek API error: %s", e)
-        return "Lo siento, hubo un problema tecnico. Por favor intentá de nuevo en unos segundos."
+        return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
