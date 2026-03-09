@@ -201,18 +201,17 @@ def get_reply(messages: list, lead: dict = None) -> str:
         if last_assistant:
             reminder_lines.append(f"- Tu último mensaje fue: \"{last_assistant[:250]}\" — el cliente está respondiendo a ESO")
 
-    if reminder_lines:
-        reminder_msg = "CONTEXTO ACTIVO DE ESTA CONVERSACIÓN:\n" + "\n".join(reminder_lines)
-        # Inject right before the last user message so the model sees it immediately before responding
-        if messages:
-            full_messages = (
-                [{"role": "system", "content": system_prompt}]
-                + messages[:-1]
-                + [{"role": "system", "content": reminder_msg}]
-                + [messages[-1]]
-            )
-        else:
-            full_messages = [{"role": "system", "content": system_prompt}]
+    if reminder_lines and messages:
+        # Prepend context directly into the last user message — DeepSeek ignores extra system messages
+        # but reliably reads the content it needs to respond to.
+        reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + "]\n"
+        last_msg = messages[-1].copy()
+        last_msg["content"] = reminder_prefix + last_msg["content"]
+        full_messages = (
+            [{"role": "system", "content": system_prompt}]
+            + messages[:-1]
+            + [last_msg]
+        )
     else:
         full_messages = [{"role": "system", "content": system_prompt}] + messages
 
