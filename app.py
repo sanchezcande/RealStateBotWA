@@ -1,14 +1,15 @@
 """
 Main Flask app.
-Handles Meta WhatsApp webhook verification and incoming message processing.
+Handles Meta WhatsApp, Facebook Messenger, and Instagram Direct webhook messages.
 """
 import logging
 import json
 import re
 import time
 import threading
+import requests
 from flask import Flask, request, jsonify
-from config import VERIFY_TOKEN
+from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN
 import conversations
 import ai
 import lead_qualifier
@@ -223,6 +224,136 @@ def _reply(phone: str, user_text: str):
 
     # Send reply to user
     whatsapp.send_message(phone, clean_response)
+
+
+# ---------------------------------------------------------------------------
+# Facebook Messenger / Instagram Direct support
+# To enable: subscribe the webhook in Meta App Dashboard under Messenger and
+# Instagram settings (subscribed_fields: messages, messaging_postbacks).
+# ---------------------------------------------------------------------------
+
+def _send_meta_message(recipient_id: str, text: str):
+    """Send a reply via Meta Graph API (Facebook Messenger / Instagram Direct)."""
+    if not PAGE_ACCESS_TOKEN:
+        logger.warning("PAGE_ACCESS_TOKEN not set — cannot send Meta message.")
+        return
+    try:
+        resp = requests.post(
+            "https://graph.facebook.com/v19.0/me/messages",
+            params={"access_token": PAGE_ACCESS_TOKEN},
+            json={"recipient": {"id": recipient_id}, "message": {"text": text}},
+            timeout=10,
+        )
+        if not resp.ok:
+            logger.error("Meta send API error %s: %s", resp.status_code, resp.text)
+    except Exception as e:
+        logger.error("Failed to send Meta message: %s", e)
+
+
+def _reply_meta(sender_id: str, user_text: str):
+    """Run the AI pipeline for a Facebook/Instagram message and reply."""
+    conversations.add_message(sender_id, "user", user_text)
+
+    operation = _extract_operation(user_text)
+    if operation:
+        current = conversations.get_lead(sender_id)
+        if not current.get("operation"):
+            conversations.update_lead(sender_id, operation=operation)
+
+    prop_type = _extract_property_type(user_text)
+    if prop_type:
+        current = conversations.get_lead(sender_id)
+        if not current.get("property_type"):
+            conversations.update_lead(sender_id, property_type=prop_type)
+
+    name = _extract_name(user_text)
+    if name:
+        current = conversations.get_lead(sender_id)
+        if not current.get("name"):
+            conversations.update_lead(sender_id, name=name)
+
+    history = conversations.get_messages(sender_id)
+    lead = conversations.get_lead(sender_id)
+    ai_response = ai.get_reply(history, lead=lead)
+
+    clean_response = lead_qualifier.process(sender_id, ai_response)
+    clean_response = visit_scheduler.process(sender_id, clean_response)
+    clean_response = clean_response.replace("¿", "").replace("¡", "")
+
+    history_after = conversations.get_messages(sender_id)
+    if len(history_after) > 2:
+        clean_response = re.sub(
+            r'Hola[!.]?\s*[Ss]oy Valentina[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
+            '',
+            clean_response,
+        ).strip()
+
+    conversations.add_message(sender_id, "assistant", clean_response)
+    _send_meta_message(sender_id, clean_response)
+
+
+@app.get("/webhook/meta")
+def verify_meta_webhook():
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
+    if mode == "subscribe" and token == VERIFY_TOKEN:
+        logger.info("Meta webhook verified.")
+        return challenge, 200
+    return "Forbidden", 403
+
+
+@app.post("/webhook/meta")
+def receive_meta_message():
+    data = request.get_json(silent=True) or {}
+    # object is "page" for Facebook Messenger, "instagram" for Instagram Direct
+    obj_type = data.get("object", "")
+    if obj_type not in ("page", "instagram"):
+        return jsonify({"status": "ok"}), 200
+    try:
+        for entry in data.get("entry", []):
+            for messaging in entry.get("messaging", []):
+                sender_id = messaging.get("sender", {}).get("id")
+                message = messaging.get("message", {})
+                # Skip delivery/read receipts (no text content)
+                if message.get("is_echo") or not message.get("text"):
+                    continue
+                text = message["text"].strip()
+                if sender_id and text:
+                    logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
+                    _enqueue_meta(sender_id, text)
+    except Exception as e:
+        logger.error("Error processing Meta webhook: %s", e, exc_info=True)
+    return jsonify({"status": "ok"}), 200
+
+
+# Separate pending dict for Meta channels to avoid collision with WhatsApp phone numbers
+_pending_meta: dict = {}
+_pending_meta_lock = threading.Lock()
+
+
+def _enqueue_meta(sender_id: str, text: str):
+    with _pending_meta_lock:
+        if sender_id in _pending_meta:
+            _pending_meta[sender_id]["timer"].cancel()
+            _pending_meta[sender_id]["texts"].append(text)
+        else:
+            _pending_meta[sender_id] = {"texts": [text]}
+        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[sender_id])
+        _pending_meta[sender_id]["timer"] = timer
+        timer.start()
+
+
+def _flush_meta(sender_id: str):
+    with _pending_meta_lock:
+        if sender_id not in _pending_meta:
+            return
+        texts = _pending_meta.pop(sender_id)["texts"]
+    combined = " / ".join(texts) if len(texts) > 1 else texts[0]
+    try:
+        _reply_meta(sender_id, combined)
+    except Exception as e:
+        logger.error("Unhandled error in _reply_meta for %s: %s", sender_id, e, exc_info=True)
 
 
 # ---------------------------------------------------------------------------

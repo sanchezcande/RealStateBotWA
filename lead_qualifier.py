@@ -101,21 +101,18 @@ def _notify_callback(phone: str, callback_data: dict, lead: dict):
     preferred_time = callback_data.get("preferred_time") or "No especificado"
     callback_phone = callback_data.get("phone") or f"+{phone}"
 
-    # Build a short summary from the last few messages
-    messages = conversations.get_messages(phone)
-    last_msgs = messages[-6:] if len(messages) >= 6 else messages
-    summary_lines = []
-    for m in last_msgs:
-        role = "Cliente" if m["role"] == "user" else "Valentina"
-        summary_lines.append(f"{role}: {m['content'][:120]}")
-    summary = "\n".join(summary_lines)
+    # Last 3 user messages only
+    all_messages = conversations.get_messages(phone)
+    user_msgs = [m["content"] for m in all_messages if m["role"] == "user"]
+    last_user = user_msgs[-3:] if len(user_msgs) >= 3 else user_msgs
+    summary = "\n".join(f"- {m[:150]}" for m in last_user)
 
     msg = (
-        f"*CLIENTE QUIERE QUE LO LLAMEN*\n"
+        f"Cliente quiere que lo llamen.\n"
         f"Nombre: {name}\n"
-        f"Telefono: {callback_phone}\n"
-        f"Horario preferido: {preferred_time}\n\n"
-        f"*Resumen de la charla:*\n{summary}"
+        f"Teléfono: {callback_phone}\n"
+        f"Horario preferido: {preferred_time}\n"
+        f"Resumen: {summary}"
     )
     success = whatsapp.send_message(NOTIFY_NUMBER, msg)
     if success:

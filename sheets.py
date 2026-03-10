@@ -247,6 +247,7 @@ def format_listings_for_prompt(listings: list) -> str:
         direccion = str(p.get("direccion", "") or "").strip()
         descripcion = p.get("descripcion", "")
         condiciones = str(p.get("condiciones", "") or "").strip()
+        horarios_visita = str(p.get("horarios_visita", "") or "").strip()
 
         precio_str = f"USD {precio:,}" if isinstance(precio, (int, float)) else str(precio)
         expensas_str = (f"USD {expensas}/mes" if isinstance(expensas, (int, float)) and expensas > 0
@@ -266,6 +267,7 @@ def format_listings_for_prompt(listings: list) -> str:
   Ascensor: {ascensor} | Seguridad: {seguridad} | Antigüedad: {antiguedad} años | Estado: {estado}
   Fotos: {fotos_str}
   Descripción: {descripcion}
-  Condiciones: {condiciones if condiciones else "Consultar"}"""
+  Condiciones: {condiciones if condiciones else "Consultar"}
+  Horarios visita: {horarios_visita if horarios_visita else "lunes a viernes 9-13 y 17-20"}"""
         lines.append(block)
     return "\n\n".join(lines)

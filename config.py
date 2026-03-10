@@ -16,4 +16,10 @@ GOOGLE_SHEET_ID = os.environ.get("GOOGLE_SHEET_ID", "1mlysMKdK1vQp4zZBlsrl4AY28Z
 GOOGLE_CALENDAR_ID = os.environ.get("GOOGLE_CALENDAR_ID", "")
 GOOGLE_CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
 
-SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "300"))  # seconds
+SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "60"))  # seconds
+
+# Facebook / Instagram Messenger
+# Set PAGE_ACCESS_TOKEN in Railway env vars.
+# Also subscribe the webhook to the page in Meta App Dashboard under
+# Messenger and Instagram settings (subscribed_fields: messages, messaging_postbacks).
+PAGE_ACCESS_TOKEN = os.environ.get("PAGE_ACCESS_TOKEN", "")
