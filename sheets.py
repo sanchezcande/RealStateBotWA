@@ -246,6 +246,7 @@ def format_listings_for_prompt(listings: list) -> str:
         fotos_url = str(p.get("fotos_url", "") or "").strip()
         direccion = str(p.get("direccion", "") or "").strip()
         descripcion = p.get("descripcion", "")
+        condiciones = str(p.get("condiciones", "") or "").strip()
 
         precio_str = f"USD {precio:,}" if isinstance(precio, (int, float)) else str(precio)
         expensas_str = (f"USD {expensas}/mes" if isinstance(expensas, (int, float)) and expensas > 0
@@ -264,6 +265,7 @@ def format_listings_for_prompt(listings: list) -> str:
   Calefón: {calefon} | Calefacción: {calefaccion} | Aire acond.: {aa} | Gas natural: {gas}
   Ascensor: {ascensor} | Seguridad: {seguridad} | Antigüedad: {antiguedad} años | Estado: {estado}
   Fotos: {fotos_str}
-  Descripción: {descripcion}"""
+  Descripción: {descripcion}
+  Condiciones: {condiciones if condiciones else "Consultar"}"""
         lines.append(block)
     return "\n\n".join(lines)
