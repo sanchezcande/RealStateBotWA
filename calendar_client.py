@@ -131,8 +131,11 @@ def create_visit_event(
             f"Coordinado por WhatsApp"
         )
 
+        title_parts = [address_str if address_str != "Sin dirección cargada" else property_title]
+        if client_name:
+            title_parts.append(client_name)
         event = {
-            "summary": f"Visita: {property_title} — {name_str}",
+            "summary": " — ".join(title_parts),
             "description": description,
             "location": address_str,
             "start": {"dateTime": start_dt.isoformat(), "timeZone": "America/Argentina/Buenos_Aires"},

@@ -13,6 +13,7 @@ _store = defaultdict(lambda: {
         "timeline": None,
         "name": None,
         "notified": False,
+        "visit_scheduled": False,
     }
 })
 _lock = Lock()

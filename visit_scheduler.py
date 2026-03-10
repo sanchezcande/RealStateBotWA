@@ -55,6 +55,12 @@ def process(phone: str, ai_text: str) -> str:
     if not visit_data:
         return clean_text
 
+    # Avoid creating duplicate calendar events for the same visit
+    lead = conversations.get_lead(phone)
+    if lead.get("visit_scheduled"):
+        logger.info("Visit already scheduled for %s, skipping duplicate event.", phone)
+        return clean_text
+
     property_title = visit_data.get("property", "Propiedad")
     date_str = visit_data.get("date", "")
     time_str = visit_data.get("time", "")
@@ -64,7 +70,6 @@ def process(phone: str, ai_text: str) -> str:
         return clean_text
 
     # Get client name and address
-    lead = conversations.get_lead(phone)
     client_name = lead.get("name", "") or ""
     address = _find_address(property_title)
 
@@ -78,6 +83,7 @@ def process(phone: str, ai_text: str) -> str:
     )
 
     if success:
+        conversations.update_lead(phone, visit_scheduled=True)
         logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
         if address:
             clean_text = clean_text.rstrip() + f"\n\nDirección: {address}"

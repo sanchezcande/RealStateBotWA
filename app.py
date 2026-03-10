@@ -155,6 +155,18 @@ def _extract_property_type(text: str):
     return None
 
 
+def _extract_name(text: str):
+    """Detect user's name from common Spanish self-introduction patterns."""
+    patterns = [
+        r"(?:soy|me llamo|mi nombre es)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
+    ]
+    for pattern in patterns:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            return m.group(1).capitalize()
+    return None
+
+
 def _reply(phone: str, user_text: str):
     # Store user message
     conversations.add_message(phone, "user", user_text)
@@ -173,6 +185,13 @@ def _reply(phone: str, user_text: str):
         if not current.get("property_type"):
             conversations.update_lead(phone, property_type=prop_type)
             logger.info("Property type extracted from user text for %s: %s", phone, prop_type)
+
+    name = _extract_name(user_text)
+    if name:
+        current = conversations.get_lead(phone)
+        if not current.get("name"):
+            conversations.update_lead(phone, name=name)
+            logger.info("Name extracted from user text for %s: %s", phone, name)
 
     # Get full history for context
     history = conversations.get_messages(phone)
