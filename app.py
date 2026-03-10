@@ -315,9 +315,19 @@ def receive_meta_message():
             for messaging in entry.get("messaging", []):
                 sender_id = messaging.get("sender", {}).get("id")
                 message = messaging.get("message", {})
-                # Skip delivery/read receipts (no text content)
+                # Skip delivery/read receipts and echo messages
                 if message.get("is_echo") or not message.get("text"):
                     continue
+                # Deduplicate by message ID (Meta sometimes sends the same webhook twice)
+                mid = message.get("mid", "")
+                if mid:
+                    with _processed_mids_lock:
+                        if mid in _processed_mids:
+                            logger.info("Duplicate Meta message ignored: %s", mid)
+                            continue
+                        _processed_mids.add(mid)
+                        if len(_processed_mids) > 1000:
+                            _processed_mids.clear()
                 text = message["text"].strip()
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
@@ -330,6 +340,10 @@ def receive_meta_message():
 # Separate pending dict for Meta channels to avoid collision with WhatsApp phone numbers
 _pending_meta: dict = {}
 _pending_meta_lock = threading.Lock()
+
+# Deduplication: track already-processed Meta message IDs to avoid double responses
+_processed_mids: set = set()
+_processed_mids_lock = threading.Lock()
 
 
 def _enqueue_meta(sender_id: str, text: str):
