@@ -4,12 +4,14 @@ Handles Meta WhatsApp, Facebook Messenger, and Instagram Direct webhook messages
 """
 import logging
 import json
+import os
 import re
 import time
 import threading
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template_string
 from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN
+import analytics
 import conversations
 import ai
 import lead_qualifier
@@ -23,6 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+analytics.init_db()
 
 # Deduplication: buffer rapid consecutive messages from the same number
 # and combine them into a single AI call.
@@ -174,6 +177,10 @@ def _extract_name(text: str):
 
 
 def _reply(phone: str, user_text: str):
+    # Track new conversations and all incoming messages
+    is_new = len(conversations.get_messages(phone)) == 0
+    analytics.log_event("message_in", phone, channel="whatsapp")
+
     # Store user message
     conversations.add_message(phone, "user", user_text)
 
@@ -199,6 +206,10 @@ def _reply(phone: str, user_text: str):
             conversations.update_lead(phone, name=name)
             logger.info("Name extracted from user text for %s: %s", phone, name)
 
+    if is_new:
+        analytics.log_event("new_conversation", phone, channel="whatsapp",
+                             operation=operation, property_type=prop_type)
+
     # Get full history for context
     history = conversations.get_messages(phone)
 
@@ -207,7 +218,7 @@ def _reply(phone: str, user_text: str):
     ai_response = ai.get_reply(history, lead=lead)
 
     # Process lead qualification (extracts hidden tag, maybe notifies agent)
-    clean_response = lead_qualifier.process(phone, ai_response)
+    clean_response = lead_qualifier.process(phone, ai_response, channel="whatsapp")
 
     # Process visit scheduling (extracts visit tag, creates calendar event)
     clean_response = visit_scheduler.process(phone, clean_response)
@@ -257,6 +268,9 @@ def _send_meta_message(recipient_id: str, text: str):
 
 def _reply_meta(sender_id: str, user_text: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
+    is_new = len(conversations.get_messages(sender_id)) == 0
+    analytics.log_event("message_in", sender_id, channel="meta")
+
     conversations.add_message(sender_id, "user", user_text)
 
     operation = _extract_operation(user_text)
@@ -277,11 +291,15 @@ def _reply_meta(sender_id: str, user_text: str):
         if not current.get("name"):
             conversations.update_lead(sender_id, name=name)
 
+    if is_new:
+        analytics.log_event("new_conversation", sender_id, channel="meta",
+                             operation=operation, property_type=prop_type)
+
     history = conversations.get_messages(sender_id)
     lead = conversations.get_lead(sender_id)
     ai_response = ai.get_reply(history, lead=lead)
 
-    clean_response = lead_qualifier.process(sender_id, ai_response)
+    clean_response = lead_qualifier.process(sender_id, ai_response, channel="meta")
     clean_response = visit_scheduler.process(sender_id, clean_response)
     clean_response = clean_response.replace("¿", "").replace("¡", "")
 
@@ -377,6 +395,176 @@ def _flush_meta(sender_id: str):
             _send_meta_message(sender_id, "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos.")
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Analytics dashboard
+# ---------------------------------------------------------------------------
+
+_DASHBOARD_HTML = """<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valentina — Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         background: #f0f2f5; color: #1a1a2e; padding: 24px; }
+  h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 24px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+          gap: 16px; margin-bottom: 28px; }
+  .kpi { background: #fff; border-radius: 12px; padding: 20px;
+         box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .kpi .num { font-size: 2rem; font-weight: 800; color: #2563eb; line-height: 1; }
+  .kpi .pct { font-size: 0.8rem; color: #10b981; font-weight: 600; margin-top: 2px; }
+  .kpi .label { font-size: 0.75rem; color: #888; margin-top: 6px; text-transform: uppercase;
+                letter-spacing: .04em; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px; }
+  .card { background: #fff; border-radius: 12px; padding: 20px;
+          box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: .05em;
+             color: #555; margin-bottom: 16px; }
+  canvas { max-height: 260px; }
+  .no-data { color: #aaa; font-size: 0.85rem; padding: 40px 0; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Valentina — Analytics</h1>
+<p class="subtitle">Ultimos 30 dias &nbsp;·&nbsp; <a href="?token={{ token }}">Actualizar</a></p>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="num">{{ kpis.total_conversations }}</div>
+    <div class="label">Conversaciones</div>
+  </div>
+  <div class="kpi">
+    <div class="num">{{ kpis.total_leads }}</div>
+    <div class="pct">{{ kpis.conv_to_lead_pct }}% del total</div>
+    <div class="label">Leads calificados</div>
+  </div>
+  <div class="kpi">
+    <div class="num">{{ kpis.total_visits }}</div>
+    <div class="pct">{{ kpis.conv_to_visit_pct }}% del total</div>
+    <div class="label">Visitas agendadas</div>
+  </div>
+</div>
+
+<div class="charts">
+  <div class="card" style="grid-column: 1 / -1;">
+    <h2>Conversaciones nuevas por dia</h2>
+    {% if conv_by_day.labels %}
+    <canvas id="convChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Horarios pico (mensajes recibidos)</h2>
+    {% if peak_hours.values | sum > 0 %}
+    <canvas id="hoursChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Propiedades mas solicitadas (visitas)</h2>
+    {% if top_properties.labels %}
+    <canvas id="propsChart"></canvas>
+    {% else %}<p class="no-data">Sin visitas registradas todavia</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Tipo de operacion</h2>
+    {% if op_split.labels %}
+    <canvas id="opChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+  {% if channel_split.labels | length > 1 %}
+  <div class="card">
+    <h2>Canal</h2>
+    <canvas id="channelChart"></canvas>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const CONV     = {{ conv_by_day | tojson }};
+const HOURS    = {{ peak_hours | tojson }};
+const PROPS    = {{ top_properties | tojson }};
+const OPS      = {{ op_split | tojson }};
+const CHANNELS = {{ channel_split | tojson }};
+
+const BLUE  = "rgba(37,99,235,0.85)";
+const GREEN = "rgba(16,185,129,0.85)";
+const PAL   = ["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
+
+if (CONV.labels.length) {
+  new Chart(document.getElementById("convChart"), {
+    type: "line",
+    data: { labels: CONV.labels, datasets: [{ label: "Conversaciones", data: CONV.values,
+            borderColor: BLUE, backgroundColor: "rgba(37,99,235,0.1)", fill: true,
+            tension: 0.3, pointRadius: 3 }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+if (HOURS.values.reduce((a,b)=>a+b,0) > 0) {
+  new Chart(document.getElementById("hoursChart"), {
+    type: "bar",
+    data: { labels: HOURS.labels, datasets: [{ label: "Mensajes", data: HOURS.values,
+            backgroundColor: GREEN }] },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+if (PROPS.labels.length) {
+  new Chart(document.getElementById("propsChart"), {
+    type: "bar",
+    data: { labels: PROPS.labels, datasets: [{ label: "Visitas", data: PROPS.values,
+            backgroundColor: PAL }] },
+    options: { indexAxis: "y", plugins: { legend: { display: false } },
+               scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+  });
+}
+
+if (OPS.labels.length) {
+  new Chart(document.getElementById("opChart"), {
+    type: "doughnut",
+    data: { labels: OPS.labels, datasets: [{ data: OPS.values, backgroundColor: PAL }] },
+    options: { plugins: { legend: { position: "bottom" } } }
+  });
+}
+
+if (CHANNELS.labels.length > 1) {
+  new Chart(document.getElementById("channelChart"), {
+    type: "doughnut",
+    data: { labels: CHANNELS.labels, datasets: [{ data: CHANNELS.values, backgroundColor: PAL }] },
+    options: { plugins: { legend: { position: "bottom" } } }
+  });
+}
+</script>
+</body>
+</html>"""
+
+
+@app.get("/dashboard")
+def dashboard():
+    token = request.args.get("token", "")
+    expected = os.environ.get("DASHBOARD_TOKEN", "")
+    if not expected or token != expected:
+        return "Acceso denegado.", 403
+    data = analytics.get_dashboard_data(days=30)
+    if not data:
+        return "Error cargando datos.", 500
+    return render_template_string(
+        _DASHBOARD_HTML,
+        token=token,
+        kpis=data["kpis"],
+        conv_by_day=data["conv_by_day"],
+        peak_hours=data["peak_hours"],
+        top_properties=data["top_properties"],
+        op_split=data["op_split"],
+        channel_split=data["channel_split"],
+    )
 
 
 # ---------------------------------------------------------------------------

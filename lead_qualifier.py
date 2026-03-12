@@ -7,6 +7,7 @@ import re
 import json
 import logging
 from config import NOTIFY_NUMBER
+import analytics
 import conversations
 import whatsapp
 
@@ -49,7 +50,7 @@ def is_qualified(lead: dict) -> bool:
     return bool(lead.get("budget") and lead.get("operation") and lead.get("timeline"))
 
 
-def process(phone: str, ai_text: str) -> str:
+def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
     """
     Check AI response for lead and callback tags, update state, notify agent as needed.
     Returns cleaned text to send to user.
@@ -70,10 +71,13 @@ def process(phone: str, ai_text: str) -> str:
     if is_qualified(current_lead) and not current_lead.get("notified"):
         _notify_lead(phone, current_lead)
         conversations.update_lead(phone, notified=True)
+        analytics.log_event("lead_qualified", phone, channel=channel,
+                             operation=current_lead.get("operation"))
 
     # Notify agent if client requested a callback
     if callback_data:
         _notify_callback(phone, callback_data, current_lead)
+        analytics.log_event("callback_requested", phone, channel=channel)
 
     return clean_text
 

@@ -18,6 +18,10 @@ GOOGLE_CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
 
 SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "60"))  # seconds
 
+# Analytics dashboard
+ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
+DASHBOARD_TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
+
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
 # Also subscribe the webhook to the page in Meta App Dashboard under
