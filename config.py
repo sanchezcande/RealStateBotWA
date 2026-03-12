@@ -21,6 +21,8 @@ SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "60"))  # seconds
 # Analytics dashboard
 ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
 DASHBOARD_TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
+DASHBOARD_PLAN = os.environ.get("DASHBOARD_PLAN", "starter")  # starter | pro | premium
+BRANCH_NAME = os.environ.get("BRANCH_NAME", "")
 
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.

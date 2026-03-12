@@ -158,13 +158,15 @@ def get_dashboard_data(days: int = 30) -> dict:
         ).fetchall()
         conv_by_day = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
-        # --- Peak hours ---
+        # --- Peak hours (filtered to same date range) ---
         rows = conn.execute(
             """SELECT hour, COUNT(*) as cnt
                FROM events
                WHERE event_type = 'message_in'
+                 AND created_at >= DATE('now', ?)
                GROUP BY hour
-               ORDER BY hour"""
+               ORDER BY hour""",
+            (f"-{days} days",),
         ).fetchall()
         # Fill all 24 hours
         hour_map = {r[0]: r[1] for r in rows}
@@ -202,6 +204,54 @@ def get_dashboard_data(days: int = 30) -> dict:
         ).fetchall()
         channel_split = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
+        # --- Escalated to human vs resolved by bot (Pro+) ---
+        escalated = conn.execute(
+            """SELECT COUNT(DISTINCT phone_hash) FROM events
+               WHERE event_type = 'callback_requested'"""
+        ).fetchone()[0]
+        bot_resolved = max(total_convs - escalated, 0)
+        escalation_split = {
+            "labels": ["Resueltas por bot", "Escaladas a humano"],
+            "values": [bot_resolved, escalated],
+        }
+
+        # --- Lead quality split (Premium) ---
+        leads_qualified = conn.execute(
+            "SELECT COUNT(*) FROM conversations WHERE became_lead = 1"
+        ).fetchone()[0]
+        no_interaction = conn.execute(
+            "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count <= 2"
+        ).fetchone()[0]
+        cold = conn.execute(
+            "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count > 2"
+        ).fetchone()[0]
+        lead_quality_split = {
+            "labels": ["Leads calificados", "Interaccion sin calificar", "Sin interaccion"],
+            "values": [leads_qualified, cold, no_interaction],
+        }
+
+        # --- Period comparison: current vs previous same period ---
+        prev_convs = conn.execute(
+            """SELECT COUNT(*) FROM events
+               WHERE event_type = 'new_conversation'
+                 AND created_at >= DATE('now', ?)
+                 AND created_at < DATE('now', ?)""",
+            (f"-{days * 2} days", f"-{days} days"),
+        ).fetchone()[0]
+        prev_visits = conn.execute(
+            """SELECT COUNT(*) FROM events
+               WHERE event_type = 'visit_scheduled'
+                 AND created_at >= DATE('now', ?)
+                 AND created_at < DATE('now', ?)""",
+            (f"-{days * 2} days", f"-{days} days"),
+        ).fetchone()[0]
+        period_comparison = {
+            "current_convs": total_convs,
+            "prev_convs": prev_convs,
+            "current_visits": int(total_visits),
+            "prev_visits": prev_visits,
+        }
+
         return {
             "kpis": {
                 "total_conversations": total_convs,
@@ -215,6 +265,9 @@ def get_dashboard_data(days: int = 30) -> dict:
             "top_properties": top_properties,
             "op_split": op_split,
             "channel_split": channel_split,
+            "escalation_split": escalation_split,
+            "lead_quality_split": lead_quality_split,
+            "period_comparison": period_comparison,
         }
     except Exception as e:
         logger.error("analytics.get_dashboard_data error: %s", e)

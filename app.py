@@ -10,7 +10,7 @@ import time
 import threading
 import requests
 from flask import Flask, request, jsonify, render_template_string
-from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN
+from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, BRANCH_NAME
 import analytics
 import conversations
 import ai
@@ -268,6 +268,9 @@ def _send_meta_message(recipient_id: str, text: str):
 
 def _reply_meta(sender_id: str, user_text: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
+    if DASHBOARD_PLAN == "starter":
+        logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
+        return
     is_new = len(conversations.get_messages(sender_id)) == 0
     analytics.log_event("message_in", sender_id, channel="meta")
 
@@ -406,52 +409,105 @@ _DASHBOARD_HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Valentina — Dashboard</title>
+<title>Valentina{% if branch %} — {{ branch }}{% endif %} — Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
          background: #f0f2f5; color: #1a1a2e; padding: 24px; }
   h1 { font-size: 1.4rem; font-weight: 700; margin-bottom: 4px; }
-  .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 24px; }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 16px; margin-bottom: 28px; }
-  .kpi { background: #fff; border-radius: 12px; padding: 20px;
+  .subtitle { font-size: 0.85rem; color: #666; margin-bottom: 8px; display: flex;
+              align-items: center; gap: 12px; flex-wrap: wrap; }
+  .subtitle a { color: #2563eb; text-decoration: none; }
+  .pill { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.75rem;
+          font-weight: 600; background: #e0e7ff; color: #3730a3; }
+  .period-btns { display: flex; gap: 6px; margin-bottom: 20px; }
+  .period-btns a { padding: 5px 14px; border-radius: 6px; font-size: 0.8rem; font-weight: 600;
+                   background: #fff; color: #555; text-decoration: none;
+                   box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+  .period-btns a.active { background: #2563eb; color: #fff; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+          gap: 14px; margin-bottom: 24px; }
+  .kpi { background: #fff; border-radius: 12px; padding: 18px;
          box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .kpi .num { font-size: 2rem; font-weight: 800; color: #2563eb; line-height: 1; }
-  .kpi .pct { font-size: 0.8rem; color: #10b981; font-weight: 600; margin-top: 2px; }
-  .kpi .label { font-size: 0.75rem; color: #888; margin-top: 6px; text-transform: uppercase;
+  .kpi .num { font-size: 1.9rem; font-weight: 800; color: #2563eb; line-height: 1; }
+  .kpi .pct { font-size: 0.78rem; font-weight: 600; margin-top: 3px; }
+  .kpi .pct.up { color: #10b981; } .kpi .pct.down { color: #ef4444; } .kpi .pct.neu { color: #888; }
+  .kpi .label { font-size: 0.72rem; color: #888; margin-top: 6px; text-transform: uppercase;
                 letter-spacing: .04em; }
-  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 20px; }
-  .card { background: #fff; border-radius: 12px; padding: 20px;
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 18px; }
+  .card { background: #fff; border-radius: 12px; padding: 18px;
           box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-  .card h2 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: .05em;
-             color: #555; margin-bottom: 16px; }
-  canvas { max-height: 260px; }
-  .no-data { color: #aaa; font-size: 0.85rem; padding: 40px 0; text-align: center; }
+  .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .05em;
+             color: #555; margin-bottom: 14px; }
+  canvas { max-height: 240px; }
+  .no-data { color: #aaa; font-size: 0.85rem; padding: 36px 0; text-align: center; }
+  .actions { margin: 20px 0 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn { padding: 7px 16px; border-radius: 7px; font-size: 0.82rem; font-weight: 600;
+         text-decoration: none; border: none; cursor: pointer; }
+  .btn-outline { background: #fff; color: #2563eb; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  @media print {
+    .period-btns, .actions, .subtitle a { display: none !important; }
+    body { background: #fff; padding: 12px; }
+    .card { box-shadow: none; border: 1px solid #e5e7eb; break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
-<h1>Valentina — Analytics</h1>
-<p class="subtitle">Ultimos 30 dias &nbsp;·&nbsp; <a href="?token={{ token }}">Actualizar</a></p>
+<h1>Valentina{% if branch %} — {{ branch }}{% endif %}</h1>
+<div class="subtitle">
+  <span>Ultimos {{ days }} dias</span>
+  <span class="pill">{{ plan | upper }}</span>
+  <a href="?token={{ token }}&days={{ days }}">Actualizar</a>
+</div>
+
+<div class="period-btns">
+  <a href="?token={{ token }}&days=7" class="{{ 'active' if days == 7 else '' }}">7 dias</a>
+  <a href="?token={{ token }}&days=30" class="{{ 'active' if days == 30 else '' }}">30 dias</a>
+  <a href="?token={{ token }}&days=90" class="{{ 'active' if days == 90 else '' }}">90 dias</a>
+</div>
 
 <div class="kpis">
   <div class="kpi">
     <div class="num">{{ kpis.total_conversations }}</div>
+    {% set diff = kpis.total_conversations - period_comparison.prev_convs %}
+    {% if plan == 'premium' %}
+      <div class="pct {{ 'up' if diff >= 0 else 'down' }}">
+        {{ '+' if diff >= 0 else '' }}{{ diff }} vs periodo anterior
+      </div>
+    {% endif %}
     <div class="label">Conversaciones</div>
   </div>
   <div class="kpi">
     <div class="num">{{ kpis.total_leads }}</div>
-    <div class="pct">{{ kpis.conv_to_lead_pct }}% del total</div>
+    <div class="pct neu">{{ kpis.conv_to_lead_pct }}% del total</div>
     <div class="label">Leads calificados</div>
   </div>
   <div class="kpi">
     <div class="num">{{ kpis.total_visits }}</div>
-    <div class="pct">{{ kpis.conv_to_visit_pct }}% del total</div>
+    <div class="pct neu">{{ kpis.conv_to_visit_pct }}% del total</div>
     <div class="label">Visitas agendadas</div>
   </div>
+  {% if plan in ('pro', 'premium') %}
+  <div class="kpi">
+    <div class="num">{{ escalation_split.values[1] }}</div>
+    <div class="pct neu">
+      {% if kpis.total_conversations > 0 %}
+        {{ ((escalation_split.values[1] / kpis.total_conversations) * 100) | round(1) }}% del total
+      {% endif %}
+    </div>
+    <div class="label">Escaladas a humano</div>
+  </div>
+  {% endif %}
 </div>
+
+{% if plan == 'premium' %}
+<div class="actions">
+  <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days={{ days }}">Exportar CSV</a>
+  <button class="btn btn-outline" onclick="window.print()">Imprimir / PDF</button>
+</div>
+{% endif %}
 
 <div class="charts">
   <div class="card" style="grid-column: 1 / -1;">
@@ -460,90 +516,139 @@ _DASHBOARD_HTML = """<!DOCTYPE html>
     <canvas id="convChart"></canvas>
     {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
   </div>
+
   <div class="card">
-    <h2>Horarios pico (mensajes recibidos)</h2>
+    <h2>Horarios pico</h2>
     {% if peak_hours.values | sum > 0 %}
     <canvas id="hoursChart"></canvas>
     {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
   </div>
+
   <div class="card">
-    <h2>Propiedades mas solicitadas (visitas)</h2>
+    <h2>Propiedades mas solicitadas</h2>
     {% if top_properties.labels %}
     <canvas id="propsChart"></canvas>
     {% else %}<p class="no-data">Sin visitas registradas todavia</p>{% endif %}
   </div>
+
+  {% if plan in ('pro', 'premium') %}
+  <div class="card">
+    <h2>Resolucion de consultas</h2>
+    {% if escalation_split.values | sum > 0 %}
+    <canvas id="escalChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+
+  {% if channel_split.labels | length > 1 %}
+  <div class="card">
+    <h2>Canal de contacto</h2>
+    <canvas id="channelChart"></canvas>
+  </div>
+  {% endif %}
+  {% endif %}
+
   <div class="card">
     <h2>Tipo de operacion</h2>
     {% if op_split.labels %}
     <canvas id="opChart"></canvas>
     {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
   </div>
-  {% if channel_split.labels | length > 1 %}
+
+  {% if plan == 'premium' %}
   <div class="card">
-    <h2>Canal</h2>
-    <canvas id="channelChart"></canvas>
+    <h2>Calidad de leads</h2>
+    {% if lead_quality_split.values | sum > 0 %}
+    <canvas id="leadQChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
   </div>
   {% endif %}
 </div>
 
 <script>
-const CONV     = {{ conv_by_day | tojson }};
-const HOURS    = {{ peak_hours | tojson }};
-const PROPS    = {{ top_properties | tojson }};
-const OPS      = {{ op_split | tojson }};
-const CHANNELS = {{ channel_split | tojson }};
+const CONV      = {{ conv_by_day | tojson }};
+const HOURS     = {{ peak_hours | tojson }};
+const PROPS     = {{ top_properties | tojson }};
+const OPS       = {{ op_split | tojson }};
+const CHANNELS  = {{ channel_split | tojson }};
+const ESCAL     = {{ escalation_split | tojson }};
+const LEADQ     = {{ lead_quality_split | tojson }};
 
 const BLUE  = "rgba(37,99,235,0.85)";
 const GREEN = "rgba(16,185,129,0.85)";
 const PAL   = ["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
+const opts0 = { plugins: { legend: { display: false } } };
+const scaleY = { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
+const scaleX = { scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } };
 
-if (CONV.labels.length) {
+if (CONV.labels.length)
   new Chart(document.getElementById("convChart"), {
     type: "line",
     data: { labels: CONV.labels, datasets: [{ label: "Conversaciones", data: CONV.values,
-            borderColor: BLUE, backgroundColor: "rgba(37,99,235,0.1)", fill: true,
+            borderColor: BLUE, backgroundColor: "rgba(37,99,235,0.08)", fill: true,
             tension: 0.3, pointRadius: 3 }] },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    options: { ...opts0, ...scaleY }
   });
-}
 
-if (HOURS.values.reduce((a,b)=>a+b,0) > 0) {
+if (HOURS.values.reduce((a,b)=>a+b,0) > 0)
   new Chart(document.getElementById("hoursChart"), {
     type: "bar",
-    data: { labels: HOURS.labels, datasets: [{ label: "Mensajes", data: HOURS.values,
-            backgroundColor: GREEN }] },
-    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: HOURS.labels, datasets: [{ data: HOURS.values, backgroundColor: GREEN }] },
+    options: { ...opts0, ...scaleY }
   });
-}
 
-if (PROPS.labels.length) {
+if (PROPS.labels.length)
   new Chart(document.getElementById("propsChart"), {
     type: "bar",
-    data: { labels: PROPS.labels, datasets: [{ label: "Visitas", data: PROPS.values,
-            backgroundColor: PAL }] },
-    options: { indexAxis: "y", plugins: { legend: { display: false } },
-               scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } }
+    data: { labels: PROPS.labels, datasets: [{ data: PROPS.values, backgroundColor: PAL }] },
+    options: { indexAxis: "y", ...opts0, ...scaleX }
   });
-}
 
-if (OPS.labels.length) {
+if (OPS.labels.length)
   new Chart(document.getElementById("opChart"), {
     type: "doughnut",
     data: { labels: OPS.labels, datasets: [{ data: OPS.values, backgroundColor: PAL }] },
     options: { plugins: { legend: { position: "bottom" } } }
   });
-}
 
-if (CHANNELS.labels.length > 1) {
+if (document.getElementById("escalChart") && ESCAL.values.reduce((a,b)=>a+b,0) > 0)
+  new Chart(document.getElementById("escalChart"), {
+    type: "doughnut",
+    data: { labels: ESCAL.labels, datasets: [{ data: ESCAL.values, backgroundColor: [GREEN, "#ef4444"] }] },
+    options: { plugins: { legend: { position: "bottom" } } }
+  });
+
+if (document.getElementById("channelChart") && CHANNELS.labels.length > 1)
   new Chart(document.getElementById("channelChart"), {
     type: "doughnut",
     data: { labels: CHANNELS.labels, datasets: [{ data: CHANNELS.values, backgroundColor: PAL }] },
     options: { plugins: { legend: { position: "bottom" } } }
   });
-}
+
+if (document.getElementById("leadQChart") && LEADQ.values.reduce((a,b)=>a+b,0) > 0)
+  new Chart(document.getElementById("leadQChart"), {
+    type: "doughnut",
+    data: { labels: LEADQ.labels, datasets: [{ data: LEADQ.values,
+            backgroundColor: ["#10b981","#f59e0b","#e5e7eb"] }] },
+    options: { plugins: { legend: { position: "bottom" } } }
+  });
 </script>
 </body>
 </html>"""
+
+_UPGRADE_HTML = """<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Valentina — Dashboard</title>
+<style>body{font-family:-apple-system,sans-serif;display:flex;align-items:center;
+justify-content:center;min-height:100vh;background:#f0f2f5;margin:0;}
+.box{background:#fff;border-radius:16px;padding:48px 40px;text-align:center;
+box-shadow:0 2px 12px rgba(0,0,0,.1);max-width:420px;}
+h1{font-size:1.3rem;margin-bottom:8px;}p{color:#666;font-size:.9rem;line-height:1.5;}
+</style></head>
+<body><div class="box">
+<h1>Dashboard no disponible</h1>
+<p>El plan <strong>Starter</strong> no incluye acceso al dashboard.<br>
+Comunicate con tu asesor para conocer los planes Pro y Premium.</p>
+</div></body></html>"""
 
 
 @app.get("/dashboard")
@@ -552,19 +657,73 @@ def dashboard():
     expected = os.environ.get("DASHBOARD_TOKEN", "")
     if not expected or token != expected:
         return "Acceso denegado.", 403
-    data = analytics.get_dashboard_data(days=30)
+    if DASHBOARD_PLAN == "starter":
+        return _UPGRADE_HTML, 200
+    days = int(request.args.get("days", 30))
+    if days not in (7, 30, 90):
+        days = 30
+    data = analytics.get_dashboard_data(days=days)
     if not data:
         return "Error cargando datos.", 500
     return render_template_string(
         _DASHBOARD_HTML,
         token=token,
+        plan=DASHBOARD_PLAN,
+        branch=BRANCH_NAME,
+        days=days,
         kpis=data["kpis"],
         conv_by_day=data["conv_by_day"],
         peak_hours=data["peak_hours"],
         top_properties=data["top_properties"],
         op_split=data["op_split"],
         channel_split=data["channel_split"],
+        escalation_split=data["escalation_split"],
+        lead_quality_split=data["lead_quality_split"],
+        period_comparison=data["period_comparison"],
     )
+
+
+@app.get("/dashboard/export.csv")
+def dashboard_export_csv():
+    import csv
+    import io
+    token = request.args.get("token", "")
+    expected = os.environ.get("DASHBOARD_TOKEN", "")
+    if not expected or token != expected:
+        return "Acceso denegado.", 403
+    if DASHBOARD_PLAN != "premium":
+        return "Exportacion CSV disponible solo en el plan Premium.", 403
+    days = int(request.args.get("days", 30))
+    if days not in (7, 30, 90):
+        days = 30
+    try:
+        import sqlite3 as _sqlite3
+        db_path = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
+        conn = _sqlite3.connect(db_path, check_same_thread=False)
+        rows = conn.execute(
+            """SELECT phone_hash, channel, first_seen_at, last_seen_at,
+                      message_count, became_lead, visit_count, operation, property_type
+               FROM conversations
+               WHERE last_seen_at >= DATE('now', ?)
+               ORDER BY last_seen_at DESC""",
+            (f"-{days} days",),
+        ).fetchall()
+        conn.close()
+    except Exception as e:
+        logger.error("CSV export error: %s", e)
+        return "Error generando el CSV.", 500
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["id_anonimo", "canal", "primer_contacto", "ultimo_contacto",
+                     "mensajes", "lead_calificado", "visitas", "operacion", "tipo_propiedad"])
+    writer.writerows(rows)
+    branch_slug = BRANCH_NAME.lower().replace(" ", "_") if BRANCH_NAME else "valentina"
+    filename = f"{branch_slug}_leads_{days}d.csv"
+    return output.getvalue(), 200, {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": f"attachment; filename={filename}",
+    }
 
 
 # ---------------------------------------------------------------------------
