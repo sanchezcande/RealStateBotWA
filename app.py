@@ -145,9 +145,12 @@ def _extract_property_type(text: str):
         return "monoambiente"
     if any(w in t for w in ("departamento", "depto", "dpto", "dept")):
         return "departamento"
+    # "2 ambientes", "tres ambientes", etc. → departamento (common Argentine expression)
+    if re.search(r'\b(?:un|dos|tres|cuatro|cinco|\d)\s*ambientes?\b', t):
+        return "departamento"
     if any(w in t for w in ("casa", "chalet")):
         return "casa"
-    if any(w in t for w in ("ph ", "p.h")):
+    if re.search(r'\bph\b', t) or "p.h" in t:
         return "PH"
     if any(w in t for w in ("local", "comercial")):
         return "local"
@@ -159,7 +162,9 @@ def _extract_property_type(text: str):
 def _extract_name(text: str):
     """Detect user's name from common Spanish self-introduction patterns."""
     patterns = [
-        r"(?:soy|me llamo|mi nombre es)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
+        r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
+        r"(?:habla|te escribe|les escribe|te contacta|de parte de|acá)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
+        r"(?:les\s+habla|acá\s+habla)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
     ]
     for pattern in patterns:
         m = re.search(pattern, text, re.IGNORECASE)
@@ -368,6 +373,10 @@ def _flush_meta(sender_id: str):
         _reply_meta(sender_id, combined)
     except Exception as e:
         logger.error("Unhandled error in _reply_meta for %s: %s", sender_id, e, exc_info=True)
+        try:
+            _send_meta_message(sender_id, "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos.")
+        except Exception:
+            pass
 
 
 # ---------------------------------------------------------------------------

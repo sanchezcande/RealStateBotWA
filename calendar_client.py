@@ -104,16 +104,16 @@ def create_visit_event(
     client_phone: str,
     client_name: str = "",
     address: str = "",
-) -> bool:
+):
     """
     Create a property visit event on the calendar.
     date_str: "YYYY-MM-DD"
     time_str: "HH:MM"
-    Returns True on success.
+    Returns the Google Calendar event ID (str) on success, or None on failure.
     """
     if not GOOGLE_CALENDAR_ID:
         logger.warning("GOOGLE_CALENDAR_ID not set — skipping calendar event creation.")
-        return False
+        return None
 
     try:
         service = _get_service()
@@ -142,10 +142,30 @@ def create_visit_event(
             "end": {"dateTime": end_dt.isoformat(), "timeZone": "America/Argentina/Buenos_Aires"},
         }
 
-        service.events().insert(calendarId=GOOGLE_CALENDAR_ID, body=event).execute()
-        logger.info("Calendar event created: %s on %s %s for %s", property_title, date_str, time_str, client_phone)
-        return True
+        result = service.events().insert(calendarId=GOOGLE_CALENDAR_ID, body=event).execute()
+        event_id = result.get("id", "")
+        logger.info("Calendar event created: %s on %s %s for %s (id=%s)", property_title, date_str, time_str, client_phone, event_id)
+        return event_id if event_id else None
 
     except Exception as e:
         logger.error("Failed to create calendar event: %s", e)
+        return None
+
+
+def cancel_visit_event(event_id: str) -> bool:
+    """
+    Delete a previously created calendar event by its ID.
+    Returns True on success, False on failure.
+    """
+    if not GOOGLE_CALENDAR_ID:
+        logger.warning("GOOGLE_CALENDAR_ID not set — cannot delete calendar event.")
+        return False
+
+    try:
+        service = _get_service()
+        service.events().delete(calendarId=GOOGLE_CALENDAR_ID, eventId=event_id).execute()
+        logger.info("Calendar event deleted: %s", event_id)
+        return True
+    except Exception as e:
+        logger.error("Failed to delete calendar event %s: %s", event_id, e)
         return False

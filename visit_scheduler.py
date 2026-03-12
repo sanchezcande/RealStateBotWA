@@ -22,26 +22,40 @@ logger = logging.getLogger(__name__)
 AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
 
 VISIT_TAG_RE = re.compile(r"<!--visit:(.*?)-->", re.DOTALL)
+CANCEL_TAG_RE = re.compile(r"<!--cancel_visit:(.*?)-->", re.DOTALL)
 
 _scheduler = BackgroundScheduler(timezone=AR_TZ)
 _scheduler.start()
 
 
-def extract_visit_data(ai_text: str):
-    """Extract embedded visit JSON from AI response, if present."""
-    match = VISIT_TAG_RE.search(ai_text)
+def extract_all_visit_data(ai_text: str) -> list:
+    """Extract all embedded visit JSONs from AI response (supports multiple tags)."""
+    results = []
+    for match in VISIT_TAG_RE.finditer(ai_text):
+        try:
+            results.append(json.loads(match.group(1)))
+        except json.JSONDecodeError:
+            logger.warning("Could not parse visit JSON: %s", match.group(1))
+    return results
+
+
+def extract_cancel_data(ai_text: str):
+    """Extract cancel_visit JSON from AI response, if present."""
+    match = CANCEL_TAG_RE.search(ai_text)
     if not match:
         return None
     try:
         return json.loads(match.group(1))
     except json.JSONDecodeError:
-        logger.warning("Could not parse visit JSON: %s", match.group(1))
+        logger.warning("Could not parse cancel_visit JSON: %s", match.group(1))
         return None
 
 
 def clean_response(ai_text: str) -> str:
-    """Remove the hidden visit tag from the text before sending to user."""
-    return VISIT_TAG_RE.sub("", ai_text).strip()
+    """Remove all hidden visit/cancel tags from the text before sending to user."""
+    text = VISIT_TAG_RE.sub("", ai_text)
+    text = CANCEL_TAG_RE.sub("", text)
+    return text.strip()
 
 
 def _find_address(property_title: str) -> str:
@@ -69,16 +83,32 @@ def _send_reminder(property_title: str, address: str, client_name: str, time_str
     whatsapp.send_message(NOTIFY_NUMBER, msg)
 
 
-def _notify_visit(property_title: str, address: str, client_name: str, date_str: str, time_str: str):
+def _notify_cancellation(property_title: str, client_name: str, date_str: str, time_str: str, phone: str = ""):
+    """Notify agent that a visit has been cancelled."""
+    name_str = client_name or "Sin nombre"
+    summary = conversations.get_conversation_summary(phone) if phone else "(sin mensajes)"
+    msg = (
+        f"Visita cancelada.\n"
+        f"Propiedad: {property_title}\n"
+        f"Cliente: {name_str}\n"
+        f"Horario que tenía: {date_str} a las {time_str}\n\n"
+        f"Resumen de la charla:\n{summary}"
+    )
+    whatsapp.send_message(NOTIFY_NUMBER, msg)
+
+
+def _notify_visit(property_title: str, address: str, client_name: str, date_str: str, time_str: str, phone: str = ""):
     """Send immediate visit confirmation to the agent."""
     address_str = address or "Sin dirección cargada"
     name_str = client_name or "Sin nombre"
+    summary = conversations.get_conversation_summary(phone) if phone else "(sin mensajes)"
     msg = (
         f"Visita confirmada!\n"
         f"Propiedad: {property_title}\n"
         f"Dirección: {address_str}\n"
         f"Cliente: {name_str}\n"
-        f"Horario: {date_str} a las {time_str}"
+        f"Horario: {date_str} a las {time_str}\n\n"
+        f"Resumen de la charla:\n{summary}"
     )
     success = whatsapp.send_message(NOTIFY_NUMBER, msg)
     if success:
@@ -110,51 +140,88 @@ def _schedule_reminder(property_title: str, address: str, client_name: str, date
 
 def process(phone: str, ai_text: str) -> str:
     """
-    Check AI response for a visit tag. If found, create calendar event,
-    notify agent, and schedule reminder.
-    Returns cleaned text (tag removed).
+    Check AI response for visit/cancel tags. Handles multiple visits in a single message.
+    Creates/deletes calendar events, notifies agent, schedules reminders.
+    Returns cleaned text (tags removed).
     """
-    visit_data = extract_visit_data(ai_text)
+    all_visit_data = extract_all_visit_data(ai_text)
+    cancel_data = extract_cancel_data(ai_text)
     clean_text = clean_response(ai_text)
 
-    if not visit_data:
+    if not all_visit_data and not cancel_data:
         return clean_text
 
-    # Avoid creating duplicate calendar events for the same visit
     lead = conversations.get_lead(phone)
-    if lead.get("visit_scheduled"):
-        logger.info("Visit already scheduled for %s, skipping duplicate event.", phone)
-        return clean_text
-
-    property_title = visit_data.get("property", "Propiedad")
-    date_str = visit_data.get("date", "")
-    time_str = visit_data.get("time", "")
-
-    if not date_str or not time_str:
-        logger.warning("Incomplete visit data, skipping calendar event: %s", visit_data)
-        return clean_text
-
-    # Get client name and address
     client_name = lead.get("name", "") or ""
-    address = _find_address(property_title)
+    scheduled_visits = list(lead.get("scheduled_visits") or [])
+    visit_events = dict(lead.get("visit_events") or {})
 
-    success = calendar_client.create_visit_event(
-        property_title=property_title,
-        date_str=date_str,
-        time_str=time_str,
-        client_phone=phone,
-        client_name=client_name,
-        address=address,
-    )
+    # Handle cancellation
+    if cancel_data:
+        property_title = cancel_data.get("property", "")
+        date_str = cancel_data.get("date", "")
+        time_str = cancel_data.get("time", "")
+        visit_key = f"{property_title}|{date_str}|{time_str}"
+        event_id = visit_events.get(visit_key)
+        if event_id:
+            success = calendar_client.cancel_visit_event(event_id)
+            if success:
+                scheduled_visits = [k for k in scheduled_visits if k != visit_key]
+                visit_events = {k: v for k, v in visit_events.items() if k != visit_key}
+                conversations.update_lead(phone, scheduled_visits=scheduled_visits, visit_events=visit_events)
+                logger.info("Visit cancelled for %s: %s", phone, visit_key)
+            else:
+                logger.error("Could not delete calendar event for visit: %s", visit_key)
+        else:
+            logger.warning("No event_id stored for visit_key '%s' — skipping calendar delete", visit_key)
+        _notify_cancellation(property_title, client_name, date_str, time_str, phone=phone)
 
-    if success:
-        conversations.update_lead(phone, visit_scheduled=True)
+    # Handle new visits (supports multiple tags in same message)
+    address_lines = []
+    for visit_data in all_visit_data:
+        property_title = visit_data.get("property", "Propiedad")
+        date_str = visit_data.get("date", "")
+        time_str = visit_data.get("time", "")
+
+        if not date_str or not time_str:
+            logger.warning("Incomplete visit data, skipping: %s", visit_data)
+            continue
+
+        visit_key = f"{property_title}|{date_str}|{time_str}"
+        if visit_key in scheduled_visits:
+            logger.info("Duplicate visit detected for %s, skipping: %s", phone, visit_key)
+            continue
+
+        address = _find_address(property_title)
+        event_id = calendar_client.create_visit_event(
+            property_title=property_title,
+            date_str=date_str,
+            time_str=time_str,
+            client_phone=phone,
+            client_name=client_name,
+            address=address,
+        )
+
+        # Always track the visit and notify agent, regardless of calendar outcome
+        scheduled_visits.append(visit_key)
+        lead_update = dict(
+            visit_scheduled=True,
+            scheduled_visits=scheduled_visits,
+        )
+        if event_id is not None:
+            visit_events[visit_key] = event_id
+            lead_update["visit_events"] = visit_events
+            _schedule_reminder(property_title, address, client_name, date_str, time_str)
+        else:
+            logger.warning("Could not create calendar event for %s / %s — visit tracked without event_id", phone, property_title)
+
+        conversations.update_lead(phone, **lead_update)
         logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
-        _notify_visit(property_title, address, client_name, date_str, time_str)
-        _schedule_reminder(property_title, address, client_name, date_str, time_str)
+        _notify_visit(property_title, address, client_name, date_str, time_str, phone=phone)
         if address:
-            clean_text = clean_text.rstrip() + f"\n\nDirección: {address}"
-    else:
-        logger.error("Could not create calendar event for %s", phone)
+            address_lines.append(f"Dirección {property_title}: {address}" if len(all_visit_data) > 1 else address)
+
+    if address_lines:
+        clean_text = clean_text.rstrip() + "\n\nDirección: " + "\n".join(address_lines)
 
     return clean_text

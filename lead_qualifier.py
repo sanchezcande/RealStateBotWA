@@ -80,6 +80,7 @@ def process(phone: str, ai_text: str) -> str:
 
 def _notify_lead(phone: str, lead: dict):
     name = lead.get("name") or "Sin nombre"
+    summary = conversations.get_conversation_summary(phone)
     msg = (
         f"*NUEVO LEAD CALIFICADO*\n"
         f"Telefono: +{phone}\n"
@@ -87,6 +88,7 @@ def _notify_lead(phone: str, lead: dict):
         f"Operacion: {lead.get('operation', '')}\n"
         f"Presupuesto: {lead.get('budget', '')}\n"
         f"Plazo: {lead.get('timeline', '')}\n\n"
+        f"Resumen de la charla:\n{summary}\n\n"
         f"Respondé cuanto antes para no perder la oportunidad."
     )
     success = whatsapp.send_message(NOTIFY_NUMBER, msg)
