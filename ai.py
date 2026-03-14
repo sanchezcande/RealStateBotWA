@@ -257,7 +257,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
     if reminder_lines and messages:
         # Prepend context directly into the last user message — DeepSeek ignores extra system messages
         # but reliably reads the content it needs to respond to.
-        reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + "]\n"
+        reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + " | REGLA ABSOLUTA: JAMÁS uses ¿ ni ¡ en tu respuesta, solo signos de cierre ? y !]\n"
         last_msg = messages[-1].copy()
         last_msg["content"] = reminder_prefix + last_msg["content"]
         full_messages = (
@@ -266,7 +266,13 @@ def get_reply(messages: list, lead: dict = None) -> str:
             + [last_msg]
         )
     else:
-        full_messages = [{"role": "system", "content": system_prompt}] + messages
+        # Sin historial previo: igual inyectamos la regla de signos en el mensaje del usuario
+        if messages:
+            last_msg = messages[-1].copy()
+            last_msg["content"] = "[REGLA ABSOLUTA: JAMÁS uses ¿ ni ¡, solo signos de cierre ? y !]\n" + last_msg["content"]
+            full_messages = [{"role": "system", "content": system_prompt}] + messages[:-1] + [last_msg]
+        else:
+            full_messages = [{"role": "system", "content": system_prompt}] + messages
 
     try:
         response = client.chat.completions.create(
