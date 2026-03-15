@@ -5,6 +5,7 @@ then calls the DeepSeek API.
 """
 import logging
 import time
+import socket
 from datetime import date
 from openai import OpenAI
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
@@ -20,6 +21,26 @@ _MONTHS_ES = [
     "enero", "febrero", "marzo", "abril", "mayo", "junio",
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ]
+
+def _check_deepseek_dns_once():
+    """Log DNS resolution status once to surface connectivity issues early."""
+    try:
+        host = DEEPSEEK_BASE_URL.replace("https://", "").replace("http://", "").split("/")[0]
+        socket.gethostbyname(host)
+        logger.info("DeepSeek DNS OK for host: %s", host)
+    except Exception as e:
+        logger.error("DeepSeek DNS FAIL for base URL '%s': %s", DEEPSEEK_BASE_URL, e)
+
+
+_DNS_CHECKED = False
+
+
+def _ensure_dns_check():
+    global _DNS_CHECKED
+    if _DNS_CHECKED:
+        return
+    _DNS_CHECKED = True
+    _check_deepseek_dns_once()
 
 
 def _today_str() -> str:
@@ -222,6 +243,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
     lead: dict with known lead data (operation, budget, timeline, name)
     """
     try:
+        _ensure_dns_check()
         system_prompt = build_system_prompt()
     except Exception as e:
         logger.error("Error building system prompt: %s", e)
