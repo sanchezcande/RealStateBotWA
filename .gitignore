@@ -1,0 +1,29 @@
+# Entorno
+.env
+.env.local
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Base de datos local
+*.db
+*.db-shm
+*.db-wal
+
+# Tests y resultados
+test_results.csv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
