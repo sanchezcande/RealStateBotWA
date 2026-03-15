@@ -107,49 +107,61 @@ body {
 canvas { max-height: 260px; }
 .no-data { color: #aaa; font-size: .85rem; padding: 36px 0; text-align: center; }
 
-.stat-list { display: flex; flex-direction: column; gap: 12px; }
-.stat-row {
-  display: grid; grid-template-columns: 36px minmax(0, 1fr) auto;
+.viz-layout {
+  display: grid; grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+  gap: 18px; align-items: center;
+}
+.viz-layout-tight {
+  grid-template-columns: minmax(200px, 240px) minmax(0, 1fr);
+}
+.viz-chart {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 240px; padding: 10px;
+}
+.viz-chart-small { min-height: 210px; }
+.viz-legend {
+  display: flex; flex-direction: column; gap: 10px;
+}
+.legend-row {
+  display: grid; grid-template-columns: 28px 10px minmax(0, 1fr) auto;
   gap: 12px; align-items: center; padding: 12px 14px;
   border: 1px solid #e5e7eb; border-radius: 12px; background: #fbfdff;
 }
-.stat-rank {
-  width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; color: #2563eb;
-  display: flex; align-items: center; justify-content: center; font-size: .86rem; font-weight: 700;
+.legend-row-compact {
+  grid-template-columns: 10px minmax(0, 1fr) auto;
 }
-.stat-copy { min-width: 0; }
-.stat-title {
+.legend-index {
+  width: 28px; height: 28px; border-radius: 8px; background: #eff6ff; color: #2563eb;
+  display: flex; align-items: center; justify-content: center; font-size: .8rem; font-weight: 700;
+}
+.legend-swatch {
+  width: 10px; height: 36px; border-radius: 999px; background: #2563eb;
+}
+.swatch-0 { background: #2563eb; }
+.swatch-1 { background: #10b981; }
+.swatch-2 { background: #f59e0b; }
+.swatch-3 { background: #ef4444; }
+.swatch-4 { background: #8b5cf6; }
+.swatch-5 { background: #06b6d4; }
+.swatch-6 { background: #ec4899; }
+.swatch-7 { background: #84cc16; }
+.channel-swatch-whatsapp { background: #16a34a; }
+.channel-swatch-instagram { background: #e11d48; }
+.channel-swatch-facebook { background: #2563eb; }
+.channel-swatch-social_legacy { background: #94a3b8; }
+.legend-copy { min-width: 0; }
+.legend-title {
   font-size: .9rem; font-weight: 700; color: #111827;
 }
-.stat-subtitle {
+.legend-subtitle {
   font-size: .76rem; color: #6b7280; margin-top: 3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.stat-value {
+.legend-value {
   text-align: right; display: flex; flex-direction: column; align-items: flex-end;
 }
-.stat-value strong { font-size: 1.1rem; color: #111827; line-height: 1; }
-.stat-value span { font-size: .72rem; color: #6b7280; margin-top: 4px; }
-
-.channel-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-}
-.channel-card {
-  padding: 16px; border-radius: 14px; border: 1px solid #e5e7eb; background: #fff;
-}
-.channel-label {
-  font-size: .76rem; text-transform: uppercase; letter-spacing: .06em; color: #6b7280;
-}
-.channel-count {
-  font-size: 1.8rem; font-weight: 800; line-height: 1; margin: 10px 0 6px;
-  color: #111827;
-}
-.channel-meta { font-size: .8rem; color: #4b5563; }
-.channel-whatsapp { background: linear-gradient(180deg, #f0fdf4, #ffffff); }
-.channel-instagram { background: linear-gradient(180deg, #fff1f2, #ffffff); }
-.channel-facebook { background: linear-gradient(180deg, #eff6ff, #ffffff); }
-.channel-social_legacy { background: linear-gradient(180deg, #f9fafb, #ffffff); }
+.legend-value strong { font-size: 1.05rem; color: #111827; line-height: 1; }
+.legend-value span { font-size: .72rem; color: #6b7280; margin-top: 4px; }
 
 /* ===== Actions Bar ===== */
 .actions { margin: 20px 0 24px; display: flex; gap: 10px; flex-wrap: wrap; }
@@ -327,8 +339,12 @@ tr:hover td { background: #f8fafc; }
   .conv-detail { border-radius: 12px; min-height: 50vh; }
   .kpis { grid-template-columns: repeat(2, 1fr); }
   .charts { grid-template-columns: 1fr; }
-  .stat-row { grid-template-columns: 32px minmax(0, 1fr); }
-  .stat-value { grid-column: 2; align-items: flex-start; text-align: left; }
+  .viz-layout, .viz-layout-tight { grid-template-columns: 1fr; }
+  .viz-chart, .viz-chart-small { min-height: 220px; }
+  .legend-row { grid-template-columns: 28px 10px minmax(0, 1fr); }
+  .legend-row-compact { grid-template-columns: 10px minmax(0, 1fr); }
+  .legend-value { grid-column: 3; align-items: flex-start; text-align: left; }
+  .legend-row-compact .legend-value { grid-column: 2; }
 }
 
 /* ===== Print ===== */

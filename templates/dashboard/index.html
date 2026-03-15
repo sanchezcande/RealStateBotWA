@@ -79,22 +79,28 @@
       </div>
     </div>
     {% if top_properties["items"] %}
-    <div class="stat-list">
-      {% for property in top_properties["items"] %}
-      <div class="stat-row">
-        <div class="stat-rank">{{ loop.index }}</div>
-        <div class="stat-copy">
-          <div class="stat-title">{{ property.title }}</div>
-          {% if property.address %}
-          <div class="stat-subtitle">{{ property.address }}</div>
-          {% endif %}
-        </div>
-        <div class="stat-value">
-          <strong>{{ property.count }}</strong>
-          <span>{{ 'solicitud' if property.count == 1 else 'solicitudes' }}</span>
-        </div>
+    <div class="viz-layout">
+      <div class="viz-chart">
+        <canvas id="propsChart"></canvas>
       </div>
-      {% endfor %}
+      <div class="viz-legend">
+        {% for property in top_properties["items"] %}
+        <div class="legend-row">
+          <div class="legend-index">{{ loop.index }}</div>
+          <div class="legend-swatch swatch-{{ loop.index0 % 8 }}"></div>
+          <div class="legend-copy">
+            <div class="legend-title">{{ property.title }}</div>
+            {% if property.address %}
+            <div class="legend-subtitle">{{ property.address }}</div>
+            {% endif %}
+          </div>
+          <div class="legend-value">
+            <strong>{{ property.count }}</strong>
+            <span>{{ 'solicitud' if property.count == 1 else 'solicitudes' }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% else %}<p class="no-data">Sin visitas registradas todavia</p>{% endif %}
   </div>
@@ -115,14 +121,25 @@
         <p>Desglose real por WhatsApp, Instagram y Facebook.</p>
       </div>
     </div>
-    <div class="channel-grid">
-      {% for channel in channel_breakdown %}
-      <div class="channel-card channel-{{ channel.key }}">
-        <div class="channel-label">{{ channel.label }}</div>
-        <div class="channel-count">{{ channel.count }}</div>
-        <div class="channel-meta">{{ channel.pct }}% del total</div>
+    <div class="viz-layout viz-layout-tight">
+      <div class="viz-chart viz-chart-small">
+        <canvas id="channelChart"></canvas>
       </div>
-      {% endfor %}
+      <div class="viz-legend">
+        {% for channel in channel_breakdown %}
+        <div class="legend-row legend-row-compact">
+          <div class="legend-swatch channel-swatch-{{ channel.key }}"></div>
+          <div class="legend-copy">
+            <div class="legend-title">{{ channel.label }}</div>
+            <div class="legend-subtitle">{{ channel.pct }}% del total</div>
+          </div>
+          <div class="legend-value">
+            <strong>{{ channel.count }}</strong>
+            <span>{{ 'conversación' if channel.count == 1 else 'conversaciones' }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
     </div>
   </div>
   {% endif %}
@@ -151,6 +168,8 @@
 <script>
 const CONV      = {{ conv_by_day | tojson }};
 const HOURS     = {{ peak_hours | tojson }};
+const PROPS     = {{ top_properties | tojson }};
+const CHANNELS  = {{ channel_split | tojson }};
 const OPS       = {{ op_split | tojson }};
 const ESCAL     = {{ escalation_split | tojson }};
 const LEADQ     = {{ lead_quality_split | tojson }};
@@ -165,6 +184,16 @@ if (HOURS.values.reduce((a,b)=>a+b,0) > 0)
   makeChart("hoursChart", "bar", HOURS.labels,
     [{ data: HOURS.values, backgroundColor: GREEN }],
     { ...OPTS_CLEAN, ...SCALE_Y });
+
+if (document.getElementById("propsChart") && PROPS.values.length)
+  makeChart("propsChart", "doughnut", PROPS.labels,
+    [{ data: PROPS.values, backgroundColor: PAL, borderWidth: 0 }],
+    { ...OPTS_DONUT, cutout: "62%" });
+
+if (document.getElementById("channelChart") && CHANNELS.values.length)
+  makeChart("channelChart", "doughnut", CHANNELS.labels,
+    [{ data: CHANNELS.values, backgroundColor: CHANNEL_PAL, borderWidth: 0 }],
+    { ...OPTS_DONUT, cutout: "66%" });
 
 if (OPS.labels.length)
   makeChart("opChart", "doughnut", OPS.labels,
