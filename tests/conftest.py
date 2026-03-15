@@ -14,6 +14,9 @@ os.environ.setdefault("DEEPSEEK_API_KEY", "test-deepseek-key")
 os.environ.setdefault("ANALYTICS_DB_PATH", ":memory:")
 os.environ.setdefault("DASHBOARD_TOKEN", "test-dashboard-token")
 os.environ.setdefault("DASHBOARD_PLAN", "premium")
+os.environ.setdefault("DASHBOARD_SECRET_KEY", "test-secret-key")
+# Force empty to avoid .env leaking a password into tests
+os.environ["DASHBOARD_ADMIN_PASSWORD"] = ""
 os.environ.setdefault("GOOGLE_SHEET_ID", "")
 os.environ.setdefault("GOOGLE_CREDENTIALS_JSON", "")
 os.environ.setdefault("GOOGLE_CALENDAR_ID", "")
