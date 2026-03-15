@@ -1275,6 +1275,9 @@ if __name__ == "__main__":
     results = []
     fallos_total = 0
     warns_total  = 0
+    fallbacks_total = 0
+    max_fallback_pct = 0.7
+    max_fallbacks_abs = max(3, int(total * max_fallback_pct))
 
     for i, t in enumerate(tests_a_correr, 1):
         r = run_test(t)
@@ -1283,6 +1286,12 @@ if __name__ == "__main__":
 
         fallos_total += len([x for x in r["issues"] if x.startswith("FALLO")])
         warns_total  += len([x for x in r["issues"] if x.startswith("WARN")])
+        fallbacks_total += len([x for x in r["issues"] if "fallback API" in x])
+
+        # Abort run if API is degraded to avoid burning credits
+        if fallbacks_total >= max_fallbacks_abs:
+            print(f"\n{YELLOW}API degradada: {fallbacks_total}/{i} respuestas técnicas. Abortando para no gastar créditos.{RESET}")
+            break
 
         # Rate limiting suave para no saturar la API
         time.sleep(0.3)

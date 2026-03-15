@@ -111,7 +111,196 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_visits_phone  ON visits(phone);
             CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status);
         """)
+        # Seed mock data if DB is empty (so dashboard has something to show)
+        # Skip seeding for in-memory DBs (used in tests)
+        if _DB_PATH != ":memory:":
+            count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+            if count == 0:
+                _seed_mock_data(conn)
     logger.info("Analytics DB initialised at %s", _DB_PATH)
+
+
+def _seed_mock_data(conn):
+    """Insert realistic demo data so the dashboard isn't empty on first load."""
+    import random
+
+    logger.info("Seeding mock data for dashboard demo...")
+
+    properties = [
+        "Depto 3 amb Palermo", "Casa 4 amb Belgrano", "Monoambiente Recoleta",
+        "PH 2 amb Villa Crespo", "Depto 2 amb Caballito", "Casa 3 amb Nuñez",
+        "Loft San Telmo", "Depto 4 amb Puerto Madero", "Casa 5 amb Olivos",
+        "Depto 2 amb Almagro",
+    ]
+    names = [
+        "Martin", "Lucia", "Santiago", "Valentina", "Mateo",
+        "Camila", "Nicolas", "Sofia", "Tomas", "Julieta",
+        "Agustin", "Florencia", "Lautaro", "Martina", "Facundo",
+        "Carolina", "Gonzalo", "Milagros", "Federico", "Rocio",
+        "Pablo", "Maria", "Ezequiel", "Daniela", "Ignacio",
+    ]
+    operations = ["comprar", "alquilar"]
+    prop_types = ["departamento", "casa", "monoambiente", "PH"]
+    channels = ["whatsapp", "whatsapp", "whatsapp", "meta"]  # 75% WA
+    budgets = ["USD 80.000-120.000", "USD 150.000-200.000", "$300.000/mes",
+               "$450.000/mes", "USD 250.000+", "$200.000-350.000/mes"]
+    timelines = ["1-2 meses", "3-6 meses", "urgente", "explorando", "este mes"]
+
+    greetings = [
+        "Hola, estoy buscando {op} un {tipo}",
+        "Buenas, me interesa {op} un {tipo} en zona norte",
+        "Hola soy {name}, quiero {op}",
+        "Buenas tardes, busco {tipo} para {op}",
+        "Hola, vi una publicacion de ustedes y me interesa",
+    ]
+    responses_user = [
+        "Si, me interesa mucho", "Podemos coordinar una visita?",
+        "Cual es el precio?", "Tiene cochera?", "Me podes mandar fotos?",
+        "Genial, cuando podemos ir?", "Tiene balcon?", "Es luminoso?",
+        "Cuantos metros tiene?", "Acepta mascotas?",
+        "Me gusta, quiero verlo", "Gracias por la info",
+        "Puede ser el sabado?", "Prefiero por la tarde",
+        "Tienen algo mas grande?", "Y las expensas?",
+    ]
+    responses_bot = [
+        "Dale, te cuento sobre las opciones que tenemos",
+        "Tenemos varias propiedades que te pueden interesar",
+        "Perfecto, te paso los detalles",
+        "La propiedad tiene 65m2 con balcon al frente",
+        "Las expensas son de $45.000 aproximadamente",
+        "Podemos coordinar una visita para esta semana",
+        "Te confirmo la visita para el jueves a las 15hs",
+        "Tiene 2 dormitorios, living comedor y cocina integrada",
+        "Si, acepta mascotas sin problema",
+        "Te mando las fotos por aca",
+    ]
+
+    now = datetime.now(AR_TZ)
+    phone_counter = 5491100000000
+
+    for i in range(25):
+        phone = str(phone_counter + i)
+        phone_hash = _hash_phone(phone)
+        ch = random.choice(channels)
+        name = names[i % len(names)]
+        op = random.choice(operations)
+        pt = random.choice(prop_types)
+        is_lead = random.random() < 0.6
+        has_visit = is_lead and random.random() < 0.5
+        msg_count = random.randint(3, 18)
+
+        # Spread conversations over last 30 days
+        days_ago = random.randint(0, 29)
+        base_time = now - __import__("datetime").timedelta(days=days_ago)
+        first_seen = base_time.strftime("%Y-%m-%dT%H:%M:%S")
+        last_offset = random.randint(0, min(days_ago, 5))
+        last_time = (now - __import__("datetime").timedelta(days=last_offset))
+        last_seen = last_time.strftime("%Y-%m-%dT%H:%M:%S")
+
+        visit_count = 1 if has_visit else 0
+
+        # Insert conversation analytics
+        conn.execute(
+            """INSERT INTO conversations
+               (phone_hash, channel, first_seen_at, last_seen_at,
+                message_count, became_lead, visit_count, operation, property_type)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (phone_hash, ch, first_seen, last_seen,
+             msg_count, 1 if is_lead else 0, visit_count, op, pt),
+        )
+
+        # Insert events
+        hour = random.choice([9, 10, 11, 14, 15, 16, 17, 18, 19, 20])
+        event_time = base_time.replace(hour=hour).strftime("%Y-%m-%dT%H:%M:%S")
+
+        conn.execute(
+            "INSERT INTO events (event_type, phone_hash, channel, hour, created_at) VALUES (?,?,?,?,?)",
+            ("new_conversation", phone_hash, ch, hour, event_time),
+        )
+        for m in range(msg_count):
+            msg_offset = random.randint(0, days_ago * 24 * 60)
+            msg_time = (base_time + __import__("datetime").timedelta(minutes=msg_offset)).strftime("%Y-%m-%dT%H:%M:%S")
+            msg_hour = random.choice(range(8, 22))
+            conn.execute(
+                "INSERT INTO events (event_type, phone_hash, channel, hour, created_at) VALUES (?,?,?,?,?)",
+                ("message_in", phone_hash, ch, msg_hour, msg_time),
+            )
+
+        if is_lead:
+            conn.execute(
+                "INSERT INTO events (event_type, phone_hash, channel, operation, property_type, created_at) VALUES (?,?,?,?,?,?)",
+                ("lead_qualified", phone_hash, ch, op, pt, last_seen),
+            )
+
+        if has_visit:
+            prop = random.choice(properties)
+            conn.execute(
+                "INSERT INTO events (event_type, phone_hash, channel, property, operation, created_at) VALUES (?,?,?,?,?,?)",
+                ("visit_scheduled", phone_hash, ch, prop, op, last_seen),
+            )
+
+        # Insert chat messages
+        greeting = random.choice(greetings).format(op=op, tipo=pt, name=name)
+        conn.execute(
+            "INSERT INTO chat_messages (phone, phone_hash, role, content, channel, created_at) VALUES (?,?,?,?,?,?)",
+            (phone, phone_hash, "user", f"Hola, soy {name}. " + greeting, ch, event_time),
+        )
+        conn.execute(
+            "INSERT INTO chat_messages (phone, phone_hash, role, content, channel, created_at) VALUES (?,?,?,?,?,?)",
+            (phone, phone_hash, "assistant", random.choice(responses_bot), ch, event_time),
+        )
+        for m in range(min(msg_count - 1, 8)):
+            msg_offset = (m + 1) * random.randint(10, 120)
+            msg_dt = (base_time + __import__("datetime").timedelta(minutes=msg_offset))
+            conn.execute(
+                "INSERT INTO chat_messages (phone, phone_hash, role, content, channel, created_at) VALUES (?,?,?,?,?,?)",
+                (phone, phone_hash, "user", random.choice(responses_user), ch, msg_dt.strftime("%Y-%m-%dT%H:%M:%S")),
+            )
+            conn.execute(
+                "INSERT INTO chat_messages (phone, phone_hash, role, content, channel, created_at) VALUES (?,?,?,?,?,?)",
+                (phone, phone_hash, "assistant", random.choice(responses_bot), ch, msg_dt.strftime("%Y-%m-%dT%H:%M:%S")),
+            )
+
+        # Insert lead record
+        if is_lead:
+            budget = random.choice(budgets)
+            timeline = random.choice(timelines)
+            conn.execute(
+                """INSERT INTO leads (phone, phone_hash, name, operation, property_type,
+                   budget, timeline, notified, channel, created_at, updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                (phone, phone_hash, name, op, pt, budget, timeline,
+                 1, ch, first_seen, last_seen),
+            )
+
+        # Insert visit record
+        if has_visit:
+            prop = random.choice(properties)
+            visit_days_ahead = random.randint(-5, 14)
+            visit_date = (now + __import__("datetime").timedelta(days=visit_days_ahead)).strftime("%Y-%m-%d")
+            visit_time = f"{random.choice([10,11,14,15,16,17])}:{random.choice(['00','30'])}"
+            status = "confirmed" if visit_days_ahead >= 0 else random.choice(["confirmed", "cancelled"])
+            conn.execute(
+                """INSERT INTO visits (phone, phone_hash, client_name, property_title,
+                   address, visit_date, visit_time, status, channel, created_at, updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                (phone, phone_hash, name, prop,
+                 f"Av. Ejemplo {random.randint(100,9999)}", visit_date, visit_time,
+                 status, ch, first_seen, last_seen),
+            )
+
+    # Add a few callback_requested events for escalation metrics
+    for i in range(4):
+        phone = str(phone_counter + random.randint(0, 24))
+        phone_hash = _hash_phone(phone)
+        days_ago = random.randint(0, 20)
+        event_time = (now - __import__("datetime").timedelta(days=days_ago)).strftime("%Y-%m-%dT%H:%M:%S")
+        conn.execute(
+            "INSERT INTO events (event_type, phone_hash, channel, created_at) VALUES (?,?,?,?)",
+            ("callback_requested", phone_hash, "whatsapp", event_time),
+        )
+
+    logger.info("Mock data seeded: 25 conversations, leads, visits, and messages")
 
 
 def _hash_phone(phone: str) -> str:
