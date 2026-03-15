@@ -83,7 +83,7 @@
   <div class="page-header">
     <div>
       <h1 data-i18n="media_studio">Media Studio</h1>
-      <span class="page-subtitle" data-i18n="media_subtitle">Genera videos y fotos con IA para tus propiedades</span>
+      <span class="page-subtitle" data-i18n="media_subtitle">Genera videos con IA para tus propiedades</span>
     </div>
   </div>
 
@@ -136,7 +136,6 @@
   <!-- Tabs -->
   <div class="tabs">
     <button :class="{ active: tab === 'video' }" @click="tab = 'video'" x-text="t('generate_video')"></button>
-    <button :class="{ active: tab === 'image' }" @click="tab = 'image'" x-text="t('generate_image')"></button>
     <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()" x-text="t('history')"></button>
   </div>
 
@@ -227,37 +226,6 @@
     </div>
   </template>
 
-  <!-- ======================== IMAGE GEN TAB ======================== -->
-  <template x-if="tab === 'image'">
-    <div class="gen-panel">
-      <h3 x-text="t('generate_ai_image')"></h3>
-      <p style="font-size:.82rem;color:#666;margin-bottom:12px" x-text="t('ai_image_desc')"></p>
-      <input type="text" :placeholder="t('property_name_opt')"
-             x-model="imgProperty">
-      <textarea :placeholder="t('image_prompt_placeholder')"
-                x-model="imgPrompt" style="min-height:80px"></textarea>
-      <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
-        <button class="btn btn-primary" @click="generateImage()" :disabled="imgGenerating">
-          <span x-show="!imgGenerating" x-text="t('generate_image')"></span>
-          <span x-show="imgGenerating" x-text="t('generating')"></span>
-        </button>
-        <span x-show="imgGenerating" class="spinner"></span>
-      </div>
-      <template x-if="imgError">
-        <p style="color:#dc2626;font-size:.82rem;margin-top:8px" x-text="imgError"></p>
-      </template>
-      <template x-if="imgResult">
-        <div style="margin-top:16px">
-          <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px" x-text="t('image_generated')"></p>
-          <img class="result-image" :src="imgResult" alt="Generated image">
-          <div style="margin-top:8px">
-            <a class="btn btn-outline" :href="imgResult" download x-text="t('download_image')"></a>
-          </div>
-        </div>
-      </template>
-    </div>
-  </template>
-
   <!-- ======================== JOBS HISTORY TAB ======================== -->
   <template x-if="tab === 'jobs'">
     <div>
@@ -319,9 +287,6 @@ function mediaStudio() {
     // Video gen
     videoPrompt: "", videoProperty: "",
     generating: false, genProgress: "", genError: "", genResult: "",
-    // Image gen
-    imgPrompt: "", imgProperty: "",
-    imgGenerating: false, imgError: "", imgResult: "",
     // Jobs
     jobs: [],
     _pollTimer: null,
@@ -429,34 +394,15 @@ function mediaStudio() {
       }).catch(e => { this.genError = t("network_error"); this.generating = false; });
     },
 
-    // ---- Image generation ----
-    generateImage() {
-      if (!this.imgPrompt.trim()) { this.imgError = t("write_description"); return; }
-      this.imgGenerating = true;
-      this.imgError = "";
-      this.imgResult = "";
-
-      dashFetch("/api/dashboard/media/generate/image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: this.imgPrompt, property: this.imgProperty }),
-      }).then(d => {
-        if (d.error) { this.imgError = d.error; this.imgGenerating = false; return; }
-        this._pollJob(d.job_id, "image");
-      }).catch(e => { this.imgError = t("network_error"); this.imgGenerating = false; });
-    },
-
     // ---- Polling ----
     _pollJob(jobId, type) {
       const poll = () => {
         dashFetch(`/api/dashboard/media/jobs/${jobId}`).then(j => {
           if (type === "video") this.genProgress = j.progress || "";
           if (j.status === "completed") {
-            if (type === "video") { this.genResult = j.result_url; this.generating = false; }
-            else { this.imgResult = j.result_url; this.imgGenerating = false; }
+            this.genResult = j.result_url; this.generating = false;
           } else if (j.status === "error") {
-            if (type === "video") { this.genError = j.error; this.generating = false; }
-            else { this.imgError = j.error; this.imgGenerating = false; }
+            this.genError = j.error; this.generating = false;
           } else {
             setTimeout(poll, 3000);
           }
