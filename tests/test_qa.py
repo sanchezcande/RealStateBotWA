@@ -360,11 +360,11 @@ class TestVisitScheduler:
     @patch("sheets.get_listings", return_value=[
         {"titulo": "Depto Palermo", "direccion": "Av. Santa Fe 1234"}
     ])
-    def test_process_appends_address(self, mock_sheets, mock_send, mock_cal):
+    def test_process_does_not_append_address(self, mock_sheets, mock_send, mock_cal):
         import visit_scheduler
         text = 'Dale! <!--visit:{"property":"Depto Palermo","date":"2026-03-20","time":"10:00"}-->'
         clean = visit_scheduler.process("5491112345678", text)
-        assert "Av. Santa Fe 1234" in clean
+        assert "Av. Santa Fe 1234" not in clean
 
     @patch("calendar_client.create_visit_event", return_value=None)
     @patch("whatsapp.send_message", return_value=True)

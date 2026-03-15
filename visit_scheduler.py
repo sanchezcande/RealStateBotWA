@@ -180,7 +180,6 @@ def process(phone: str, ai_text: str) -> str:
         _notify_cancellation(property_title, client_name, date_str, time_str, phone=phone)
 
     # Handle new visits (supports multiple tags in same message)
-    address_lines = []
     for visit_data in all_visit_data:
         property_title = visit_data.get("property", "Propiedad")
         date_str = visit_data.get("date", "")
@@ -225,10 +224,8 @@ def process(phone: str, ai_text: str) -> str:
         analytics.save_visit(phone, property_title, address, client_name,
                              date_str, time_str, event_id=event_id)
         _notify_visit(property_title, address, client_name, date_str, time_str, phone=phone)
-        if address:
-            address_lines.append(f"Dirección {property_title}: {address}" if len(all_visit_data) > 1 else address)
 
-    if address_lines:
-        clean_text = clean_text.rstrip() + "\n\nDirección: " + "\n".join(address_lines)
+    # Do NOT append address to user-visible text after confirming visits.
+    # The prompt explicitly forbids sharing the exact address at confirmation time.
 
     return clean_text
