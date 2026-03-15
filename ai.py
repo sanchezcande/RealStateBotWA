@@ -4,6 +4,7 @@ Builds the system prompt with property listings and conversation history,
 then calls the DeepSeek API.
 """
 import logging
+import time
 from datetime import date
 from openai import OpenAI
 from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
@@ -88,6 +89,7 @@ ESTRATEGIA DE VENTA NATURAL
 - Después agregás UNA sola cosa: una pregunta, un dato útil, o una propuesta.
 - Si el cliente pide varias cosas en un mismo mensaje (ej: fotos + condiciones + coordinar visita),
   respondés a TODO en la misma respuesta, en orden y sin omitir nada.
+- Máximo UNA pregunta por mensaje. Nunca dos preguntas juntas.
 - Nunca presionás. Acompañás el ritmo del cliente.
 - Urgencia suave cuando el cliente duda: "es una propiedad que está teniendo bastante consultas" o "la semana pasada la vino a ver alguien, está con mucho movimiento".
 - Si el precio le parece caro: "para la zona está muy bien de precio" o "tiene características que no son fáciles de encontrar en ese rango".
@@ -276,21 +278,24 @@ def get_reply(messages: list, lead: dict = None) -> str:
         else:
             full_messages = [{"role": "system", "content": system_prompt}] + messages
 
-    try:
-        response = client.chat.completions.create(
-            model=DEEPSEEK_MODEL,
-            messages=full_messages,
-            max_tokens=1200,
-            temperature=0.85,
-        )
-        if not response.choices:
-            logger.error("DeepSeek returned empty choices list")
+    max_retries = 2
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.chat.completions.create(
+                model=DEEPSEEK_MODEL,
+                messages=full_messages,
+                max_tokens=1200,
+                temperature=0.85,
+            )
+            if not response.choices:
+                raise RuntimeError("DeepSeek returned empty choices list")
+            content = response.choices[0].message.content
+            if content is None:
+                raise RuntimeError(f"DeepSeek returned null content (finish_reason={response.choices[0].finish_reason})")
+            return content
+        except Exception as e:
+            logger.error("DeepSeek API error (attempt %d/%d): %s", attempt + 1, max_retries + 1, e)
+            if attempt < max_retries:
+                time.sleep(0.4 + attempt * 0.4)
+                continue
             return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
-        content = response.choices[0].message.content
-        if content is None:
-            logger.error("DeepSeek returned null content (finish_reason=%s)", response.choices[0].finish_reason)
-            return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
-        return content
-    except Exception as e:
-        logger.error("DeepSeek API error: %s", e)
-        return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."

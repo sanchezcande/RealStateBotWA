@@ -149,13 +149,41 @@ def api_media_delete_photo(photo_id):
     return jsonify({"error": "Foto no encontrada"}), 404
 
 
+@api.route("/media/usage")
+@_require_auth
+def api_media_usage():
+    return jsonify(analytics.get_media_usage())
+
+
+@api.route("/media/purchase", methods=["POST"])
+@_require_auth
+def api_media_purchase():
+    data = request.get_json(silent=True) or {}
+    count = data.get("count", 1)
+    if not isinstance(count, int) or count < 1:
+        return jsonify({"error": "Cantidad invalida"}), 400
+    result = analytics.add_purchased_videos(count)
+    return jsonify(result)
+
+
 @api.route("/media/generate/video", methods=["POST"])
 @_require_auth
 def api_media_generate_video():
     import media_studio
     from config import GOOGLE_AI_API_KEY
+
+    # Check usage limit first
+    usage = analytics.get_media_usage()
+    if usage["remaining"] <= 0:
+        return jsonify({
+            "error": f"Llegaste al limite de {usage['total_allowed']} videos este mes. Compra videos adicionales a USD {usage['extra_video_price_usd']} cada uno.",
+            "limit_reached": True,
+            "usage": usage,
+        }), 429
+
     if not GOOGLE_AI_API_KEY:
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
+
     data = request.get_json(silent=True) or {}
     photo_ids = data.get("photo_ids", [])
     prompt = data.get("prompt", "")
@@ -172,8 +200,16 @@ def api_media_generate_video():
             return jsonify({"error": f"Foto {pid} no encontrada"}), 404
         paths.append(all_photos[pid])
 
+    # Increment usage (double-check limit atomically)
+    if not analytics.increment_video_usage():
+        return jsonify({
+            "error": "Limite de videos alcanzado",
+            "limit_reached": True,
+            "usage": analytics.get_media_usage(),
+        }), 429
+
     job_id = media_studio.generate_video_tour(paths, prompt=prompt, property_name=property_name)
-    return jsonify({"job_id": job_id, "status": "queued"})
+    return jsonify({"job_id": job_id, "status": "queued", "usage": analytics.get_media_usage()})
 
 
 @api.route("/media/generate/image", methods=["POST"])

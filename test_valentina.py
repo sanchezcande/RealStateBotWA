@@ -106,8 +106,8 @@ def evaluar(response: str, test: dict) -> list:
     if len(r.strip()) < 10:
         issues.append("FALLO: respuesta vacía o insignificante")
 
-    # Máximo una pregunta (opcional por test)
-    if test.get("max_one_question"):
+    # Máximo una pregunta (por defecto)
+    if not test.get("allow_multi_question"):
         if r.count("?") > 1:
             issues.append("FALLO: hizo más de una pregunta en la respuesta")
 
@@ -1105,13 +1105,13 @@ TESTS += [
         [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
          u("Martín"), a("Hola Martín! En qué te puedo ayudar?"),
          u("quiero ver el depto entre 18 y 19")],
-        lead={"name": "Martín"}, no_saludo=True, max_one_question=True),
+        lead={"name": "Martín"}, no_saludo=True),
 
     make_test("relativo_manana_tarde", "nuevos",
         [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
          u("Sol"), a("Hola Sol! En qué te puedo ayudar?"),
          u("quiero ver el depto mañana a la tarde")],
-        lead={"name": "Sol"}, no_saludo=True, max_one_question=True),
+        lead={"name": "Sol"}, no_saludo=True),
 
     make_test("pedido_mixto_fotos_condiciones_visita", "nuevos",
         [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
@@ -1153,6 +1153,79 @@ TESTS += [
          u("Andrés"), a("Hola Andrés! En qué te puedo ayudar?"),
          u("quiero el que tiene balcón")],
         lead={"name": "Andrés"}, no_saludo=True),
+]
+
+# ════════════════════════════════════════════════════════
+# 13. NUEVOS CASOS HUMANOS — HARD
+# ════════════════════════════════════════════════════════
+TESTS += [
+    make_test("ambig_ese_tras_3_opciones", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Luz"), a("Hola Luz! En qué te puedo ayudar?"),
+         u("busco alquilar en palermo"),
+         a("Tengo uno en palermo, otro en villa crespo y otro en belgrano. Cuál te interesa?"),
+         u("ese")],
+        lead={"name": "Luz", "operation": "alquilar"}, no_saludo=True),
+
+    make_test("corrige_nombre", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("soy juan"), a("Hola Juan! En qué te puedo ayudar?"),
+         u("perdón, es Juan Pablo")],
+        lead={"name": "Juan"}, no_saludo=True),
+
+    make_test("contradiccion_operacion", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Dani"), a("Hola Dani! En qué te puedo ayudar?"),
+         u("quiero comprar"),
+         u("igual prefiero alquilar")],
+        lead={"name": "Dani", "operation": "comprar"}, no_saludo=True),
+
+    make_test("rango_precio", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Fer"), a("Hola Fer! En qué te puedo ayudar?"),
+         u("presupuesto entre 180 y 220 mil")],
+        lead={"name": "Fer"}, no_saludo=True),
+
+    make_test("consulta_direccion_antes_visita", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Marcos"), a("Hola Marcos! En qué te puedo ayudar?"),
+         u("pasame la dirección exacta")],
+        lead={"name": "Marcos"}, no_saludo=True,
+        checks_extra=[
+            lambda r: (bool(re.search(r"\b(avenida|av\.|calle|altura|al\\s\\d{3,5})\\b", r, re.IGNORECASE)),
+                       "WARN: dio dirección exacta sin coordinar visita"),
+        ]),
+
+    make_test("pedido_fuera_horario", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Mauro"), a("Hola Mauro! En qué te puedo ayudar?"),
+         u("podés responderme a las 2am?")],
+        lead={"name": "Mauro"}, no_saludo=True, redirigir_negocio=True),
+
+    make_test("mezcla_adjuntos_texto", "nuevos2",
+        [u("[archivo recibido — image/jpeg] tengo un presupuesto de 250 mil para palermo")],
+        no_saludo=False),
+
+    make_test("respuesta_con_dos_pedidos", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Nati"), a("Hola Nati! En qué te puedo ayudar?"),
+         u("me podés decir si aceptan mascotas y cómo se ajusta el alquiler?")],
+        lead={"name": "Nati"}, no_saludo=True),
+
+    make_test("reconfirma_despues_de_respuesta", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Leo"), a("Hola Leo! En qué te puedo ayudar?"),
+         u("busco alquilar en palermo"),
+         a("Dale, qué presupuesto manejás?"),
+         u("220 mil"),
+         u("sí, eso")],
+        lead={"name": "Leo", "operation": "alquilar", "budget": "220000"}, no_saludo=True),
+
+    make_test("pide_financiacion", "nuevos2",
+        [u("hola"), a("Hola! Soy Valentina, con quién hablo?"),
+         u("Cris"), a("Hola Cris! En qué te puedo ayudar?"),
+         u("pueden financiar en cuotas sin banco?")],
+        lead={"name": "Cris", "operation": "comprar"}, no_saludo=True),
 ]
 
 # ════════════════════════════════════════════════════════

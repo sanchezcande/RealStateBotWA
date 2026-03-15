@@ -110,12 +110,27 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_visits_date   ON visits(visit_date);
             CREATE INDEX IF NOT EXISTS idx_visits_phone  ON visits(phone);
             CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status);
+
+            CREATE TABLE IF NOT EXISTS media_usage (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                month           TEXT NOT NULL,
+                videos_used     INTEGER DEFAULT 0,
+                videos_purchased INTEGER DEFAULT 0,
+                updated_at      TEXT NOT NULL,
+                UNIQUE(month)
+            );
         """)
-        # Seed mock data if DB is empty (so dashboard has something to show)
-        # Skip seeding for in-memory DBs (used in tests)
+        # Seed mock data so the dashboard has something to show.
+        # Runs if DB is empty OR if SEED_DEMO_DATA=true (force reseed).
+        # Skipped for in-memory DBs (tests).
         if _DB_PATH != ":memory:":
+            force_seed = os.environ.get("SEED_DEMO_DATA", "").lower() in ("true", "1", "yes")
             count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-            if count == 0:
+            if count == 0 or force_seed:
+                if force_seed and count > 0:
+                    for tbl in ("events", "conversations", "chat_messages", "leads", "visits"):
+                        conn.execute(f"DELETE FROM {tbl}")
+                    logger.info("Cleared existing data for demo reseed")
                 _seed_mock_data(conn)
     logger.info("Analytics DB initialised at %s", _DB_PATH)
 
@@ -907,3 +922,106 @@ def get_visits_calendar(month: str) -> dict:
     except Exception as e:
         logger.error("analytics.get_visits_calendar error: %s", e)
         return {"month": month, "days": {}}
+
+
+# ---------------------------------------------------------------------------
+# Media usage tracking (video generation limits)
+# ---------------------------------------------------------------------------
+
+FREE_VIDEOS_PER_MONTH = 4
+EXTRA_VIDEO_PRICE_USD = 25
+
+
+def get_media_usage(month: str = "") -> dict:
+    """Return video usage for the given month (YYYY-MM). Defaults to current month."""
+    if not month:
+        month = datetime.now(AR_TZ).strftime("%Y-%m")
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                "SELECT videos_used, videos_purchased FROM media_usage WHERE month = ?",
+                (month,),
+            ).fetchone()
+        used = row[0] if row else 0
+        purchased = row[1] if row else 0
+        total_allowed = FREE_VIDEOS_PER_MONTH + purchased
+        return {
+            "month": month,
+            "videos_used": used,
+            "videos_purchased": purchased,
+            "free_limit": FREE_VIDEOS_PER_MONTH,
+            "total_allowed": total_allowed,
+            "remaining": max(total_allowed - used, 0),
+            "extra_video_price_usd": EXTRA_VIDEO_PRICE_USD,
+        }
+    except Exception as e:
+        logger.error("analytics.get_media_usage error: %s", e)
+        return {
+            "month": month, "videos_used": 0, "videos_purchased": 0,
+            "free_limit": FREE_VIDEOS_PER_MONTH, "total_allowed": FREE_VIDEOS_PER_MONTH,
+            "remaining": FREE_VIDEOS_PER_MONTH, "extra_video_price_usd": EXTRA_VIDEO_PRICE_USD,
+        }
+
+
+def increment_video_usage() -> bool:
+    """Increment video usage for the current month. Returns True if within limit."""
+    month = datetime.now(AR_TZ).strftime("%Y-%m")
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+            row = conn.execute(
+                "SELECT videos_used, videos_purchased FROM media_usage WHERE month = ?",
+                (month,),
+            ).fetchone()
+
+            used = row[0] if row else 0
+            purchased = row[1] if row else 0
+            total_allowed = FREE_VIDEOS_PER_MONTH + purchased
+
+            if used >= total_allowed:
+                return False
+
+            if row is None:
+                conn.execute(
+                    "INSERT INTO media_usage (month, videos_used, videos_purchased, updated_at) VALUES (?,?,?,?)",
+                    (month, 1, 0, now),
+                )
+            else:
+                conn.execute(
+                    "UPDATE media_usage SET videos_used = videos_used + 1, updated_at = ? WHERE month = ?",
+                    (now, month),
+                )
+            return True
+    except Exception as e:
+        logger.error("analytics.increment_video_usage error: %s", e)
+        return False
+
+
+def add_purchased_videos(count: int = 1) -> dict:
+    """Add purchased videos to the current month's allowance."""
+    month = datetime.now(AR_TZ).strftime("%Y-%m")
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+            row = conn.execute(
+                "SELECT videos_purchased FROM media_usage WHERE month = ?",
+                (month,),
+            ).fetchone()
+
+            if row is None:
+                conn.execute(
+                    "INSERT INTO media_usage (month, videos_used, videos_purchased, updated_at) VALUES (?,?,?,?)",
+                    (month, 0, count, now),
+                )
+            else:
+                conn.execute(
+                    "UPDATE media_usage SET videos_purchased = videos_purchased + ?, updated_at = ? WHERE month = ?",
+                    (count, now, month),
+                )
+        return get_media_usage(month)
+    except Exception as e:
+        logger.error("analytics.add_purchased_videos error: %s", e)
+        return get_media_usage(month)

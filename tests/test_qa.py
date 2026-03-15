@@ -833,3 +833,117 @@ class TestCalendarClient:
         import calendar_client
         with patch.object(calendar_client, "GOOGLE_CALENDAR_ID", ""):
             assert calendar_client.get_free_slots() == []
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 11. AI RETRIES
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestAI:
+    @patch("ai.time.sleep")
+    @patch("ai.client.chat.completions.create")
+    @patch("ai.build_system_prompt", return_value="SYS")
+    def test_get_reply_retries_and_succeeds(self, mock_prompt, mock_create, mock_sleep):
+        import ai
+        ok_response = MagicMock()
+        ok_response.choices = [MagicMock(message=MagicMock(content="ok"), finish_reason="stop")]
+        mock_create.side_effect = [Exception("x"), Exception("x"), ok_response]
+
+        resp = ai.get_reply([{"role": "user", "content": "hola"}])
+        assert resp == "ok"
+        assert mock_create.call_count == 3
+
+    @patch("ai.time.sleep")
+    @patch("ai.client.chat.completions.create", side_effect=Exception("boom"))
+    @patch("ai.build_system_prompt", return_value="SYS")
+    def test_get_reply_returns_fallback_after_retries(self, mock_prompt, mock_create, mock_sleep):
+        import ai
+        resp = ai.get_reply([{"role": "user", "content": "hola"}])
+        assert "problema técnico" in resp
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 12. MEDIA USAGE LIMITS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class TestMediaUsage:
+    def test_initial_usage_is_zero(self):
+        import analytics
+        usage = analytics.get_media_usage()
+        assert usage["videos_used"] == 0
+        assert usage["videos_purchased"] == 0
+        assert usage["free_limit"] == 4
+        assert usage["remaining"] == 4
+
+    def test_increment_video_usage(self):
+        import analytics
+        assert analytics.increment_video_usage() is True
+        usage = analytics.get_media_usage()
+        assert usage["videos_used"] == 1
+        assert usage["remaining"] == 3
+
+    def test_usage_limit_enforced(self):
+        import analytics
+        for _ in range(4):
+            assert analytics.increment_video_usage() is True
+        # 5th should fail
+        assert analytics.increment_video_usage() is False
+        usage = analytics.get_media_usage()
+        assert usage["videos_used"] == 4
+        assert usage["remaining"] == 0
+
+    def test_purchase_adds_allowance(self):
+        import analytics
+        # Use all 4 free
+        for _ in range(4):
+            analytics.increment_video_usage()
+        assert analytics.increment_video_usage() is False
+
+        # Purchase 2 more
+        result = analytics.add_purchased_videos(2)
+        assert result["videos_purchased"] == 2
+        assert result["total_allowed"] == 6
+        assert result["remaining"] == 2
+
+        # Can now generate 2 more
+        assert analytics.increment_video_usage() is True
+        assert analytics.increment_video_usage() is True
+        assert analytics.increment_video_usage() is False
+
+    def test_api_video_generation_checks_limit(self, flask_client):
+        import analytics
+        # Use all 4 free
+        for _ in range(4):
+            analytics.increment_video_usage()
+        # Try to generate via API
+        from flask import session
+        with flask_client.session_transaction() as sess:
+            sess["dashboard_auth"] = True
+        resp = flask_client.post(
+            "/api/dashboard/media/generate/video",
+            json={"photo_ids": ["test123"], "prompt": "test"},
+        )
+        assert resp.status_code == 429
+        data = resp.get_json()
+        assert data["limit_reached"] is True
+
+    def test_api_usage_endpoint(self, flask_client):
+        with flask_client.session_transaction() as sess:
+            sess["dashboard_auth"] = True
+        resp = flask_client.get("/api/dashboard/media/usage")
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert "remaining" in data
+        assert data["free_limit"] == 4
+
+    def test_api_purchase_endpoint(self, flask_client):
+        with flask_client.session_transaction() as sess:
+            sess["dashboard_auth"] = True
+        resp = flask_client.post(
+            "/api/dashboard/media/purchase",
+            json={"count": 3},
+        )
+        assert resp.status_code == 200
+        data = resp.get_json()
+        assert data["videos_purchased"] == 3
+        assert data["total_allowed"] == 7

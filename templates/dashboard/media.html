@@ -87,9 +87,57 @@
     </div>
   </div>
 
+  <!-- Usage banner -->
+  <template x-if="usage">
+    <div style="background:#fff;border-radius:10px;padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div>
+          <span style="font-size:.82rem;color:#888">Videos este mes:</span>
+          <strong style="font-size:1.1rem;margin-left:6px" x-text="usage.videos_used + '/' + usage.total_allowed"></strong>
+        </div>
+        <div style="width:120px;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
+          <div style="height:100%;border-radius:4px;transition:width .3s"
+               :style="'width:' + Math.min(usage.videos_used / usage.total_allowed * 100, 100) + '%;background:' + (usage.remaining <= 0 ? '#dc2626' : usage.remaining <= 1 ? '#f59e0b' : '#10b981')"></div>
+        </div>
+        <span style="font-size:.78rem;color:#888" x-text="usage.remaining + ' restantes'"></span>
+      </div>
+      <button class="btn btn-outline" style="font-size:.78rem" @click="showPurchase = !showPurchase">
+        + Comprar videos
+      </button>
+    </div>
+  </template>
+
+  <!-- Purchase modal -->
+  <template x-if="showPurchase">
+    <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1);border:1px solid #e5e7eb">
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px">Comprar videos adicionales</h3>
+      <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+        Cada video adicional cuesta <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
+        Se agregan al limite de este mes.
+      </p>
+      <div style="display:flex;gap:10px;align-items:center">
+        <label style="font-size:.82rem">Cantidad:</label>
+        <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+          <option value="1">1 video — USD <span x-text="usage.extra_video_price_usd"></span></option>
+          <option value="2">2 videos — USD <span x-text="usage.extra_video_price_usd * 2"></span></option>
+          <option value="5">5 videos — USD <span x-text="usage.extra_video_price_usd * 5"></span></option>
+          <option value="10">10 videos — USD <span x-text="usage.extra_video_price_usd * 10"></span></option>
+        </select>
+        <span style="font-size:.9rem;font-weight:700;color:#2563eb">Total: USD <span x-text="purchaseCount * usage.extra_video_price_usd"></span></span>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:10px">
+        <button class="btn btn-primary" @click="purchaseVideos()">Confirmar compra</button>
+        <button class="btn btn-outline" @click="showPurchase = false">Cancelar</button>
+      </div>
+      <template x-if="purchaseMsg">
+        <p style="font-size:.82rem;color:#10b981;margin-top:8px" x-text="purchaseMsg"></p>
+      </template>
+    </div>
+  </template>
+
   <!-- Tabs -->
   <div class="tabs">
-    <button :class="{ active: tab === 'video' }" @click="tab = 'video'">Video Tour</button>
+    <button :class="{ active: tab === 'video' }" @click="tab = 'video'">Generar Video</button>
     <button :class="{ active: tab === 'image' }" @click="tab = 'image'">Generar Imagen</button>
     <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()">Historial</button>
   </div>
@@ -153,13 +201,16 @@
                  x-model="videoProperty">
           <textarea placeholder="Prompt personalizado (opcional) — ej: 'Tour elegante por departamento moderno en Palermo, luz natural'"
                     x-model="videoPrompt"></textarea>
-          <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
-            <button class="btn btn-primary" @click="generateVideo()" :disabled="generating">
-              <span x-show="!generating">Generar Video Tour</span>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <button class="btn btn-primary" @click="generateVideo()" :disabled="generating || (usage && usage.remaining <= 0)">
+              <span x-show="!generating">Generar Video</span>
               <span x-show="generating">Generando...</span>
             </button>
             <span x-show="generating" class="spinner"></span>
             <span x-show="generating" style="font-size:.82rem;color:#666" x-text="genProgress"></span>
+            <template x-if="usage && usage.remaining <= 0 && !generating">
+              <span style="font-size:.82rem;color:#dc2626">Sin videos disponibles — <a href="#" @click.prevent="showPurchase = true" style="color:#2563eb;text-decoration:underline">comprar mas</a></span>
+            </template>
           </div>
           <template x-if="genError">
             <p style="color:#dc2626;font-size:.82rem;margin-top:8px" x-text="genError"></p>
@@ -278,8 +329,31 @@ function mediaStudio() {
     // Jobs
     jobs: [],
     _pollTimer: null,
+    // Usage & purchase
+    usage: null,
+    showPurchase: false,
+    purchaseCount: 1,
+    purchaseMsg: "",
 
-    init() { this.loadPhotos(); },
+    init() { this.loadPhotos(); this.loadUsage(); },
+
+    loadUsage() {
+      dashFetch("/api/dashboard/media/usage").then(d => { this.usage = d; });
+    },
+
+    purchaseVideos() {
+      this.purchaseMsg = "";
+      dashFetch("/api/dashboard/media/purchase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ count: this.purchaseCount }),
+      }).then(d => {
+        if (d.error) { alert(d.error); return; }
+        this.usage = d;
+        this.purchaseMsg = `Se agregaron ${this.purchaseCount} video(s). Ahora tenes ${d.remaining} disponibles.`;
+        this.purchaseCount = 1;
+      });
+    },
 
     // ---- Photo management ----
     loadPhotos() {
@@ -348,7 +422,13 @@ function mediaStudio() {
           property: this.videoProperty,
         }),
       }).then(d => {
-        if (d.error) { this.genError = d.error; this.generating = false; return; }
+        if (d.usage) this.usage = d.usage;
+        if (d.error) {
+          this.genError = d.error;
+          this.generating = false;
+          if (d.limit_reached) this.showPurchase = true;
+          return;
+        }
         this._pollJob(d.job_id, "video");
       }).catch(e => { this.genError = "Error de red"; this.generating = false; });
     },
