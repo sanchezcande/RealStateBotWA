@@ -465,5 +465,45 @@ def health_deepseek():
         return jsonify({"status": "error", "error": str(e)}), 503
 
 
+@app.post("/admin/run-valentina")
+def run_valentina_tests():
+    """
+    Run Valentina stress tests (manual, protected).
+    Requires VALENTINA_RUN_TOKEN env var and matching Bearer token.
+    """
+    import os
+    import sys
+    import subprocess
+
+    expected = os.environ.get("VALENTINA_RUN_TOKEN", "")
+    auth = request.headers.get("Authorization", "")
+    if not expected or auth != f"Bearer {expected}":
+        return jsonify({"error": "unauthorized"}), 403
+
+    data = request.get_json(silent=True) or {}
+    category = (data.get("category") or "nuevos").strip()
+    if category not in ("nuevos", "nuevos2"):
+        return jsonify({"error": "invalid category"}), 400
+
+    cmd = [sys.executable, "test_valentina.py", category]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=900,
+        )
+        out = (result.stdout or "")[-4000:]
+        err = (result.stderr or "")[-2000:]
+        return jsonify({
+            "status": "ok" if result.returncode == 0 else "error",
+            "returncode": result.returncode,
+            "stdout_tail": out,
+            "stderr_tail": err,
+        }), 200 if result.returncode == 0 else 500
+    except subprocess.TimeoutExpired:
+        return jsonify({"status": "error", "error": "timeout"}), 504
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

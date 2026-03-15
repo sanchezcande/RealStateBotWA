@@ -2,30 +2,39 @@
 {% block title %}Valentina — Leads{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1>Leads</h1>
-</div>
-
 <div x-data="leadsView()" x-init="load()">
-  <div class="filters">
-    <select x-model="filterOp" @change="page=1; load()">
-      <option value="" x-text="t('all_operations')"></option>
-      <option value="alquilar" x-text="t('rental')"></option>
-      <option value="comprar" x-text="t('purchase')"></option>
-    </select>
-    <select x-model="sortBy" @change="page=1; load()">
-      <option value="updated_at" x-text="t('most_recent')"></option>
-      <option value="created_at" x-text="t('oldest')"></option>
-      <option value="name" x-text="t('name')"></option>
-    </select>
-    {% if plan == 'premium' %}
-    <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days=90" data-i18n="export_csv">Exportar CSV</a>
-    {% endif %}
-  </div>
+  <section class="subpage-hero">
+    <div>
+      <span class="section-kicker">Gestión comercial</span>
+      <h1>Leads</h1>
+      <p>Una vista ordenada para revisar intención, presupuesto, origen y nivel de avance de cada contacto.</p>
+    </div>
+    <div class="subpage-actions">
+      <select x-model="filterOp" @change="page=1; load()">
+        <option value="" x-text="t('all_operations')"></option>
+        <option value="alquilar" x-text="t('rental')"></option>
+        <option value="comprar" x-text="t('purchase')"></option>
+      </select>
+      <select x-model="sortBy" @change="page=1; load()">
+        <option value="updated_at" x-text="t('most_recent')"></option>
+        <option value="created_at" x-text="t('oldest')"></option>
+        <option value="name" x-text="t('name')"></option>
+      </select>
+      {% if plan == 'premium' %}
+      <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days=90" data-i18n="export_csv">Exportar CSV</a>
+      {% endif %}
+    </div>
+  </section>
 
-  <div class="card">
+  <section class="card panel-card">
+    <div class="panel-head">
+      <div>
+        <h2>Base de leads</h2>
+        <p x-text="items.length ? ('Mostrando ' + items.length + ' contactos en esta página') : 'Todavía no hay leads registrados en este filtro'"></p>
+      </div>
+    </div>
     <div class="table-wrap">
-      <table>
+      <table class="data-table">
         <thead>
           <tr>
             <th data-i18n="name">Nombre</th>
@@ -45,9 +54,11 @@
             <tr><td colspan="10" class="no-data" x-text="t('no_leads')"></td></tr>
           </template>
           <template x-for="l in items" :key="l.phone_hash">
-            <tr>
-              <td x-text="l.name || '—'" style="font-weight:600"></td>
-              <td x-text="l.phone" style="font-family:monospace;font-size:.78rem"></td>
+            <tr class="table-row-hover">
+              <td>
+                <div class="table-primary" x-text="l.name || '—'"></div>
+              </td>
+              <td><span class="mono-soft" x-text="l.phone"></span></td>
               <td>
                 <span x-show="l.operation === 'alquilar'" class="badge badge-blue" x-text="t('rental')"></span>
                 <span x-show="l.operation === 'comprar'" class="badge badge-green" x-text="t('purchase')"></span>
@@ -57,9 +68,9 @@
               <td x-text="l.budget || '—'"></td>
               <td x-text="l.timeline || '—'"></td>
               <td><span class="badge badge-gray" x-text="l.channel"></span></td>
-              <td x-text="l.message_count"></td>
-              <td x-text="l.visit_count"></td>
-              <td x-text="timeAgo(l.updated_at)" style="font-size:.78rem;color:#888"></td>
+              <td><span class="table-metric" x-text="l.message_count"></span></td>
+              <td><span class="table-metric" x-text="l.visit_count"></span></td>
+              <td><span class="soft-meta" x-text="timeAgo(l.updated_at)"></span></td>
             </tr>
           </template>
         </tbody>
@@ -70,7 +81,7 @@
       <span class="current" x-text="page + ' / ' + totalPages"></span>
       <a href="#" x-show="page < totalPages" @click.prevent="page++; load()" x-text="t('next')"></a>
     </div>
-  </div>
+  </section>
 </div>
 {% endblock %}
 

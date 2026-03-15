@@ -43,10 +43,11 @@ _jobs_lock = threading.Lock()
 
 def _get_client():
     """Lazy-init the Gemini client."""
-    if not GOOGLE_AI_API_KEY:
+    key = os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
+    if not key:
         raise RuntimeError("GOOGLE_AI_API_KEY no configurada")
     from google import genai
-    return genai.Client(api_key=GOOGLE_AI_API_KEY)
+    return genai.Client(api_key=key)
 
 
 # ---------------------------------------------------------------------------

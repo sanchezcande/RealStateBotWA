@@ -170,7 +170,6 @@ def api_media_purchase():
 @_require_auth
 def api_media_generate_video():
     import media_studio
-    from config import GOOGLE_AI_API_KEY
 
     # Check usage limit first
     usage = analytics.get_media_usage()
@@ -181,7 +180,7 @@ def api_media_generate_video():
             "usage": usage,
         }), 429
 
-    if not GOOGLE_AI_API_KEY:
+    if not os.environ.get("GOOGLE_AI_API_KEY", ""):
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
 
     data = request.get_json(silent=True) or {}
@@ -216,8 +215,7 @@ def api_media_generate_video():
 @_require_auth
 def api_media_generate_image():
     import media_studio
-    from config import GOOGLE_AI_API_KEY
-    if not GOOGLE_AI_API_KEY:
+    if not os.environ.get("GOOGLE_AI_API_KEY", ""):
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada"}), 400
     data = request.get_json(silent=True) or {}
     prompt = data.get("prompt", "")

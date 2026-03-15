@@ -2,25 +2,30 @@
 {% block title %}Valentina — {{ "Conversations" if request.args.get('lang') == 'en' else "Conversaciones" }}{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <h1 data-i18n="conversations">Conversaciones</h1>
-</div>
-
 <div x-data="convViewer()" x-init="loadList()">
-  <div class="filters">
-    <select x-model="filterChannel" @change="loadList()">
-      <option value="" x-text="t('all_channels')"></option>
-      <option value="whatsapp">WhatsApp</option>
-      <option value="meta">Facebook / Instagram</option>
-    </select>
-    <select x-model="filterStatus" @change="loadList()">
-      <option value="" x-text="t('all')"></option>
-      <option value="lead" x-text="t('leads_only')"></option>
-      <option value="visit" x-text="t('with_visit')"></option>
-    </select>
-  </div>
+  <section class="subpage-hero">
+    <div>
+      <span class="section-kicker">Seguimiento de conversaciones</span>
+      <h1 data-i18n="conversations">Conversaciones</h1>
+      <p>Lectura centralizada de WhatsApp, Instagram y Facebook para detectar intención, objeciones y timing.</p>
+    </div>
+    <div class="subpage-actions">
+      <select x-model="filterChannel" @change="page=1; loadList()">
+        <option value="" x-text="t('all_channels')"></option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="instagram">Instagram</option>
+        <option value="facebook">Facebook</option>
+        <option value="meta">Instagram / Facebook legado</option>
+      </select>
+      <select x-model="filterStatus" @change="page=1; loadList()">
+        <option value="" x-text="t('all')"></option>
+        <option value="lead" x-text="t('leads_only')"></option>
+        <option value="visit" x-text="t('with_visit')"></option>
+      </select>
+    </div>
+  </section>
 
-  <div class="conv-layout">
+  <div class="conv-layout conv-layout-premium">
     <!-- Left panel: conversation list -->
     <div class="conv-list">
       <div class="conv-search">
@@ -40,7 +45,7 @@
             <div class="conv-item-badges">
               <span x-show="c.is_lead" class="badge badge-green" x-text="t('lead')"></span>
               <span x-show="c.visit_count > 0" class="badge badge-blue" x-text="c.visit_count + ' ' + (c.visit_count > 1 ? t('visit_plural') : t('visit_singular'))"></span>
-              <span class="badge badge-gray" x-text="c.channel"></span>
+              <span class="badge badge-gray" x-text="prettyChannel(c.channel)"></span>
             </div>
           </div>
         </div>
@@ -61,7 +66,10 @@
       <template x-if="selected">
         <div style="display:flex;flex-direction:column;height:100%">
           <div class="conv-detail-header">
-            <h2 x-text="selectedName || selectedPhone"></h2>
+            <div>
+              <h2 x-text="selectedName || selectedPhone"></h2>
+              <div class="soft-meta" x-text="selectedPhone"></div>
+            </div>
             <div>
               <span x-show="selectedLead" class="badge badge-green" x-text="t('qualified_lead')"></span>
             </div>
@@ -104,6 +112,14 @@ function convViewer() {
     messages: [], leadInfo: null, loading: false,
 
     get totalPages() { return Math.max(1, Math.ceil(this.total / this.perPage)); },
+
+    prettyChannel(channel) {
+      if (channel === "whatsapp") return "WhatsApp";
+      if (channel === "instagram") return "Instagram";
+      if (channel === "facebook") return "Facebook";
+      if (channel === "meta") return "IG/FB legado";
+      return channel || "—";
+    },
 
     loadList() {
       this.loading = true;

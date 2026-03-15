@@ -2,22 +2,56 @@
 {% block title %}Valentina{% if branch %} — {{ branch }}{% endif %} — Dashboard{% endblock %}
 
 {% block content %}
-<div class="page-header">
-  <div>
-    <h1 data-i18n="dashboard">Dashboard</h1>
-    <span class="page-subtitle" data-i18n="last_n_days" data-i18n-p='{"days": "{{ days }}"}'>Últimos {{ days }} días</span>
+<section class="owner-hero">
+  <div class="owner-hero-copy">
+    <span class="owner-eyebrow">Portal de propietarios</span>
+    <h1>Tu operación, clara y bajo control</h1>
+    <p class="owner-hero-text">
+      Seguimiento comercial de consultas, visitas y propiedades con una lectura simple, visual y profesional.
+    </p>
+    <div class="hero-inline-stats">
+      <div class="hero-inline-stat">
+        <strong>{{ kpis.total_conversations }}</strong>
+        <span>consultas activas en el período</span>
+      </div>
+      <div class="hero-inline-stat">
+        <strong>{{ kpis.total_visits }}</strong>
+        <span>visitas coordinadas</span>
+      </div>
+      <div class="hero-inline-stat">
+        <strong>{{ kpis.conv_to_lead_pct }}%</strong>
+        <span>conversión a lead</span>
+      </div>
+    </div>
   </div>
-</div>
-
-<div class="period-btns">
-  <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}" data-i18n="n_days" data-i18n-p='{"n":"7"}'>7 días</a>
-  <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}" data-i18n="n_days" data-i18n-p='{"n":"30"}'>30 días</a>
-  <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}" data-i18n="n_days" data-i18n-p='{"n":"90"}'>90 días</a>
-</div>
+  <div class="owner-hero-side">
+    <div class="hero-panel">
+      <div class="hero-panel-label">Ventana de análisis</div>
+      <div class="hero-period-title" data-i18n="last_n_days" data-i18n-p='{"days": "{{ days }}"}'>Últimos {{ days }} días</div>
+      <div class="period-btns">
+        <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}" data-i18n="n_days" data-i18n-p='{"n":"7"}'>7 días</a>
+        <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}" data-i18n="n_days" data-i18n-p='{"n":"30"}'>30 días</a>
+        <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}" data-i18n="n_days" data-i18n-p='{"n":"90"}'>90 días</a>
+      </div>
+      <div class="hero-panel-note">
+        Vista pensada para entender rápido qué propiedades están moviendo interés y por qué canal.
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- KPIs -->
-<div class="kpis">
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="section-kicker">Resumen ejecutivo</span>
+      <h2>Indicadores principales</h2>
+    </div>
+    <p>Los números clave primero, para saber en segundos cómo se está moviendo la cartera.</p>
+  </div>
+  <div class="kpis">
   <div class="kpi">
+    <div class="kpi-topline">Actividad</div>
     <div class="num">{{ kpis.total_conversations }}</div>
     {% set diff = kpis.total_conversations - period_comparison.prev_convs %}
     {% if plan == 'premium' %}
@@ -28,17 +62,20 @@
     <div class="label" data-i18n="conversations_kpi">Conversaciones</div>
   </div>
   <div class="kpi">
+    <div class="kpi-topline">Captación</div>
     <div class="num">{{ kpis.total_leads }}</div>
     <div class="pct neu">{{ kpis.conv_to_lead_pct }}% <span data-i18n="of_total">del total</span></div>
     <div class="label" data-i18n="qualified_leads">Leads calificados</div>
   </div>
   <div class="kpi">
+    <div class="kpi-topline">Conversión</div>
     <div class="num">{{ kpis.total_visits }}</div>
     <div class="pct neu">{{ kpis.conv_to_visit_pct }}% <span data-i18n="of_total">del total</span></div>
     <div class="label" data-i18n="scheduled_visits">Visitas agendadas</div>
   </div>
   {% if plan in ('pro', 'premium') %}
   <div class="kpi">
+    <div class="kpi-topline">Atención</div>
     <div class="num">{{ escalation_split["values"][1] }}</div>
     <div class="pct neu">
       {% if kpis.total_conversations > 0 %}
@@ -48,7 +85,8 @@
     <div class="label" data-i18n="escalated_human">Escaladas a humano</div>
   </div>
   {% endif %}
-</div>
+  </div>
+</section>
 
 {% if plan == 'premium' %}
 <div class="actions">
@@ -58,7 +96,15 @@
 {% endif %}
 
 <!-- CHARTS -->
-<div class="charts">
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="section-kicker">Rendimiento</span>
+      <h2>Lectura visual del negocio</h2>
+    </div>
+    <p>Gráficos simples para detectar volumen, origen de demanda y propiedades con más tracción.</p>
+  </div>
+  <div class="charts">
 
   <!-- 1. Conversaciones por dia -->
   <div class="card full-width">
@@ -132,7 +178,8 @@
   </div>
   {% endif %}
 
-</div>
+  </div>
+</section>
 {% endblock %}
 
 {% block scripts %}

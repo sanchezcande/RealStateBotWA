@@ -4,27 +4,53 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Valentina — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/static/js/i18n.js"></script>
 <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
 <div class="login-wrap">
-  <div class="login-box">
-    <h1>Valentina</h1>
-    <p data-i18n="login_subtitle">Ingresa para acceder al dashboard</p>
-    {% if error %}
-      <div class="login-error" data-i18n="invalid_credentials">{{ error }}</div>
-    {% endif %}
-    <form method="POST">
-      <label for="password" data-i18n="password">Contrasena</label>
-      <input type="password" id="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Tu contrasena" autofocus>
-      <div style="text-align:center;color:#aaa;font-size:.78rem;margin:-8px 0 12px" data-i18n="or">o</div>
-      <label for="token" data-i18n="access_token">Token de acceso</label>
-      <input type="text" id="token" name="token" data-i18n-placeholder="token_placeholder" placeholder="Token del dashboard">
-      <button type="submit" class="btn btn-primary" data-i18n="sign_in">Ingresar</button>
-    </form>
-    <div style="text-align:center;margin-top:16px">
-      <button id="langToggle" class="lang-toggle" onclick="toggleLang()" style="background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.1);color:#555">EN</button>
+  <div class="login-shell">
+    <div class="login-brand">
+      <span class="owner-eyebrow">Portal Valentina</span>
+      <h1>Una vista clara para propietarios y equipo comercial</h1>
+      <p>
+        Accedé a un panel con métricas, conversaciones, leads y visitas en una experiencia simple y profesional.
+      </p>
+      <div class="hero-inline-stats">
+        <div class="hero-inline-stat">
+          <strong>Leads</strong>
+          <span>seguimiento de intención y presupuesto</span>
+        </div>
+        <div class="hero-inline-stat">
+          <strong>Visitas</strong>
+          <span>agenda ordenada por propiedad y canal</span>
+        </div>
+        <div class="hero-inline-stat">
+          <strong>Reportes</strong>
+          <span>lectura visual del negocio en segundos</span>
+        </div>
+      </div>
+    </div>
+    <div class="login-box">
+      <h1>Valentina</h1>
+      <p data-i18n="login_subtitle">Ingresa para acceder al dashboard</p>
+      {% if error %}
+        <div class="login-error" data-i18n="invalid_credentials">{{ error }}</div>
+      {% endif %}
+      <form method="POST">
+        <label for="password" data-i18n="password">Contrasena</label>
+        <input type="password" id="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Tu contrasena" autofocus>
+        <div class="login-divider" data-i18n="or">o</div>
+        <label for="token" data-i18n="access_token">Token de acceso</label>
+        <input type="text" id="token" name="token" data-i18n-placeholder="token_placeholder" placeholder="Token del dashboard">
+        <button type="submit" class="btn btn-primary" data-i18n="sign_in">Ingresar</button>
+      </form>
+      <div style="text-align:center;margin-top:16px">
+        <button id="langToggle" class="lang-toggle login-lang-toggle" onclick="toggleLang()">EN</button>
+      </div>
     </div>
   </div>
 </div>
