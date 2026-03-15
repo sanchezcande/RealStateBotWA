@@ -163,6 +163,40 @@ canvas { max-height: 260px; }
 .legend-value strong { font-size: 1.05rem; color: #111827; line-height: 1; }
 .legend-value span { font-size: .72rem; color: #6b7280; margin-top: 4px; }
 
+/* ===== Donut + Legend Layout ===== */
+.donut-with-legend {
+  display: flex; align-items: center; gap: 24px;
+}
+.donut-wrap {
+  width: 160px; min-width: 160px; flex-shrink: 0;
+}
+.donut-wrap canvas { width: 100% !important; height: auto !important; }
+.donut-legend {
+  flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 8px; font-size: .84rem;
+  padding: 5px 0;
+}
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.legend-label {
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; color: #333; font-weight: 500;
+}
+.legend-val {
+  font-weight: 700; color: #111; white-space: nowrap;
+}
+.legend-val small {
+  font-weight: 400; color: #888;
+}
+
+@media (max-width: 768px) {
+  .donut-with-legend { flex-direction: column; }
+  .donut-wrap { width: 140px; min-width: 140px; }
+}
+
 /* ===== Actions Bar ===== */
 .actions { margin: 20px 0 24px; display: flex; gap: 10px; flex-wrap: wrap; }
 .btn {
