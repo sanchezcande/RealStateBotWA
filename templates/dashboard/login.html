@@ -3,25 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Valentina — Iniciar sesion</title>
+<title>Valentina — Login</title>
+<script src="/static/js/i18n.js"></script>
 <link rel="stylesheet" href="/static/css/dashboard.css">
 </head>
 <body>
 <div class="login-wrap">
   <div class="login-box">
     <h1>Valentina</h1>
-    <p>Ingresa para acceder al dashboard</p>
+    <p data-i18n="login_subtitle">Ingresa para acceder al dashboard</p>
     {% if error %}
-      <div class="login-error">{{ error }}</div>
+      <div class="login-error" data-i18n="invalid_credentials">{{ error }}</div>
     {% endif %}
     <form method="POST">
-      <label for="password">Contrasena</label>
-      <input type="password" id="password" name="password" placeholder="Tu contrasena" autofocus>
-      <div style="text-align:center;color:#aaa;font-size:.78rem;margin:-8px 0 12px">o</div>
-      <label for="token">Token de acceso</label>
-      <input type="text" id="token" name="token" placeholder="Token del dashboard">
-      <button type="submit" class="btn btn-primary">Ingresar</button>
+      <label for="password" data-i18n="password">Contrasena</label>
+      <input type="password" id="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Tu contrasena" autofocus>
+      <div style="text-align:center;color:#aaa;font-size:.78rem;margin:-8px 0 12px" data-i18n="or">o</div>
+      <label for="token" data-i18n="access_token">Token de acceso</label>
+      <input type="text" id="token" name="token" data-i18n-placeholder="token_placeholder" placeholder="Token del dashboard">
+      <button type="submit" class="btn btn-primary" data-i18n="sign_in">Ingresar</button>
     </form>
+    <div style="text-align:center;margin-top:16px">
+      <button id="langToggle" class="lang-toggle" onclick="toggleLang()" style="background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.1);color:#555">EN</button>
+    </div>
   </div>
 </div>
 </body>

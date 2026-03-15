@@ -4,113 +4,113 @@
 {% block content %}
 <div class="page-header">
   <div>
-    <h1>Dashboard</h1>
-    <span class="page-subtitle">Últimos {{ days }} días</span>
+    <h1 data-i18n="dashboard">Dashboard</h1>
+    <span class="page-subtitle" data-i18n="last_n_days" data-i18n-p='{"days": "{{ days }}"}'>Últimos {{ days }} días</span>
   </div>
 </div>
 
 <div class="period-btns">
-  <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}">7 días</a>
-  <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}">30 días</a>
-  <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}">90 días</a>
+  <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}" data-i18n="n_days" data-i18n-p='{"n":"7"}'>7 días</a>
+  <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}" data-i18n="n_days" data-i18n-p='{"n":"30"}'>30 días</a>
+  <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}" data-i18n="n_days" data-i18n-p='{"n":"90"}'>90 días</a>
 </div>
 
-<!-- ═══ KPIs ═══ -->
+<!-- KPIs -->
 <div class="kpis">
   <div class="kpi">
     <div class="num">{{ kpis.total_conversations }}</div>
     {% set diff = kpis.total_conversations - period_comparison.prev_convs %}
     {% if plan == 'premium' %}
       <div class="pct {{ 'up' if diff >= 0 else 'down' }}">
-        {{ '+' if diff >= 0 else '' }}{{ diff }} vs. período anterior
+        {{ '+' if diff >= 0 else '' }}{{ diff }} <span data-i18n="vs_prev_period">vs. período anterior</span>
       </div>
     {% endif %}
-    <div class="label">Conversaciones</div>
+    <div class="label" data-i18n="conversations_kpi">Conversaciones</div>
   </div>
   <div class="kpi">
     <div class="num">{{ kpis.total_leads }}</div>
-    <div class="pct neu">{{ kpis.conv_to_lead_pct }}% del total</div>
-    <div class="label">Leads calificados</div>
+    <div class="pct neu">{{ kpis.conv_to_lead_pct }}% <span data-i18n="of_total">del total</span></div>
+    <div class="label" data-i18n="qualified_leads">Leads calificados</div>
   </div>
   <div class="kpi">
     <div class="num">{{ kpis.total_visits }}</div>
-    <div class="pct neu">{{ kpis.conv_to_visit_pct }}% del total</div>
-    <div class="label">Visitas agendadas</div>
+    <div class="pct neu">{{ kpis.conv_to_visit_pct }}% <span data-i18n="of_total">del total</span></div>
+    <div class="label" data-i18n="scheduled_visits">Visitas agendadas</div>
   </div>
   {% if plan in ('pro', 'premium') %}
   <div class="kpi">
     <div class="num">{{ escalation_split["values"][1] }}</div>
     <div class="pct neu">
       {% if kpis.total_conversations > 0 %}
-        {{ ((escalation_split["values"][1] / kpis.total_conversations) * 100) | round(1) }}% del total
+        {{ ((escalation_split["values"][1] / kpis.total_conversations) * 100) | round(1) }}% <span data-i18n="of_total">del total</span>
       {% endif %}
     </div>
-    <div class="label">Escaladas a humano</div>
+    <div class="label" data-i18n="escalated_human">Escaladas a humano</div>
   </div>
   {% endif %}
 </div>
 
 {% if plan == 'premium' %}
 <div class="actions">
-  <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days={{ days }}">Exportar CSV</a>
-  <button class="btn btn-outline" onclick="window.print()">Imprimir / PDF</button>
+  <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days={{ days }}" data-i18n="export_csv">Exportar CSV</a>
+  <button class="btn btn-outline" onclick="window.print()" data-i18n="print_pdf">Imprimir / PDF</button>
 </div>
 {% endif %}
 
-<!-- ═══ CHARTS ═══ -->
+<!-- CHARTS -->
 <div class="charts">
 
-  <!-- 1. Conversaciones por día — full width line -->
+  <!-- 1. Conversaciones por dia -->
   <div class="card full-width">
-    <h2>Conversaciones nuevas por día</h2>
+    <h2 data-i18n="new_conv_per_day">Conversaciones nuevas por día</h2>
     {% if conv_by_day.labels %}
     <canvas id="convChart"></canvas>
-    {% else %}<p class="no-data">Sin datos todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 2. Horarios pico — bar -->
+  <!-- 2. Horarios pico -->
   <div class="card">
-    <h2>Horarios pico</h2>
+    <h2 data-i18n="peak_hours">Horarios pico</h2>
     {% if peak_hours['values'] | sum > 0 %}
     <canvas id="hoursChart"></canvas>
-    {% else %}<p class="no-data">Sin datos todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 3. Tipo de operación — donut + legend -->
+  <!-- 3. Tipo de operacion -->
   <div class="card">
-    <h2>Tipo de operación</h2>
+    <h2 data-i18n="operation_type">Tipo de operación</h2>
     {% if op_split.labels %}
     <div class="donut-with-legend">
       <div class="donut-wrap"><canvas id="opChart"></canvas></div>
       <div class="donut-legend" id="opLegend"></div>
     </div>
-    {% else %}<p class="no-data">Sin datos todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 4. Propiedades más solicitadas — horizontal bar (full width) -->
+  <!-- 4. Propiedades mas solicitadas -->
   <div class="card full-width">
-    <h2>Propiedades más solicitadas</h2>
+    <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
     {% if top_properties["items"] %}
     <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 40, 120] | max }}px"></canvas>
-    {% else %}<p class="no-data">Sin visitas registradas todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin visitas registradas todavía</p>{% endif %}
   </div>
 
   {% if plan in ('pro', 'premium') %}
-  <!-- 5. Resolución de consultas — donut + legend -->
+  <!-- 5. Resolucion de consultas -->
   <div class="card">
-    <h2>Resolución de consultas</h2>
+    <h2 data-i18n="query_resolution">Resolución de consultas</h2>
     {% if escalation_split['values'] | sum > 0 %}
     <div class="donut-with-legend">
       <div class="donut-wrap"><canvas id="escalChart"></canvas></div>
       <div class="donut-legend" id="escalLegend"></div>
     </div>
-    {% else %}<p class="no-data">Sin datos todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 6. Canales de contacto — donut + legend -->
+  <!-- 6. Canales de contacto -->
   {% if channel_breakdown %}
   <div class="card">
-    <h2>Canales de contacto</h2>
+    <h2 data-i18n="contact_channels">Canales de contacto</h2>
     <div class="donut-with-legend">
       <div class="donut-wrap"><canvas id="channelChart"></canvas></div>
       <div class="donut-legend" id="channelLegend"></div>
@@ -120,15 +120,15 @@
   {% endif %}
 
   {% if plan == 'premium' %}
-  <!-- 7. Calidad de leads — donut + legend -->
+  <!-- 7. Calidad de leads -->
   <div class="card">
-    <h2>Calidad de leads</h2>
+    <h2 data-i18n="lead_quality">Calidad de leads</h2>
     {% if lead_quality_split['values'] | sum > 0 %}
     <div class="donut-with-legend">
       <div class="donut-wrap"><canvas id="leadQChart"></canvas></div>
       <div class="donut-legend" id="leadQLegend"></div>
     </div>
-    {% else %}<p class="no-data">Sin datos todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
   {% endif %}
 
@@ -146,10 +146,10 @@ const CHANNELS = {{ channel_split | tojson }};
 const ESCAL = {{ escalation_split | tojson }};
 const LEADQ = {{ lead_quality_split | tojson }};
 
-/* 1. Conversaciones por día */
+/* 1. Conversaciones por dia */
 if (CONV.labels.length)
   makeChart("convChart", "line", CONV.labels,
-    [{ label: "Conversaciones", data: CONV.values, borderColor: BLUE,
+    [{ label: t("conv_chart_label"), data: CONV.values, borderColor: BLUE,
        backgroundColor: "rgba(37,99,235,0.08)", fill: true, tension: 0.3, pointRadius: 3 }],
     { ...OPTS_CLEAN, ...SCALE_Y });
 
@@ -159,24 +159,40 @@ if (HOURS.values.reduce((a,b)=>a+b,0) > 0)
     [{ data: HOURS.values, backgroundColor: GREEN, borderRadius: 3 }],
     { ...OPTS_CLEAN, ...SCALE_Y });
 
-/* 3. Tipo de operación */
+/* 3. Tipo de operacion — translate labels */
 if (OPS.labels.length) {
-  const opColors = OPS.labels.map((_, i) => PAL[i % PAL.length]);
-  makeChart("opChart", "doughnut", OPS.labels,
+  const opLabels = OPS.labels.map(l => tData(l));
+  const opColors = opLabels.map((_, i) => PAL[i % PAL.length]);
+  makeChart("opChart", "doughnut", opLabels,
     [{ data: OPS.values, backgroundColor: opColors, borderWidth: 0 }],
     DONUT_OPTS);
   const total = OPS.values.reduce((a,b)=>a+b,0);
-  buildLegend("opLegend", OPS.labels, OPS.values, opColors, total);
+  buildLegend("opLegend", opLabels, OPS.values, opColors, total);
 }
 
 /* 4. Propiedades — horizontal bar */
 if (PROPS.values.length) {
   const barColors = PROPS.labels.map((_, i) => PAL[i % PAL.length]);
+  const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
   makeChart("propsChart", "bar", PROPS.labels,
     [{ data: PROPS.values, backgroundColor: barColors, borderRadius: 4, barThickness: 28 }],
     {
       indexAxis: "y",
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(ctx) { return ctx[0].label; },
+            afterTitle: function(ctx) {
+              const addr = propAddresses[ctx[0].dataIndex];
+              return addr ? addr : "";
+            },
+            label: function(ctx) {
+              return ctx.parsed.x + " " + (ctx.parsed.x === 1 ? t("visit_singular") : t("visit_plural"));
+            }
+          }
+        }
+      },
       scales: {
         x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
         y: { ticks: { font: { size: 12, weight: 600 } }, grid: { display: false } }
@@ -184,14 +200,15 @@ if (PROPS.values.length) {
     });
 }
 
-/* 5. Resolución de consultas */
+/* 5. Resolucion de consultas — translate labels */
 if (document.getElementById("escalChart") && ESCAL.values.reduce((a,b)=>a+b,0) > 0) {
+  const escalLabels = ESCAL.labels.map(l => tData(l));
   const escalColors = ["#10b981", "#ef4444"];
-  makeChart("escalChart", "doughnut", ESCAL.labels,
+  makeChart("escalChart", "doughnut", escalLabels,
     [{ data: ESCAL.values, backgroundColor: escalColors, borderWidth: 0 }],
     DONUT_OPTS);
   const total = ESCAL.values.reduce((a,b)=>a+b,0);
-  buildLegend("escalLegend", ESCAL.labels, ESCAL.values, escalColors, total);
+  buildLegend("escalLegend", escalLabels, ESCAL.values, escalColors, total);
 }
 
 /* 6. Canales de contacto */
@@ -204,14 +221,15 @@ if (document.getElementById("channelChart") && CHANNELS.values.length) {
   buildLegend("channelLegend", CHANNELS.labels, CHANNELS.values, chColors, total);
 }
 
-/* 7. Calidad de leads */
+/* 7. Calidad de leads — translate labels */
 if (document.getElementById("leadQChart") && LEADQ.values.reduce((a,b)=>a+b,0) > 0) {
+  const lqLabels = LEADQ.labels.map(l => tData(l));
   const lqColors = ["#10b981", "#f59e0b", "#e5e7eb"];
-  makeChart("leadQChart", "doughnut", LEADQ.labels,
+  makeChart("leadQChart", "doughnut", lqLabels,
     [{ data: LEADQ.values, backgroundColor: lqColors, borderWidth: 0 }],
     DONUT_OPTS);
   const total = LEADQ.values.reduce((a,b)=>a+b,0);
-  buildLegend("leadQLegend", LEADQ.labels, LEADQ.values, lqColors, total);
+  buildLegend("leadQLegend", lqLabels, LEADQ.values, lqColors, total);
 }
 </script>
 {% endblock %}

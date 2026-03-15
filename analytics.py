@@ -492,7 +492,11 @@ def get_dashboard_data(days: int = 30) -> dict:
                    GROUP BY operation""",
                 (cutoff,),
             ).fetchall()
-            op_split = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
+            _op_display = {"comprar": "Venta", "alquilar": "Alquiler"}
+            op_split = {
+                "labels": [_op_display.get(r[0], r[0]) for r in rows],
+                "values": [r[1] for r in rows],
+            }
 
             # --- Channel split (filtered) ---
             rows = conn.execute(

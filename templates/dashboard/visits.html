@@ -1,16 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Valentina — Visitas{% endblock %}
+{% block title %}Valentina — {{ "Visits" if request.args.get('lang') == 'en' else "Visitas" }}{% endblock %}
 
 {% block content %}
 <div class="page-header">
-  <h1>Visitas</h1>
+  <h1 data-i18n="visits">Visitas</h1>
 </div>
 
 <div x-data="visitsView()" x-init="load()">
   <!-- View toggle -->
   <div class="filters">
-    <button class="btn" :class="view === 'calendar' ? 'btn-primary' : 'btn-outline'" @click="view='calendar'; loadCalendar()">Calendario</button>
-    <button class="btn" :class="view === 'list' ? 'btn-primary' : 'btn-outline'" @click="view='list'; load()">Lista</button>
+    <button class="btn" :class="view === 'calendar' ? 'btn-primary' : 'btn-outline'" @click="view='calendar'; loadCalendar()" x-text="t('calendar')"></button>
+    <button class="btn" :class="view === 'list' ? 'btn-primary' : 'btn-outline'" @click="view='list'; load()" x-text="t('list')"></button>
     <template x-if="view === 'calendar'">
       <div style="display:flex;gap:8px;align-items:center">
         <button class="btn btn-outline" @click="prevMonth()">&larr;</button>
@@ -20,9 +20,9 @@
     </template>
     <template x-if="view === 'list'">
       <select x-model="filterStatus" @change="page=1; load()">
-        <option value="">Todos</option>
-        <option value="confirmed">Confirmadas</option>
-        <option value="cancelled">Canceladas</option>
+        <option value="" x-text="t('all')"></option>
+        <option value="confirmed" x-text="t('confirmed_f')"></option>
+        <option value="cancelled" x-text="t('cancelled_f')"></option>
       </select>
     </template>
   </div>
@@ -31,13 +31,13 @@
   <template x-if="view === 'calendar'">
     <div class="card">
       <div class="cal-grid">
-        <div class="cal-header">Lun</div>
-        <div class="cal-header">Mar</div>
-        <div class="cal-header">Mie</div>
-        <div class="cal-header">Jue</div>
-        <div class="cal-header">Vie</div>
-        <div class="cal-header">Sab</div>
-        <div class="cal-header">Dom</div>
+        <div class="cal-header" x-text="t('mon')"></div>
+        <div class="cal-header" x-text="t('tue')"></div>
+        <div class="cal-header" x-text="t('wed')"></div>
+        <div class="cal-header" x-text="t('thu')"></div>
+        <div class="cal-header" x-text="t('fri')"></div>
+        <div class="cal-header" x-text="t('sat')"></div>
+        <div class="cal-header" x-text="t('sun')"></div>
         <template x-for="cell in calCells" :key="cell.key">
           <div class="cal-day" :class="{ empty: !cell.day, today: cell.isToday }">
             <template x-if="cell.day">
@@ -63,18 +63,18 @@
         <table>
           <thead>
             <tr>
-              <th>Fecha</th>
-              <th>Hora</th>
-              <th>Propiedad</th>
-              <th>Cliente</th>
-              <th>Direccion</th>
-              <th>Estado</th>
-              <th>Canal</th>
+              <th data-i18n="date">Fecha</th>
+              <th data-i18n="time">Hora</th>
+              <th data-i18n="property">Propiedad</th>
+              <th data-i18n="client">Cliente</th>
+              <th data-i18n="address">Direccion</th>
+              <th data-i18n="status">Estado</th>
+              <th data-i18n="channel">Canal</th>
             </tr>
           </thead>
           <tbody>
             <template x-if="listItems.length === 0">
-              <tr><td colspan="7" class="no-data">Sin visitas registradas</td></tr>
+              <tr><td colspan="7" class="no-data" x-text="t('no_visits_registered')"></td></tr>
             </template>
             <template x-for="v in listItems" :key="v.id">
               <tr>
@@ -88,7 +88,7 @@
                     'badge-green': v.status === 'confirmed',
                     'badge-red': v.status === 'cancelled',
                     'badge-gray': v.status === 'completed'
-                  }" x-text="v.status === 'confirmed' ? 'Confirmada' : v.status === 'cancelled' ? 'Cancelada' : 'Completada'"></span>
+                  }" x-text="v.status === 'confirmed' ? t('confirmed') : v.status === 'cancelled' ? t('cancelled') : t('completed')"></span>
                 </td>
                 <td><span class="badge badge-gray" x-text="v.channel"></span></td>
               </tr>
@@ -97,9 +97,9 @@
         </table>
       </div>
       <div class="pagination" x-show="listTotalPages > 1">
-        <a href="#" x-show="page > 1" @click.prevent="page--; load()">Anterior</a>
+        <a href="#" x-show="page > 1" @click.prevent="page--; load()" x-text="t('previous')"></a>
         <span class="current" x-text="page + ' / ' + listTotalPages"></span>
-        <a href="#" x-show="page < listTotalPages" @click.prevent="page++; load()">Siguiente</a>
+        <a href="#" x-show="page < listTotalPages" @click.prevent="page++; load()" x-text="t('next')"></a>
       </div>
     </div>
   </template>
@@ -119,9 +119,8 @@ function visitsView() {
     filterStatus: "",
 
     get monthLabel() {
-      const months = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
-                       "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-      return months[this.month] + " " + this.year;
+      const months = t("months");
+      return (Array.isArray(months) ? months[this.month] : this.month) + " " + this.year;
     },
     get monthStr() {
       return this.year + "-" + String(this.month + 1).padStart(2, "0");

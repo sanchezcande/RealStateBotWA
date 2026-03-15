@@ -9,17 +9,17 @@
 <div x-data="leadsView()" x-init="load()">
   <div class="filters">
     <select x-model="filterOp" @change="page=1; load()">
-      <option value="">Todas las operaciones</option>
-      <option value="alquilar">Alquiler</option>
-      <option value="comprar">Compra</option>
+      <option value="" x-text="t('all_operations')"></option>
+      <option value="alquilar" x-text="t('rental')"></option>
+      <option value="comprar" x-text="t('purchase')"></option>
     </select>
     <select x-model="sortBy" @change="page=1; load()">
-      <option value="updated_at">Mas reciente</option>
-      <option value="created_at">Mas antiguo</option>
-      <option value="name">Nombre</option>
+      <option value="updated_at" x-text="t('most_recent')"></option>
+      <option value="created_at" x-text="t('oldest')"></option>
+      <option value="name" x-text="t('name')"></option>
     </select>
     {% if plan == 'premium' %}
-    <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days=90">Exportar CSV</a>
+    <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days=90" data-i18n="export_csv">Exportar CSV</a>
     {% endif %}
   </div>
 
@@ -28,29 +28,29 @@
       <table>
         <thead>
           <tr>
-            <th>Nombre</th>
-            <th>Telefono</th>
-            <th>Operacion</th>
-            <th>Tipo</th>
-            <th>Presupuesto</th>
-            <th>Timeline</th>
-            <th>Canal</th>
-            <th>Msgs</th>
-            <th>Visitas</th>
-            <th>Ultimo contacto</th>
+            <th data-i18n="name">Nombre</th>
+            <th data-i18n="phone">Telefono</th>
+            <th data-i18n="operation">Operacion</th>
+            <th data-i18n="type">Tipo</th>
+            <th data-i18n="budget">Presupuesto</th>
+            <th data-i18n="timeline">Timeline</th>
+            <th data-i18n="channel">Canal</th>
+            <th data-i18n="msgs">Msgs</th>
+            <th data-i18n="visits_th">Visitas</th>
+            <th data-i18n="last_contact">Ultimo contacto</th>
           </tr>
         </thead>
         <tbody>
           <template x-if="items.length === 0">
-            <tr><td colspan="10" class="no-data">Sin leads registrados</td></tr>
+            <tr><td colspan="10" class="no-data" x-text="t('no_leads')"></td></tr>
           </template>
           <template x-for="l in items" :key="l.phone_hash">
             <tr>
               <td x-text="l.name || '—'" style="font-weight:600"></td>
               <td x-text="l.phone" style="font-family:monospace;font-size:.78rem"></td>
               <td>
-                <span x-show="l.operation === 'alquilar'" class="badge badge-blue">Alquiler</span>
-                <span x-show="l.operation === 'comprar'" class="badge badge-green">Compra</span>
+                <span x-show="l.operation === 'alquilar'" class="badge badge-blue" x-text="t('rental')"></span>
+                <span x-show="l.operation === 'comprar'" class="badge badge-green" x-text="t('purchase')"></span>
                 <span x-show="!l.operation">—</span>
               </td>
               <td x-text="l.property_type || '—'"></td>
@@ -66,9 +66,9 @@
       </table>
     </div>
     <div class="pagination" x-show="totalPages > 1">
-      <a href="#" x-show="page > 1" @click.prevent="page--; load()">Anterior</a>
+      <a href="#" x-show="page > 1" @click.prevent="page--; load()" x-text="t('previous')"></a>
       <span class="current" x-text="page + ' / ' + totalPages"></span>
-      <a href="#" x-show="page < totalPages" @click.prevent="page++; load()">Siguiente</a>
+      <a href="#" x-show="page < totalPages" @click.prevent="page++; load()" x-text="t('next')"></a>
     </div>
   </div>
 </div>

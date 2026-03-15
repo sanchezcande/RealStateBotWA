@@ -37,18 +37,20 @@ function timeAgo(dateStr) {
   const d = new Date(dateStr);
   const now = new Date();
   const diff = (now - d) / 1000;
-  if (diff < 60) return "ahora";
-  if (diff < 3600) return Math.floor(diff / 60) + " min";
-  if (diff < 86400) return Math.floor(diff / 3600) + " h";
-  if (diff < 604800) return Math.floor(diff / 86400) + " d";
-  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "short" });
+  if (diff < 60) return t("time_now");
+  if (diff < 3600) return Math.floor(diff / 60) + " " + t("time_min");
+  if (diff < 86400) return Math.floor(diff / 3600) + " " + t("time_h");
+  if (diff < 604800) return Math.floor(diff / 86400) + " " + t("time_d");
+  const locale = (typeof getLang === "function" && getLang() === "en") ? "en-US" : "es-AR";
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 }
 
 /* Format time from ISO */
 function formatTime(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
-  return d.toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  const locale = (typeof getLang === "function" && getLang() === "en") ? "en-US" : "es-AR";
+  return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
 /* Build HTML legend beside a doughnut chart */

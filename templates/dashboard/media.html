@@ -82,8 +82,8 @@
 <div x-data="mediaStudio()" x-init="init()">
   <div class="page-header">
     <div>
-      <h1>Media Studio</h1>
-      <span class="page-subtitle">Genera videos y fotos con IA para tus propiedades</span>
+      <h1 data-i18n="media_studio">Media Studio</h1>
+      <span class="page-subtitle" data-i18n="media_subtitle">Genera videos y fotos con IA para tus propiedades</span>
     </div>
   </div>
 
@@ -92,42 +92,40 @@
     <div style="background:#fff;border-radius:10px;padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px">
         <div>
-          <span style="font-size:.82rem;color:#888">Videos este mes:</span>
+          <span style="font-size:.82rem;color:#888" x-text="t('videos_this_month')"></span>
           <strong style="font-size:1.1rem;margin-left:6px" x-text="usage.videos_used + '/' + usage.total_allowed"></strong>
         </div>
         <div style="width:120px;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
           <div style="height:100%;border-radius:4px;transition:width .3s"
                :style="'width:' + Math.min(usage.videos_used / usage.total_allowed * 100, 100) + '%;background:' + (usage.remaining <= 0 ? '#dc2626' : usage.remaining <= 1 ? '#f59e0b' : '#10b981')"></div>
         </div>
-        <span style="font-size:.78rem;color:#888" x-text="usage.remaining + ' restantes'"></span>
+        <span style="font-size:.78rem;color:#888" x-text="usage.remaining + ' ' + t('remaining')"></span>
       </div>
-      <button class="btn btn-outline" style="font-size:.78rem" @click="showPurchase = !showPurchase">
-        + Comprar videos
-      </button>
+      <button class="btn btn-outline" style="font-size:.78rem" @click="showPurchase = !showPurchase" x-text="t('buy_videos')"></button>
     </div>
   </template>
 
   <!-- Purchase modal -->
   <template x-if="showPurchase">
     <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1);border:1px solid #e5e7eb">
-      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px">Comprar videos adicionales</h3>
+      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px" x-text="t('buy_additional')"></h3>
       <p style="font-size:.82rem;color:#666;margin-bottom:12px">
-        Cada video adicional cuesta <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
-        Se agregan al limite de este mes.
+        <span x-text="t('each_video_costs')"></span> <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
+        <span x-text="t('added_to_limit')"></span>
       </p>
       <div style="display:flex;gap:10px;align-items:center">
-        <label style="font-size:.82rem">Cantidad:</label>
+        <label style="font-size:.82rem" x-text="t('quantity')"></label>
         <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
-          <option value="1">1 video — USD <span x-text="usage.extra_video_price_usd"></span></option>
-          <option value="2">2 videos — USD <span x-text="usage.extra_video_price_usd * 2"></span></option>
-          <option value="5">5 videos — USD <span x-text="usage.extra_video_price_usd * 5"></span></option>
-          <option value="10">10 videos — USD <span x-text="usage.extra_video_price_usd * 10"></span></option>
+          <option value="1" x-text="'1 ' + t('video_word') + ' — USD ' + usage.extra_video_price_usd"></option>
+          <option value="2" x-text="'2 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 2)"></option>
+          <option value="5" x-text="'5 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 5)"></option>
+          <option value="10" x-text="'10 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 10)"></option>
         </select>
-        <span style="font-size:.9rem;font-weight:700;color:#2563eb">Total: USD <span x-text="purchaseCount * usage.extra_video_price_usd"></span></span>
+        <span style="font-size:.9rem;font-weight:700;color:#2563eb" x-text="t('total') + ' USD ' + (purchaseCount * usage.extra_video_price_usd)"></span>
       </div>
       <div style="margin-top:12px;display:flex;gap:10px">
-        <button class="btn btn-primary" @click="purchaseVideos()">Confirmar compra</button>
-        <button class="btn btn-outline" @click="showPurchase = false">Cancelar</button>
+        <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
+        <button class="btn btn-outline" @click="showPurchase = false" x-text="t('cancel')"></button>
       </div>
       <template x-if="purchaseMsg">
         <p style="font-size:.82rem;color:#10b981;margin-top:8px" x-text="purchaseMsg"></p>
@@ -137,9 +135,9 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button :class="{ active: tab === 'video' }" @click="tab = 'video'">Generar Video</button>
-    <button :class="{ active: tab === 'image' }" @click="tab = 'image'">Generar Imagen</button>
-    <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()">Historial</button>
+    <button :class="{ active: tab === 'video' }" @click="tab = 'video'" x-text="t('generate_video')"></button>
+    <button :class="{ active: tab === 'image' }" @click="tab = 'image'" x-text="t('generate_image')"></button>
+    <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()" x-text="t('history')"></button>
   </div>
 
   <!-- ======================== VIDEO TOUR TAB ======================== -->
@@ -154,8 +152,8 @@
         <svg style="width:48px;height:48px;margin:0 auto 12px;display:block;opacity:.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
         </svg>
-        <p style="font-size:.9rem;font-weight:600">Arrastra fotos aca o hace click para subir</p>
-        <p style="font-size:.78rem;margin-top:4px">JPG, PNG o WebP (max 10 MB cada una)</p>
+        <p style="font-size:.9rem;font-weight:600" x-text="t('drag_photos')"></p>
+        <p style="font-size:.78rem;margin-top:4px" x-text="t('file_types')"></p>
         <input type="file" x-ref="fileInput" accept="image/jpeg,image/png,image/webp"
                multiple @change="handleFiles($event)">
       </div>
@@ -164,11 +162,11 @@
       <template x-if="photos.length > 0">
         <div style="margin-top:20px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 style="font-size:.95rem;font-weight:700">Fotos subidas
-              <span style="color:#888;font-weight:400" x-text="'(' + selectedIds.length + ' seleccionadas)'"></span>
+            <h3 style="font-size:.95rem;font-weight:700"><span x-text="t('uploaded_photos')"></span>
+              <span style="color:#888;font-weight:400" x-text="'(' + selectedIds.length + ' ' + t('selected') + ')'"></span>
             </h3>
             <button class="btn btn-outline" style="font-size:.78rem" @click="selectAll()">
-              <span x-text="selectedIds.length === photos.length ? 'Deseleccionar todas' : 'Seleccionar todas'"></span>
+              <span x-text="selectedIds.length === photos.length ? t('deselect_all') : t('select_all')"></span>
             </button>
           </div>
           <div class="media-grid">
@@ -177,7 +175,7 @@
                    @click="toggleSelect(p.id)">
                 <img :src="p.url" :alt="p.filename" loading="lazy">
                 <div class="check">&#10003;</div>
-                <button class="delete-btn" @click.stop="deletePhoto(p.id)" title="Eliminar">&times;</button>
+                <button class="delete-btn" @click.stop="deletePhoto(p.id)" :title="t('delete')">&times;</button>
               </div>
             </template>
           </div>
@@ -187,29 +185,29 @@
       <!-- Generate panel -->
       <template x-if="selectedIds.length > 0">
         <div class="gen-panel">
-          <h3>Generar Video Tour</h3>
+          <h3 x-text="t('generate_video_tour')"></h3>
           <p style="font-size:.82rem;color:#666;margin-bottom:12px">
-            Se generara un video con transiciones suaves entre las <strong x-text="selectedIds.length"></strong> fotos seleccionadas.
+            <span x-text="t('video_smooth_desc')"></span> <strong x-text="selectedIds.length"></strong> <span x-text="t('photos_selected')"></span>
             <template x-if="selectedIds.length === 1">
-              <span>Con 1 sola foto se genera una animacion cinematica de ~8 segundos.</span>
+              <span x-text="t('single_photo_desc')"></span>
             </template>
             <template x-if="selectedIds.length > 1">
-              <span>Con <span x-text="selectedIds.length"></span> fotos se generan <span x-text="selectedIds.length - 1"></span> clips de transicion (~<span x-text="(selectedIds.length - 1) * 8"></span> seg total).</span>
+              <span><span x-text="t('multi_photo_desc_1')"></span> <span x-text="selectedIds.length"></span> <span x-text="t('multi_photo_desc_2')"></span> <span x-text="selectedIds.length - 1"></span> <span x-text="t('multi_photo_desc_3')"></span><span x-text="(selectedIds.length - 1) * 8"></span> <span x-text="t('multi_photo_desc_4')"></span></span>
             </template>
           </p>
-          <input type="text" placeholder="Nombre de la propiedad (opcional)"
+          <input type="text" :placeholder="t('property_name_opt')"
                  x-model="videoProperty">
-          <textarea placeholder="Prompt personalizado (opcional) — ej: 'Tour elegante por departamento moderno en Palermo, luz natural'"
+          <textarea :placeholder="t('custom_prompt_opt')"
                     x-model="videoPrompt"></textarea>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-primary" @click="generateVideo()" :disabled="generating || (usage && usage.remaining <= 0)">
-              <span x-show="!generating">Generar Video</span>
-              <span x-show="generating">Generando...</span>
+              <span x-show="!generating" x-text="t('generate_video')"></span>
+              <span x-show="generating" x-text="t('generating')"></span>
             </button>
             <span x-show="generating" class="spinner"></span>
             <span x-show="generating" style="font-size:.82rem;color:#666" x-text="genProgress"></span>
             <template x-if="usage && usage.remaining <= 0 && !generating">
-              <span style="font-size:.82rem;color:#dc2626">Sin videos disponibles — <a href="#" @click.prevent="showPurchase = true" style="color:#2563eb;text-decoration:underline">comprar mas</a></span>
+              <span style="font-size:.82rem;color:#dc2626"><span x-text="t('no_videos_available')"></span> <a href="#" @click.prevent="showPurchase = true" style="color:#2563eb;text-decoration:underline" x-text="t('buy_more')"></a></span>
             </template>
           </div>
           <template x-if="genError">
@@ -217,10 +215,10 @@
           </template>
           <template x-if="genResult">
             <div style="margin-top:16px">
-              <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px">Video generado!</p>
+              <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px" x-text="t('video_generated')"></p>
               <video class="result-video" :src="genResult" controls></video>
               <div style="margin-top:8px">
-                <a class="btn btn-outline" :href="genResult" download>Descargar video</a>
+                <a class="btn btn-outline" :href="genResult" download x-text="t('download_video')"></a>
               </div>
             </div>
           </template>
@@ -232,18 +230,16 @@
   <!-- ======================== IMAGE GEN TAB ======================== -->
   <template x-if="tab === 'image'">
     <div class="gen-panel">
-      <h3>Generar Imagen con IA</h3>
-      <p style="font-size:.82rem;color:#666;margin-bottom:12px">
-        Genera imagenes para listings usando Imagen 3. Ideal para crear renders, home staging virtual o imagenes de marketing.
-      </p>
-      <input type="text" placeholder="Nombre de la propiedad (opcional)"
+      <h3 x-text="t('generate_ai_image')"></h3>
+      <p style="font-size:.82rem;color:#666;margin-bottom:12px" x-text="t('ai_image_desc')"></p>
+      <input type="text" :placeholder="t('property_name_opt')"
              x-model="imgProperty">
-      <textarea placeholder="Descripcion de la imagen — ej: 'Living moderno con vista al rio, decoracion minimalista, luz del atardecer, foto profesional de arquitectura'"
+      <textarea :placeholder="t('image_prompt_placeholder')"
                 x-model="imgPrompt" style="min-height:80px"></textarea>
       <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
         <button class="btn btn-primary" @click="generateImage()" :disabled="imgGenerating">
-          <span x-show="!imgGenerating">Generar Imagen</span>
-          <span x-show="imgGenerating">Generando...</span>
+          <span x-show="!imgGenerating" x-text="t('generate_image')"></span>
+          <span x-show="imgGenerating" x-text="t('generating')"></span>
         </button>
         <span x-show="imgGenerating" class="spinner"></span>
       </div>
@@ -252,10 +248,10 @@
       </template>
       <template x-if="imgResult">
         <div style="margin-top:16px">
-          <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px">Imagen generada!</p>
+          <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px" x-text="t('image_generated')"></p>
           <img class="result-image" :src="imgResult" alt="Generated image">
           <div style="margin-top:8px">
-            <a class="btn btn-outline" :href="imgResult" download>Descargar imagen</a>
+            <a class="btn btn-outline" :href="imgResult" download x-text="t('download_image')"></a>
           </div>
         </div>
       </template>
@@ -266,20 +262,20 @@
   <template x-if="tab === 'jobs'">
     <div>
       <template x-if="jobs.length === 0">
-        <div class="card"><p class="no-data">Sin generaciones todavia</p></div>
+        <div class="card"><p class="no-data" x-text="t('no_generations')"></p></div>
       </template>
       <template x-for="j in jobs" :key="j.id">
         <div class="job-card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div>
-              <div class="job-type" x-text="j.type === 'video_tour' ? 'Video Tour' : 'Imagen'"></div>
-              <div style="font-weight:600;font-size:.9rem;margin-top:2px" x-text="j.property || 'Sin nombre'"></div>
+              <div class="job-type" x-text="j.type === 'video_tour' ? t('video_tour') : t('image')"></div>
+              <div style="font-weight:600;font-size:.9rem;margin-top:2px" x-text="j.property || t('no_name')"></div>
             </div>
             <span class="badge" :class="{
               'badge-yellow': j.status === 'queued' || j.status === 'processing',
               'badge-green': j.status === 'completed',
               'badge-red': j.status === 'error'
-            }" x-text="j.status === 'queued' ? 'En cola' : j.status === 'processing' ? 'Procesando' : j.status === 'completed' ? 'Completado' : 'Error'"></span>
+            }" x-text="j.status === 'queued' ? t('queued') : j.status === 'processing' ? t('processing') : j.status === 'completed' ? t('completed_status') : t('error')"></span>
           </div>
           <div class="job-status" x-show="j.status === 'processing' || j.status === 'queued'">
             <span class="spinner"></span>
@@ -293,13 +289,13 @@
               <template x-if="j.type === 'video_tour'">
                 <div>
                   <video class="result-video" :src="j.result_url" controls style="max-width:480px"></video>
-                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download>Descargar</a></div>
+                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a></div>
                 </div>
               </template>
               <template x-if="j.type === 'image'">
                 <div>
                   <img class="result-image" :src="j.result_url" style="max-width:300px">
-                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download>Descargar</a></div>
+                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a></div>
                 </div>
               </template>
             </div>
@@ -350,7 +346,7 @@ function mediaStudio() {
       }).then(d => {
         if (d.error) { alert(d.error); return; }
         this.usage = d;
-        this.purchaseMsg = `Se agregaron ${this.purchaseCount} video(s). Ahora tenes ${d.remaining} disponibles.`;
+        this.purchaseMsg = t("videos_added", { count: this.purchaseCount, remaining: d.remaining });
         this.purchaseCount = 1;
       });
     },
@@ -396,7 +392,7 @@ function mediaStudio() {
     },
 
     deletePhoto(id) {
-      if (!confirm("Eliminar esta foto?")) return;
+      if (!confirm(t("delete_photo_confirm"))) return;
       const token = new URLSearchParams(window.location.search).get("token") || "";
       fetch(`/api/dashboard/media/photos/${id}?token=` + encodeURIComponent(token), {
         method: "DELETE",
@@ -411,7 +407,7 @@ function mediaStudio() {
       this.generating = true;
       this.genError = "";
       this.genResult = "";
-      this.genProgress = "Enviando...";
+      this.genProgress = t("sending");
 
       dashFetch("/api/dashboard/media/generate/video", {
         method: "POST",
@@ -430,12 +426,12 @@ function mediaStudio() {
           return;
         }
         this._pollJob(d.job_id, "video");
-      }).catch(e => { this.genError = "Error de red"; this.generating = false; });
+      }).catch(e => { this.genError = t("network_error"); this.generating = false; });
     },
 
     // ---- Image generation ----
     generateImage() {
-      if (!this.imgPrompt.trim()) { this.imgError = "Escribi una descripcion"; return; }
+      if (!this.imgPrompt.trim()) { this.imgError = t("write_description"); return; }
       this.imgGenerating = true;
       this.imgError = "";
       this.imgResult = "";
@@ -447,7 +443,7 @@ function mediaStudio() {
       }).then(d => {
         if (d.error) { this.imgError = d.error; this.imgGenerating = false; return; }
         this._pollJob(d.job_id, "image");
-      }).catch(e => { this.imgError = "Error de red"; this.imgGenerating = false; });
+      }).catch(e => { this.imgError = t("network_error"); this.imgGenerating = false; });
     },
 
     // ---- Polling ----
