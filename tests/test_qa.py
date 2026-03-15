@@ -176,6 +176,15 @@ class TestConversations:
         assert len(conversations.get_messages("phone1")) == 1
         assert len(conversations.get_messages("phone2")) == 1
 
+    def test_lead_notified_loaded_from_db(self):
+        import conversations
+        import analytics
+        phone = "5491112345678"
+        analytics.upsert_lead(phone, notified=True, name="Ana")
+        conversations._store.clear()
+        lead = conversations.get_lead(phone)
+        assert lead["notified"] is True
+
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 3. LEAD QUALIFIER (lead_qualifier.py)
@@ -543,6 +552,15 @@ class TestAnalytics:
         row = conn.execute("SELECT visit_count FROM conversations").fetchone()
         assert row[0] == 1
 
+    def test_log_event_visit_cancelled_decrements(self):
+        import analytics
+        analytics.log_event("message_in", "5491112345678")
+        analytics.log_event("visit_scheduled", "5491112345678", property="Depto X")
+        analytics.log_event("visit_cancelled", "5491112345678", property="Depto X")
+        conn = analytics._get_conn()
+        row = conn.execute("SELECT visit_count FROM conversations").fetchone()
+        assert row[0] == 0
+
     def test_peak_hours_use_ar_timezone(self):
         import analytics
         analytics.log_event("message_in", "5491112345678")
@@ -574,6 +592,50 @@ class TestAnalytics:
         analytics.log_event("message_in", "phone1")
         data = analytics.get_dashboard_data(days=30)
         assert data["kpis"]["total_conversations"] >= 1
+
+    def test_get_dashboard_data_uses_time_cutoff(self):
+        import analytics
+        from datetime import datetime, timedelta
+
+        now = datetime.now(analytics.AR_TZ)
+        old_ts = (now - timedelta(hours=25)).strftime("%Y-%m-%dT%H:%M:%S")
+        new_ts = (now - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%S")
+
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            old_hash = analytics._hash_phone("phone_old")
+            new_hash = analytics._hash_phone("phone_new")
+            conn.execute(
+                """INSERT INTO conversations
+                   (phone_hash, channel, first_seen_at, last_seen_at, message_count,
+                    became_lead, visit_count, operation, property_type)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (old_hash, "whatsapp", old_ts, old_ts, 1, 0, 0, None, None),
+            )
+            conn.execute(
+                """INSERT INTO conversations
+                   (phone_hash, channel, first_seen_at, last_seen_at, message_count,
+                    became_lead, visit_count, operation, property_type)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (new_hash, "whatsapp", new_ts, new_ts, 1, 0, 0, None, None),
+            )
+            conn.execute(
+                """INSERT INTO events
+                   (event_type, phone_hash, channel, property, operation,
+                    property_type, hour, created_at)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                ("new_conversation", old_hash, "whatsapp", None, None, None, now.hour, old_ts),
+            )
+            conn.execute(
+                """INSERT INTO events
+                   (event_type, phone_hash, channel, property, operation,
+                    property_type, hour, created_at)
+                   VALUES (?,?,?,?,?,?,?,?)""",
+                ("new_conversation", new_hash, "whatsapp", None, None, None, now.hour, new_ts),
+            )
+
+        data = analytics.get_dashboard_data(days=1)
+        assert data["kpis"]["total_conversations"] == 1
 
     def test_health_check(self):
         import analytics

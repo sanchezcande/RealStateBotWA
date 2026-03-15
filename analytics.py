@@ -9,7 +9,7 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 import pytz
@@ -185,6 +185,8 @@ def log_event(event_type: str, phone: str, channel: str = "whatsapp", **kwargs):
                         updates["operation"] = kwargs["operation"]
                 if event_type == "visit_scheduled":
                     updates["visit_count"] = existing[3] + 1
+                if event_type == "visit_cancelled":
+                    updates["visit_count"] = max(existing[3] - 1, 0)
                 if event_type == "new_conversation" and kwargs.get("operation"):
                     updates["operation"] = kwargs["operation"]
                 if event_type == "new_conversation" and kwargs.get("property_type"):
@@ -205,20 +207,22 @@ def get_dashboard_data(days: int = 30) -> dict:
     try:
         with _db_lock:
             conn = _get_conn()
-            date_filter = f"-{days} days"
+            now = datetime.now(AR_TZ)
+            cutoff = (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+            prev_cutoff = (now - timedelta(days=days * 2)).strftime("%Y-%m-%dT%H:%M:%S")
 
             # --- KPIs (filtered by date range) ---
             total_convs = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COUNT(*) FROM conversations WHERE last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             total_leads = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             total_visits = conn.execute(
-                "SELECT COALESCE(SUM(visit_count), 0) FROM conversations WHERE last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COALESCE(SUM(visit_count), 0) FROM conversations WHERE last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             conv_to_lead = round(total_leads / total_convs * 100, 1) if total_convs else 0
             conv_to_visit = round(total_visits / total_convs * 100, 1) if total_convs else 0
@@ -228,10 +232,10 @@ def get_dashboard_data(days: int = 30) -> dict:
                 """SELECT DATE(created_at) as day, COUNT(*) as cnt
                    FROM events
                    WHERE event_type = 'new_conversation'
-                     AND created_at >= DATE('now', ?)
+                     AND created_at >= ?
                    GROUP BY day
                    ORDER BY day""",
-                (date_filter,),
+                (cutoff,),
             ).fetchall()
             conv_by_day = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
@@ -240,10 +244,10 @@ def get_dashboard_data(days: int = 30) -> dict:
                 """SELECT hour, COUNT(*) as cnt
                    FROM events
                    WHERE event_type = 'message_in'
-                     AND created_at >= DATE('now', ?)
+                     AND created_at >= ?
                    GROUP BY hour
                    ORDER BY hour""",
-                (date_filter,),
+                (cutoff,),
             ).fetchall()
             hour_map = {r[0]: r[1] for r in rows}
             peak_hours = {
@@ -257,11 +261,11 @@ def get_dashboard_data(days: int = 30) -> dict:
                    FROM events
                    WHERE event_type = 'visit_scheduled'
                      AND property IS NOT NULL
-                     AND created_at >= DATE('now', ?)
+                     AND created_at >= ?
                    GROUP BY property
                    ORDER BY cnt DESC
                    LIMIT 10""",
-                (date_filter,),
+                (cutoff,),
             ).fetchall()
             top_properties = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
@@ -270,9 +274,9 @@ def get_dashboard_data(days: int = 30) -> dict:
                 """SELECT operation, COUNT(*) as cnt
                    FROM conversations
                    WHERE operation IS NOT NULL
-                     AND last_seen_at >= DATE('now', ?)
+                     AND last_seen_at >= ?
                    GROUP BY operation""",
-                (date_filter,),
+                (cutoff,),
             ).fetchall()
             op_split = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
@@ -280,9 +284,9 @@ def get_dashboard_data(days: int = 30) -> dict:
             rows = conn.execute(
                 """SELECT channel, COUNT(*) as cnt
                    FROM conversations
-                   WHERE last_seen_at >= DATE('now', ?)
+                   WHERE last_seen_at >= ?
                    GROUP BY channel""",
-                (date_filter,),
+                (cutoff,),
             ).fetchall()
             channel_split = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
 
@@ -290,8 +294,8 @@ def get_dashboard_data(days: int = 30) -> dict:
             escalated = conn.execute(
                 """SELECT COUNT(DISTINCT phone_hash) FROM events
                    WHERE event_type = 'callback_requested'
-                     AND created_at >= DATE('now', ?)""",
-                (date_filter,),
+                     AND created_at >= ?""",
+                (cutoff,),
             ).fetchone()[0]
             bot_resolved = max(total_convs - escalated, 0)
             escalation_split = {
@@ -301,16 +305,16 @@ def get_dashboard_data(days: int = 30) -> dict:
 
             # --- Lead quality split (filtered) ---
             leads_qualified = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             no_interaction = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count <= 2 AND last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count <= 2 AND last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             cold = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count > 2 AND last_seen_at >= DATE('now', ?)",
-                (date_filter,),
+                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count > 2 AND last_seen_at >= ?",
+                (cutoff,),
             ).fetchone()[0]
             lead_quality_split = {
                 "labels": ["Leads calificados", "Interaccion sin calificar", "Sin interaccion"],
@@ -321,16 +325,16 @@ def get_dashboard_data(days: int = 30) -> dict:
             prev_convs = conn.execute(
                 """SELECT COUNT(*) FROM events
                    WHERE event_type = 'new_conversation'
-                     AND created_at >= DATE('now', ?)
-                     AND created_at < DATE('now', ?)""",
-                (f"-{days * 2} days", date_filter),
+                     AND created_at >= ?
+                     AND created_at < ?""",
+                (prev_cutoff, cutoff),
             ).fetchone()[0]
             prev_visits = conn.execute(
                 """SELECT COUNT(*) FROM events
                    WHERE event_type = 'visit_scheduled'
-                     AND created_at >= DATE('now', ?)
-                     AND created_at < DATE('now', ?)""",
-                (f"-{days * 2} days", date_filter),
+                     AND created_at >= ?
+                     AND created_at < ?""",
+                (prev_cutoff, cutoff),
             ).fetchone()[0]
             period_comparison = {
                 "current_convs": total_convs,

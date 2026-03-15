@@ -42,7 +42,7 @@ def _ensure_loaded(phone: str):
     db_lead = analytics.load_lead(phone)
     if db_lead:
         for k, v in db_lead.items():
-            if v is not None and entry["lead"].get(k) is None:
+            if v is not None:
                 entry["lead"][k] = v
 
 

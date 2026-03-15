@@ -26,6 +26,10 @@ BRANCH_NAME = os.environ.get("BRANCH_NAME", "")
 DASHBOARD_SECRET_KEY = os.environ.get("DASHBOARD_SECRET_KEY", "change-me-in-production")
 DASHBOARD_ADMIN_PASSWORD = os.environ.get("DASHBOARD_ADMIN_PASSWORD", "")
 
+# Google Gemini AI (for video/image generation)
+GOOGLE_AI_API_KEY = os.environ.get("GOOGLE_AI_API_KEY", "")
+MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", "uploads")
+
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
 # Also subscribe the webhook to the page in Meta App Dashboard under

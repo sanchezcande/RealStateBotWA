@@ -107,3 +107,103 @@ def api_visits_calendar():
         month = datetime.now().strftime("%Y-%m")
     data = analytics.get_visits_calendar(month)
     return jsonify(data)
+
+
+# ---------------------------------------------------------------------------
+# Media Studio API
+# ---------------------------------------------------------------------------
+
+@api.route("/media/photos", methods=["GET"])
+@_require_auth
+def api_media_photos():
+    import media_studio
+    return jsonify({"photos": media_studio.list_photos()})
+
+
+@api.route("/media/upload", methods=["POST"])
+@_require_auth
+def api_media_upload():
+    import media_studio
+    if "photos" not in request.files:
+        return jsonify({"error": "No se recibieron fotos"}), 400
+    files = request.files.getlist("photos")
+    property_name = request.form.get("property", "")
+    results = []
+    for f in files:
+        if not f.filename:
+            continue
+        try:
+            meta = media_studio.save_photo(f, property_name=property_name)
+            results.append(meta)
+        except ValueError as e:
+            return jsonify({"error": str(e)}), 400
+    return jsonify({"uploaded": results})
+
+
+@api.route("/media/photos/<photo_id>", methods=["DELETE"])
+@_require_auth
+def api_media_delete_photo(photo_id):
+    import media_studio
+    if media_studio.delete_photo(photo_id):
+        return jsonify({"ok": True})
+    return jsonify({"error": "Foto no encontrada"}), 404
+
+
+@api.route("/media/generate/video", methods=["POST"])
+@_require_auth
+def api_media_generate_video():
+    import media_studio
+    from config import GOOGLE_AI_API_KEY
+    if not GOOGLE_AI_API_KEY:
+        return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
+    data = request.get_json(silent=True) or {}
+    photo_ids = data.get("photo_ids", [])
+    prompt = data.get("prompt", "")
+    property_name = data.get("property", "")
+
+    if not photo_ids:
+        return jsonify({"error": "Selecciona al menos una foto"}), 400
+
+    # Resolve photo IDs to paths
+    all_photos = {p["id"]: p["path"] for p in media_studio.list_photos()}
+    paths = []
+    for pid in photo_ids:
+        if pid not in all_photos:
+            return jsonify({"error": f"Foto {pid} no encontrada"}), 404
+        paths.append(all_photos[pid])
+
+    job_id = media_studio.generate_video_tour(paths, prompt=prompt, property_name=property_name)
+    return jsonify({"job_id": job_id, "status": "queued"})
+
+
+@api.route("/media/generate/image", methods=["POST"])
+@_require_auth
+def api_media_generate_image():
+    import media_studio
+    from config import GOOGLE_AI_API_KEY
+    if not GOOGLE_AI_API_KEY:
+        return jsonify({"error": "GOOGLE_AI_API_KEY no configurada"}), 400
+    data = request.get_json(silent=True) or {}
+    prompt = data.get("prompt", "")
+    property_name = data.get("property", "")
+    if not prompt:
+        return jsonify({"error": "Se necesita un prompt"}), 400
+    job_id = media_studio.generate_image(prompt=prompt, property_name=property_name)
+    return jsonify({"job_id": job_id, "status": "queued"})
+
+
+@api.route("/media/jobs")
+@_require_auth
+def api_media_jobs():
+    import media_studio
+    return jsonify({"jobs": media_studio.list_jobs()})
+
+
+@api.route("/media/jobs/<job_id>")
+@_require_auth
+def api_media_job_status(job_id):
+    import media_studio
+    job = media_studio.get_job(job_id)
+    if not job:
+        return jsonify({"error": "Job no encontrado"}), 404
+    return jsonify(job)

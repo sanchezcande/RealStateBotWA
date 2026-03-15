@@ -34,6 +34,13 @@ from dashboard_api import api as dashboard_api_bp
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(dashboard_api_bp)
 
+# Serve uploaded media files
+from config import MEDIA_UPLOAD_DIR
+@app.route("/uploads/<path:filename>")
+def serve_upload(filename):
+    from flask import send_from_directory
+    return send_from_directory(MEDIA_UPLOAD_DIR, filename)
+
 # Deduplication: buffer rapid consecutive messages from the same number
 # and combine them into a single AI call.
 _pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}

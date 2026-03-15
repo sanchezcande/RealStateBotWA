@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+{% block title %}Valentina — Media Studio{% endblock %}
+
+{% block head %}
+<style>
+  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .photo-card {
+    position: relative; border-radius: 10px; overflow: hidden;
+    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    aspect-ratio: 4/3; cursor: pointer;
+  }
+  .photo-card img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-card.selected { outline: 3px solid #2563eb; outline-offset: -3px; }
+  .photo-card .check {
+    position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
+    background: #2563eb; border-radius: 50%; display: none;
+    align-items: center; justify-content: center; color: #fff; font-size: 14px;
+  }
+  .photo-card.selected .check { display: flex; }
+  .photo-card .delete-btn {
+    position: absolute; top: 8px; left: 8px; width: 24px; height: 24px;
+    background: rgba(0,0,0,.5); border-radius: 50%; border: none;
+    color: #fff; font-size: 14px; cursor: pointer; display: none;
+    align-items: center; justify-content: center;
+  }
+  .photo-card:hover .delete-btn { display: flex; }
+
+  .upload-zone {
+    border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px 20px;
+    text-align: center; color: #888; cursor: pointer; transition: all .2s;
+    background: #fafafa;
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: #2563eb; background: #eff6ff; color: #2563eb; }
+  .upload-zone input { display: none; }
+
+  .gen-panel {
+    background: #fff; border-radius: 12px; padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-top: 20px;
+  }
+  .gen-panel h3 { font-size: .95rem; font-weight: 700; margin-bottom: 12px; }
+  .gen-panel textarea {
+    width: 100%; padding: 10px 14px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: .85rem; resize: vertical; min-height: 60px;
+  }
+  .gen-panel textarea:focus { border-color: #2563eb; outline: none; }
+  .gen-panel input[type="text"] {
+    width: 100%; padding: 8px 14px; border: 1px solid #d1d5db;
+    border-radius: 8px; font-size: .85rem; margin-bottom: 12px;
+  }
+
+  .job-card {
+    background: #fff; border-radius: 10px; padding: 16px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 10px;
+  }
+  .job-card .job-type { font-size: .72rem; text-transform: uppercase; color: #888; font-weight: 700; }
+  .job-card .job-status { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid #e5e7eb;
+    border-top-color: #2563eb; border-radius: 50%;
+    animation: spin .6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .result-video {
+    width: 100%; max-width: 640px; border-radius: 10px;
+    margin-top: 12px; background: #000;
+  }
+  .result-image {
+    max-width: 400px; border-radius: 10px; margin-top: 12px;
+  }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tabs button {
+    padding: 8px 20px; border: none; background: #e5e7eb; border-radius: 8px;
+    font-size: .85rem; font-weight: 600; cursor: pointer; color: #555;
+  }
+  .tabs button.active { background: #2563eb; color: #fff; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="mediaStudio()" x-init="init()">
+  <div class="page-header">
+    <div>
+      <h1>Media Studio</h1>
+      <span class="page-subtitle">Genera videos y fotos con IA para tus propiedades</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button :class="{ active: tab === 'video' }" @click="tab = 'video'">Video Tour</button>
+    <button :class="{ active: tab === 'image' }" @click="tab = 'image'">Generar Imagen</button>
+    <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()">Historial</button>
+  </div>
+
+  <!-- ======================== VIDEO TOUR TAB ======================== -->
+  <template x-if="tab === 'video'">
+    <div>
+      <!-- Upload zone -->
+      <div class="upload-zone" id="dropZone"
+           @dragover.prevent="$el.classList.add('dragover')"
+           @dragleave="$el.classList.remove('dragover')"
+           @drop.prevent="handleDrop($event)"
+           @click="$refs.fileInput.click()">
+        <svg style="width:48px;height:48px;margin:0 auto 12px;display:block;opacity:.4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+        <p style="font-size:.9rem;font-weight:600">Arrastra fotos aca o hace click para subir</p>
+        <p style="font-size:.78rem;margin-top:4px">JPG, PNG o WebP (max 10 MB cada una)</p>
+        <input type="file" x-ref="fileInput" accept="image/jpeg,image/png,image/webp"
+               multiple @change="handleFiles($event)">
+      </div>
+
+      <!-- Photo grid -->
+      <template x-if="photos.length > 0">
+        <div style="margin-top:20px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 style="font-size:.95rem;font-weight:700">Fotos subidas
+              <span style="color:#888;font-weight:400" x-text="'(' + selectedIds.length + ' seleccionadas)'"></span>
+            </h3>
+            <button class="btn btn-outline" style="font-size:.78rem" @click="selectAll()">
+              <span x-text="selectedIds.length === photos.length ? 'Deseleccionar todas' : 'Seleccionar todas'"></span>
+            </button>
+          </div>
+          <div class="media-grid">
+            <template x-for="p in photos" :key="p.id">
+              <div class="photo-card" :class="{ selected: selectedIds.includes(p.id) }"
+                   @click="toggleSelect(p.id)">
+                <img :src="p.url" :alt="p.filename" loading="lazy">
+                <div class="check">&#10003;</div>
+                <button class="delete-btn" @click.stop="deletePhoto(p.id)" title="Eliminar">&times;</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- Generate panel -->
+      <template x-if="selectedIds.length > 0">
+        <div class="gen-panel">
+          <h3>Generar Video Tour</h3>
+          <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+            Se generara un video con transiciones suaves entre las <strong x-text="selectedIds.length"></strong> fotos seleccionadas.
+            <template x-if="selectedIds.length === 1">
+              <span>Con 1 sola foto se genera una animacion cinematica de ~8 segundos.</span>
+            </template>
+            <template x-if="selectedIds.length > 1">
+              <span>Con <span x-text="selectedIds.length"></span> fotos se generan <span x-text="selectedIds.length - 1"></span> clips de transicion (~<span x-text="(selectedIds.length - 1) * 8"></span> seg total).</span>
+            </template>
+          </p>
+          <input type="text" placeholder="Nombre de la propiedad (opcional)"
+                 x-model="videoProperty">
+          <textarea placeholder="Prompt personalizado (opcional) — ej: 'Tour elegante por departamento moderno en Palermo, luz natural'"
+                    x-model="videoPrompt"></textarea>
+          <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+            <button class="btn btn-primary" @click="generateVideo()" :disabled="generating">
+              <span x-show="!generating">Generar Video Tour</span>
+              <span x-show="generating">Generando...</span>
+            </button>
+            <span x-show="generating" class="spinner"></span>
+            <span x-show="generating" style="font-size:.82rem;color:#666" x-text="genProgress"></span>
+          </div>
+          <template x-if="genError">
+            <p style="color:#dc2626;font-size:.82rem;margin-top:8px" x-text="genError"></p>
+          </template>
+          <template x-if="genResult">
+            <div style="margin-top:16px">
+              <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px">Video generado!</p>
+              <video class="result-video" :src="genResult" controls></video>
+              <div style="margin-top:8px">
+                <a class="btn btn-outline" :href="genResult" download>Descargar video</a>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- ======================== IMAGE GEN TAB ======================== -->
+  <template x-if="tab === 'image'">
+    <div class="gen-panel">
+      <h3>Generar Imagen con IA</h3>
+      <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+        Genera imagenes para listings usando Imagen 3. Ideal para crear renders, home staging virtual o imagenes de marketing.
+      </p>
+      <input type="text" placeholder="Nombre de la propiedad (opcional)"
+             x-model="imgProperty">
+      <textarea placeholder="Descripcion de la imagen — ej: 'Living moderno con vista al rio, decoracion minimalista, luz del atardecer, foto profesional de arquitectura'"
+                x-model="imgPrompt" style="min-height:80px"></textarea>
+      <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" @click="generateImage()" :disabled="imgGenerating">
+          <span x-show="!imgGenerating">Generar Imagen</span>
+          <span x-show="imgGenerating">Generando...</span>
+        </button>
+        <span x-show="imgGenerating" class="spinner"></span>
+      </div>
+      <template x-if="imgError">
+        <p style="color:#dc2626;font-size:.82rem;margin-top:8px" x-text="imgError"></p>
+      </template>
+      <template x-if="imgResult">
+        <div style="margin-top:16px">
+          <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px">Imagen generada!</p>
+          <img class="result-image" :src="imgResult" alt="Generated image">
+          <div style="margin-top:8px">
+            <a class="btn btn-outline" :href="imgResult" download>Descargar imagen</a>
+          </div>
+        </div>
+      </template>
+    </div>
+  </template>
+
+  <!-- ======================== JOBS HISTORY TAB ======================== -->
+  <template x-if="tab === 'jobs'">
+    <div>
+      <template x-if="jobs.length === 0">
+        <div class="card"><p class="no-data">Sin generaciones todavia</p></div>
+      </template>
+      <template x-for="j in jobs" :key="j.id">
+        <div class="job-card">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div>
+              <div class="job-type" x-text="j.type === 'video_tour' ? 'Video Tour' : 'Imagen'"></div>
+              <div style="font-weight:600;font-size:.9rem;margin-top:2px" x-text="j.property || 'Sin nombre'"></div>
+            </div>
+            <span class="badge" :class="{
+              'badge-yellow': j.status === 'queued' || j.status === 'processing',
+              'badge-green': j.status === 'completed',
+              'badge-red': j.status === 'error'
+            }" x-text="j.status === 'queued' ? 'En cola' : j.status === 'processing' ? 'Procesando' : j.status === 'completed' ? 'Completado' : 'Error'"></span>
+          </div>
+          <div class="job-status" x-show="j.status === 'processing' || j.status === 'queued'">
+            <span class="spinner"></span>
+            <span style="font-size:.82rem;color:#666" x-text="j.progress"></span>
+          </div>
+          <template x-if="j.status === 'error'">
+            <p style="color:#dc2626;font-size:.82rem;margin-top:6px" x-text="j.error"></p>
+          </template>
+          <template x-if="j.status === 'completed' && j.result_url">
+            <div style="margin-top:8px">
+              <template x-if="j.type === 'video_tour'">
+                <div>
+                  <video class="result-video" :src="j.result_url" controls style="max-width:480px"></video>
+                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download>Descargar</a></div>
+                </div>
+              </template>
+              <template x-if="j.type === 'image'">
+                <div>
+                  <img class="result-image" :src="j.result_url" style="max-width:300px">
+                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download>Descargar</a></div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <div style="font-size:.7rem;color:#aaa;margin-top:6px" x-text="j.created_at"></div>
+        </div>
+      </template>
+    </div>
+  </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+function mediaStudio() {
+  return {
+    tab: "video",
+    photos: [],
+    selectedIds: [],
+    // Video gen
+    videoPrompt: "", videoProperty: "",
+    generating: false, genProgress: "", genError: "", genResult: "",
+    // Image gen
+    imgPrompt: "", imgProperty: "",
+    imgGenerating: false, imgError: "", imgResult: "",
+    // Jobs
+    jobs: [],
+    _pollTimer: null,
+
+    init() { this.loadPhotos(); },
+
+    // ---- Photo management ----
+    loadPhotos() {
+      dashFetch("/api/dashboard/media/photos").then(d => { this.photos = d.photos || []; });
+    },
+
+    handleFiles(e) {
+      this.uploadFiles(e.target.files);
+      e.target.value = "";
+    },
+
+    handleDrop(e) {
+      e.target.classList.remove("dragover");
+      this.uploadFiles(e.dataTransfer.files);
+    },
+
+    uploadFiles(fileList) {
+      const fd = new FormData();
+      for (const f of fileList) fd.append("photos", f);
+      fd.append("property", this.videoProperty);
+
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      fetch("/api/dashboard/media/upload?token=" + encodeURIComponent(token), {
+        method: "POST", body: fd,
+      }).then(r => r.json()).then(d => {
+        if (d.error) { alert(d.error); return; }
+        this.loadPhotos();
+      });
+    },
+
+    toggleSelect(id) {
+      const idx = this.selectedIds.indexOf(id);
+      if (idx >= 0) this.selectedIds.splice(idx, 1);
+      else this.selectedIds.push(id);
+    },
+
+    selectAll() {
+      if (this.selectedIds.length === this.photos.length) this.selectedIds = [];
+      else this.selectedIds = this.photos.map(p => p.id);
+    },
+
+    deletePhoto(id) {
+      if (!confirm("Eliminar esta foto?")) return;
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      fetch(`/api/dashboard/media/photos/${id}?token=` + encodeURIComponent(token), {
+        method: "DELETE",
+      }).then(() => {
+        this.selectedIds = this.selectedIds.filter(x => x !== id);
+        this.loadPhotos();
+      });
+    },
+
+    // ---- Video generation ----
+    generateVideo() {
+      this.generating = true;
+      this.genError = "";
+      this.genResult = "";
+      this.genProgress = "Enviando...";
+
+      dashFetch("/api/dashboard/media/generate/video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          photo_ids: this.selectedIds,
+          prompt: this.videoPrompt,
+          property: this.videoProperty,
+        }),
+      }).then(d => {
+        if (d.error) { this.genError = d.error; this.generating = false; return; }
+        this._pollJob(d.job_id, "video");
+      }).catch(e => { this.genError = "Error de red"; this.generating = false; });
+    },
+
+    // ---- Image generation ----
+    generateImage() {
+      if (!this.imgPrompt.trim()) { this.imgError = "Escribi una descripcion"; return; }
+      this.imgGenerating = true;
+      this.imgError = "";
+      this.imgResult = "";
+
+      dashFetch("/api/dashboard/media/generate/image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: this.imgPrompt, property: this.imgProperty }),
+      }).then(d => {
+        if (d.error) { this.imgError = d.error; this.imgGenerating = false; return; }
+        this._pollJob(d.job_id, "image");
+      }).catch(e => { this.imgError = "Error de red"; this.imgGenerating = false; });
+    },
+
+    // ---- Polling ----
+    _pollJob(jobId, type) {
+      const poll = () => {
+        dashFetch(`/api/dashboard/media/jobs/${jobId}`).then(j => {
+          if (type === "video") this.genProgress = j.progress || "";
+          if (j.status === "completed") {
+            if (type === "video") { this.genResult = j.result_url; this.generating = false; }
+            else { this.imgResult = j.result_url; this.imgGenerating = false; }
+          } else if (j.status === "error") {
+            if (type === "video") { this.genError = j.error; this.generating = false; }
+            else { this.imgError = j.error; this.imgGenerating = false; }
+          } else {
+            setTimeout(poll, 3000);
+          }
+        });
+      };
+      setTimeout(poll, 2000);
+    },
+
+    // ---- Jobs history ----
+    loadJobs() {
+      dashFetch("/api/dashboard/media/jobs").then(d => { this.jobs = d.jobs || []; });
+    },
+  };
+}
+
+// Override dashFetch for POST support
+const _origDashFetch = dashFetch;
+dashFetch = function(url, opts) {
+  const token = new URLSearchParams(window.location.search).get("token") || "";
+  const sep = url.includes("?") ? "&" : "?";
+  const fullUrl = url + sep + "token=" + encodeURIComponent(token);
+  if (opts && opts.method && opts.method !== "GET") {
+    return fetch(fullUrl, opts).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  }
+  return _origDashFetch(url);
+};
+</script>
+{% endblock %}

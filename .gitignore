@@ -25,5 +25,8 @@ test_results.csv
 *.swp
 *.swo
 
+# Media uploads
+uploads/
+
 # macOS
 .DS_Store

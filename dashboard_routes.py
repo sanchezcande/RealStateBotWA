@@ -176,6 +176,18 @@ def visits_page():
 
 
 # ---------------------------------------------------------------------------
+# Media Studio
+# ---------------------------------------------------------------------------
+
+@dashboard.route("/media")
+@_require_auth
+def media_page():
+    if DASHBOARD_PLAN == "starter":
+        return render_template("dashboard/upgrade.html", **_ctx(active_page="media"))
+    return render_template("dashboard/media.html", **_ctx(active_page="media"))
+
+
+# ---------------------------------------------------------------------------
 # CSV Export
 # ---------------------------------------------------------------------------
 
@@ -188,15 +200,17 @@ def export_csv():
     if days not in (7, 30, 90):
         days = 30
     try:
+        from datetime import datetime, timedelta
+        cutoff = (datetime.now(analytics.AR_TZ) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
         with analytics._db_lock:
             conn = analytics._get_conn()
             rows = conn.execute(
                 """SELECT phone_hash, channel, first_seen_at, last_seen_at,
                           message_count, became_lead, visit_count, operation, property_type
                    FROM conversations
-                   WHERE last_seen_at >= DATE('now', ?)
+                   WHERE last_seen_at >= ?
                    ORDER BY last_seen_at DESC""",
-                (f"-{days} days",),
+                (cutoff,),
             ).fetchall()
     except Exception as e:
         logger.error("CSV export error: %s", e)
