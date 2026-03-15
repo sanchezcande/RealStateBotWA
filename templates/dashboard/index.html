@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Valentina{% if branch %} — {{ branch }}{% endif %} — Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Dashboard</h1>
+    <span class="page-subtitle">Ultimos {{ days }} dias</span>
+  </div>
+</div>
+
+<div class="period-btns">
+  <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}">7 dias</a>
+  <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}">30 dias</a>
+  <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}">90 dias</a>
+</div>
+
+<div class="kpis">
+  <div class="kpi">
+    <div class="num">{{ kpis.total_conversations }}</div>
+    {% set diff = kpis.total_conversations - period_comparison.prev_convs %}
+    {% if plan == 'premium' %}
+      <div class="pct {{ 'up' if diff >= 0 else 'down' }}">
+        {{ '+' if diff >= 0 else '' }}{{ diff }} vs periodo anterior
+      </div>
+    {% endif %}
+    <div class="label">Conversaciones</div>
+  </div>
+  <div class="kpi">
+    <div class="num">{{ kpis.total_leads }}</div>
+    <div class="pct neu">{{ kpis.conv_to_lead_pct }}% del total</div>
+    <div class="label">Leads calificados</div>
+  </div>
+  <div class="kpi">
+    <div class="num">{{ kpis.total_visits }}</div>
+    <div class="pct neu">{{ kpis.conv_to_visit_pct }}% del total</div>
+    <div class="label">Visitas agendadas</div>
+  </div>
+  {% if plan in ('pro', 'premium') %}
+  <div class="kpi">
+    <div class="num">{{ escalation_split["values"][1] }}</div>
+    <div class="pct neu">
+      {% if kpis.total_conversations > 0 %}
+        {{ ((escalation_split["values"][1] / kpis.total_conversations) * 100) | round(1) }}% del total
+      {% endif %}
+    </div>
+    <div class="label">Escaladas a humano</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if plan == 'premium' %}
+<div class="actions">
+  <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days={{ days }}">Exportar CSV</a>
+  <button class="btn btn-outline" onclick="window.print()">Imprimir / PDF</button>
+</div>
+{% endif %}
+
+<div class="charts">
+  <div class="card full-width">
+    <h2>Conversaciones nuevas por dia</h2>
+    {% if conv_by_day.labels %}
+    <canvas id="convChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Horarios pico</h2>
+    {% if peak_hours['values'] | sum > 0 %}
+    <canvas id="hoursChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Propiedades mas solicitadas</h2>
+    {% if top_properties.labels %}
+    <canvas id="propsChart"></canvas>
+    {% else %}<p class="no-data">Sin visitas registradas todavia</p>{% endif %}
+  </div>
+
+  {% if plan in ('pro', 'premium') %}
+  <div class="card">
+    <h2>Resolucion de consultas</h2>
+    {% if escalation_split['values'] | sum > 0 %}
+    <canvas id="escalChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+
+  {% if channel_split.labels | length > 1 %}
+  <div class="card">
+    <h2>Canal de contacto</h2>
+    <canvas id="channelChart"></canvas>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <div class="card">
+    <h2>Tipo de operacion</h2>
+    {% if op_split.labels %}
+    <canvas id="opChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+
+  {% if plan == 'premium' %}
+  <div class="card">
+    <h2>Calidad de leads</h2>
+    {% if lead_quality_split['values'] | sum > 0 %}
+    <canvas id="leadQChart"></canvas>
+    {% else %}<p class="no-data">Sin datos todavia</p>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+const CONV      = {{ conv_by_day | tojson }};
+const HOURS     = {{ peak_hours | tojson }};
+const PROPS     = {{ top_properties | tojson }};
+const OPS       = {{ op_split | tojson }};
+const CHANNELS  = {{ channel_split | tojson }};
+const ESCAL     = {{ escalation_split | tojson }};
+const LEADQ     = {{ lead_quality_split | tojson }};
+
+if (CONV.labels.length)
+  makeChart("convChart", "line", CONV.labels,
+    [{ label: "Conversaciones", data: CONV.values, borderColor: BLUE,
+       backgroundColor: "rgba(37,99,235,0.08)", fill: true, tension: 0.3, pointRadius: 3 }],
+    { ...OPTS_CLEAN, ...SCALE_Y });
+
+if (HOURS.values.reduce((a,b)=>a+b,0) > 0)
+  makeChart("hoursChart", "bar", HOURS.labels,
+    [{ data: HOURS.values, backgroundColor: GREEN }],
+    { ...OPTS_CLEAN, ...SCALE_Y });
+
+if (PROPS.labels.length)
+  makeChart("propsChart", "bar", PROPS.labels,
+    [{ data: PROPS.values, backgroundColor: PAL }],
+    { indexAxis: "y", ...OPTS_CLEAN, ...SCALE_X });
+
+if (OPS.labels.length)
+  makeChart("opChart", "doughnut", OPS.labels,
+    [{ data: OPS.values, backgroundColor: PAL }],
+    OPTS_LEGEND);
+
+if (document.getElementById("escalChart") && ESCAL.values.reduce((a,b)=>a+b,0) > 0)
+  makeChart("escalChart", "doughnut", ESCAL.labels,
+    [{ data: ESCAL.values, backgroundColor: [GREEN, "#ef4444"] }],
+    OPTS_LEGEND);
+
+if (document.getElementById("channelChart") && CHANNELS.labels.length > 1)
+  makeChart("channelChart", "doughnut", CHANNELS.labels,
+    [{ data: CHANNELS.values, backgroundColor: PAL }],
+    OPTS_LEGEND);
+
+if (document.getElementById("leadQChart") && LEADQ.values.reduce((a,b)=>a+b,0) > 0)
+  makeChart("leadQChart", "doughnut", LEADQ.labels,
+    [{ data: LEADQ.values, backgroundColor: ["#10b981","#f59e0b","#e5e7eb"] }],
+    OPTS_LEGEND);
+</script>
+{% endblock %}

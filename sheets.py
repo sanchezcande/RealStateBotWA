@@ -6,11 +6,13 @@ Caches results for SHEET_CACHE_TTL seconds.
 import json
 import time
 import logging
+import threading
 from config import GOOGLE_SHEET_ID, GOOGLE_CREDENTIALS_JSON, SHEET_CACHE_TTL
 
 logger = logging.getLogger(__name__)
 
 _cache: dict = {"data": None, "ts": 0}
+_cache_lock = threading.Lock()
 
 SAMPLE_LISTINGS = [
     {
@@ -182,8 +184,9 @@ def _fetch_from_sheets() -> list:
 def get_listings() -> list:
     """Return listings, using cache when fresh."""
     now = time.time()
-    if _cache["data"] is not None and (now - _cache["ts"]) < SHEET_CACHE_TTL:
-        return _cache["data"]
+    with _cache_lock:
+        if _cache["data"] is not None and (now - _cache["ts"]) < SHEET_CACHE_TTL:
+            return _cache["data"]
 
     if GOOGLE_SHEET_ID and GOOGLE_CREDENTIALS_JSON:
         data = _fetch_from_sheets()
@@ -191,8 +194,9 @@ def get_listings() -> list:
         logger.info("No Google Sheets config — using sample listings.")
         data = SAMPLE_LISTINGS
 
-    _cache["data"] = data
-    _cache["ts"] = now
+    with _cache_lock:
+        _cache["data"] = data
+        _cache["ts"] = now
     return data
 
 

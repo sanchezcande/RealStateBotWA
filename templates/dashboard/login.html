@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Valentina — Iniciar sesion</title>
+<link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-box">
+    <h1>Valentina</h1>
+    <p>Ingresa para acceder al dashboard</p>
+    {% if error %}
+      <div class="login-error">{{ error }}</div>
+    {% endif %}
+    <form method="POST">
+      <label for="password">Contrasena</label>
+      <input type="password" id="password" name="password" placeholder="Tu contrasena" autofocus>
+      <div style="text-align:center;color:#aaa;font-size:.78rem;margin:-8px 0 12px">o</div>
+      <label for="token">Token de acceso</label>
+      <input type="text" id="token" name="token" placeholder="Token del dashboard">
+      <button type="submit" class="btn btn-primary">Ingresar</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

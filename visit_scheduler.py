@@ -176,6 +176,7 @@ def process(phone: str, ai_text: str) -> str:
         else:
             logger.warning("No event_id stored for visit_key '%s' — skipping calendar delete", visit_key)
         analytics.log_event("visit_cancelled", phone, property=property_title)
+        analytics.cancel_visit(phone, property_title, date_str, time_str)
         _notify_cancellation(property_title, client_name, date_str, time_str, phone=phone)
 
     # Handle new visits (supports multiple tags in same message)
@@ -221,6 +222,8 @@ def process(phone: str, ai_text: str) -> str:
         logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
         analytics.log_event("visit_scheduled", phone, property=property_title,
                              operation=lead.get("operation"))
+        analytics.save_visit(phone, property_title, address, client_name,
+                             date_str, time_str, event_id=event_id)
         _notify_visit(property_title, address, client_name, date_str, time_str, phone=phone)
         if address:
             address_lines.append(f"Dirección {property_title}: {address}" if len(all_visit_data) > 1 else address)

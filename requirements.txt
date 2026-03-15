@@ -8,3 +8,4 @@ google-auth>=2.29.0
 google-api-python-client>=2.100.0
 pytz>=2024.1
 APScheduler>=3.10.0
+pytest>=8.0.0

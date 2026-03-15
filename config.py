@@ -23,6 +23,8 @@ ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
 DASHBOARD_TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
 DASHBOARD_PLAN = os.environ.get("DASHBOARD_PLAN", "starter")  # starter | pro | premium
 BRANCH_NAME = os.environ.get("BRANCH_NAME", "")
+DASHBOARD_SECRET_KEY = os.environ.get("DASHBOARD_SECRET_KEY", "change-me-in-production")
+DASHBOARD_ADMIN_PASSWORD = os.environ.get("DASHBOARD_ADMIN_PASSWORD", "")
 
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.

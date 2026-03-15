@@ -1,0 +1,35 @@
+name: Monitor Bot Health
+
+# Corre cada 15 minutos automáticamente
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch: # también se puede correr manual desde GitHub
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: pip install requests pytest
+
+      - name: Run smoke tests
+        env:
+          BOT_URL: ${{ secrets.BOT_URL }}
+          VERIFY_TOKEN: ${{ secrets.VERIFY_TOKEN }}
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+        run: |
+          if [ -z "$BOT_URL" ]; then
+            echo "⚠️ BOT_URL secret not configured — skipping monitor"
+            exit 0
+          fi
+          pytest tests/test_smoke.py -v --tb=short
+
+      # Si falla, GitHub te manda email automáticamente
+      # (Settings > Notifications > Actions > check "Send notifications for failed workflows")

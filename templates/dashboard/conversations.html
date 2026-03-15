@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}Valentina — Conversaciones{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Conversaciones</h1>
+</div>
+
+<div x-data="convViewer()" x-init="loadList()">
+  <div class="filters">
+    <select x-model="filterChannel" @change="loadList()">
+      <option value="">Todos los canales</option>
+      <option value="whatsapp">WhatsApp</option>
+      <option value="meta">Facebook / Instagram</option>
+    </select>
+    <select x-model="filterStatus" @change="loadList()">
+      <option value="">Todos</option>
+      <option value="lead">Solo leads</option>
+      <option value="visit">Con visita</option>
+    </select>
+  </div>
+
+  <div class="conv-layout">
+    <!-- Left panel: conversation list -->
+    <div class="conv-list">
+      <div class="conv-search">
+        <input type="text" placeholder="Buscar por nombre, telefono o mensaje..."
+               x-model="search" @input.debounce.400ms="loadList()">
+      </div>
+      <template x-if="items.length === 0 && !loading">
+        <div class="conv-empty" style="padding:40px">Sin conversaciones</div>
+      </template>
+      <template x-for="c in items" :key="c.phone_hash">
+        <div class="conv-item" :class="{ selected: selected === c.phone_hash }"
+             @click="selectConv(c)">
+          <div class="conv-item-name" x-text="c.name || c.phone"></div>
+          <div class="conv-item-preview" x-text="c.last_preview"></div>
+          <div class="conv-item-meta">
+            <span class="conv-item-time" x-text="timeAgo(c.last_message)"></span>
+            <div class="conv-item-badges">
+              <span x-show="c.is_lead" class="badge badge-green">Lead</span>
+              <span x-show="c.visit_count > 0" class="badge badge-blue" x-text="c.visit_count + ' visita' + (c.visit_count > 1 ? 's' : '')"></span>
+              <span class="badge badge-gray" x-text="c.channel"></span>
+            </div>
+          </div>
+        </div>
+      </template>
+      <!-- Pagination -->
+      <div class="pagination" style="padding:12px" x-show="totalPages > 1">
+        <a href="#" x-show="page > 1" @click.prevent="page--; loadList()">Anterior</a>
+        <span class="current" x-text="page + ' / ' + totalPages"></span>
+        <a href="#" x-show="page < totalPages" @click.prevent="page++; loadList()">Siguiente</a>
+      </div>
+    </div>
+
+    <!-- Right panel: conversation detail -->
+    <div class="conv-detail">
+      <template x-if="!selected">
+        <div class="conv-empty">Selecciona una conversacion</div>
+      </template>
+      <template x-if="selected">
+        <div style="display:flex;flex-direction:column;height:100%">
+          <div class="conv-detail-header">
+            <h2 x-text="selectedName || selectedPhone"></h2>
+            <div>
+              <span x-show="selectedLead" class="badge badge-green">Lead calificado</span>
+            </div>
+          </div>
+          <!-- Lead info bar -->
+          <template x-if="leadInfo">
+            <div class="conv-lead-info">
+              <template x-if="leadInfo.operation"><span><strong>Operacion:</strong> <span x-text="leadInfo.operation"></span> | </span></template>
+              <template x-if="leadInfo.property_type"><span><strong>Tipo:</strong> <span x-text="leadInfo.property_type"></span> | </span></template>
+              <template x-if="leadInfo.budget"><span><strong>Presupuesto:</strong> <span x-text="leadInfo.budget"></span> | </span></template>
+              <template x-if="leadInfo.timeline"><span><strong>Timeline:</strong> <span x-text="leadInfo.timeline"></span></span></template>
+            </div>
+          </template>
+          <!-- Messages -->
+          <div class="conv-messages" id="msgScroll">
+            <template x-for="(m, i) in messages" :key="i">
+              <div>
+                <div class="msg-bubble" :class="m.role === 'user' ? 'msg-user' : 'msg-assistant'"
+                     x-text="m.content"></div>
+                <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''"
+                     x-text="formatTime(m.time)"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+function convViewer() {
+  return {
+    items: [], total: 0, page: 1, perPage: 20,
+    search: "", filterChannel: "", filterStatus: "",
+    selected: null, selectedName: "", selectedPhone: "", selectedLead: false,
+    messages: [], leadInfo: null, loading: false,
+
+    get totalPages() { return Math.max(1, Math.ceil(this.total / this.perPage)); },
+
+    loadList() {
+      this.loading = true;
+      let url = `/api/dashboard/conversations?page=${this.page}&per_page=${this.perPage}`;
+      if (this.search) url += `&q=${encodeURIComponent(this.search)}`;
+      if (this.filterChannel) url += `&channel=${this.filterChannel}`;
+      if (this.filterStatus) url += `&status=${this.filterStatus}`;
+      dashFetch(url).then(data => {
+        this.items = data.items;
+        this.total = data.total;
+        this.loading = false;
+      }).catch(() => { this.loading = false; });
+    },
+
+    selectConv(c) {
+      this.selected = c.phone_hash;
+      this.selectedName = c.name;
+      this.selectedPhone = c.phone;
+      this.selectedLead = c.is_lead;
+      this.messages = [];
+      this.leadInfo = null;
+
+      dashFetch(`/api/dashboard/conversations/${c.phone_hash}`).then(data => {
+        this.messages = data.messages || [];
+        this.leadInfo = data.lead;
+        this.$nextTick(() => {
+          const el = document.getElementById("msgScroll");
+          if (el) el.scrollTop = el.scrollHeight;
+        });
+      });
+    },
+  };
+}
+</script>
+{% endblock %}

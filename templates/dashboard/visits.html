@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Valentina — Visitas{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Visitas</h1>
+</div>
+
+<div x-data="visitsView()" x-init="load()">
+  <!-- View toggle -->
+  <div class="filters">
+    <button class="btn" :class="view === 'calendar' ? 'btn-primary' : 'btn-outline'" @click="view='calendar'; loadCalendar()">Calendario</button>
+    <button class="btn" :class="view === 'list' ? 'btn-primary' : 'btn-outline'" @click="view='list'; load()">Lista</button>
+    <template x-if="view === 'calendar'">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline" @click="prevMonth()">&larr;</button>
+        <span style="font-weight:600;min-width:120px;text-align:center" x-text="monthLabel"></span>
+        <button class="btn btn-outline" @click="nextMonth()">&rarr;</button>
+      </div>
+    </template>
+    <template x-if="view === 'list'">
+      <select x-model="filterStatus" @change="page=1; load()">
+        <option value="">Todos</option>
+        <option value="confirmed">Confirmadas</option>
+        <option value="cancelled">Canceladas</option>
+      </select>
+    </template>
+  </div>
+
+  <!-- Calendar view -->
+  <template x-if="view === 'calendar'">
+    <div class="card">
+      <div class="cal-grid">
+        <div class="cal-header">Lun</div>
+        <div class="cal-header">Mar</div>
+        <div class="cal-header">Mie</div>
+        <div class="cal-header">Jue</div>
+        <div class="cal-header">Vie</div>
+        <div class="cal-header">Sab</div>
+        <div class="cal-header">Dom</div>
+        <template x-for="cell in calCells" :key="cell.key">
+          <div class="cal-day" :class="{ empty: !cell.day, today: cell.isToday }">
+            <template x-if="cell.day">
+              <div>
+                <div class="cal-day-num" x-text="cell.day"></div>
+                <template x-for="v in cell.visits" :key="v.time + v.property">
+                  <div class="cal-visit" :class="v.status" :title="v.time + ' - ' + v.property + (v.client ? ' (' + v.client + ')' : '')">
+                    <span x-text="v.time"></span> <span x-text="v.property"></span>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+      </div>
+    </div>
+  </template>
+
+  <!-- List view -->
+  <template x-if="view === 'list'">
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Hora</th>
+              <th>Propiedad</th>
+              <th>Cliente</th>
+              <th>Direccion</th>
+              <th>Estado</th>
+              <th>Canal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-if="listItems.length === 0">
+              <tr><td colspan="7" class="no-data">Sin visitas registradas</td></tr>
+            </template>
+            <template x-for="v in listItems" :key="v.id">
+              <tr>
+                <td x-text="v.visit_date" style="white-space:nowrap"></td>
+                <td x-text="v.visit_time"></td>
+                <td x-text="v.property_title" style="font-weight:600"></td>
+                <td x-text="v.client_name || '—'"></td>
+                <td x-text="v.address || '—'" style="font-size:.78rem;color:#666"></td>
+                <td>
+                  <span class="badge" :class="{
+                    'badge-green': v.status === 'confirmed',
+                    'badge-red': v.status === 'cancelled',
+                    'badge-gray': v.status === 'completed'
+                  }" x-text="v.status === 'confirmed' ? 'Confirmada' : v.status === 'cancelled' ? 'Cancelada' : 'Completada'"></span>
+                </td>
+                <td><span class="badge badge-gray" x-text="v.channel"></span></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" x-show="listTotalPages > 1">
+        <a href="#" x-show="page > 1" @click.prevent="page--; load()">Anterior</a>
+        <span class="current" x-text="page + ' / ' + listTotalPages"></span>
+        <a href="#" x-show="page < listTotalPages" @click.prevent="page++; load()">Siguiente</a>
+      </div>
+    </div>
+  </template>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+<script>
+function visitsView() {
+  const now = new Date();
+  return {
+    view: "calendar",
+    year: now.getFullYear(), month: now.getMonth(), // 0-indexed
+    calDays: {},
+    listItems: [], listTotal: 0, page: 1, perPage: 50,
+    filterStatus: "",
+
+    get monthLabel() {
+      const months = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+                       "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      return months[this.month] + " " + this.year;
+    },
+    get monthStr() {
+      return this.year + "-" + String(this.month + 1).padStart(2, "0");
+    },
+    get listTotalPages() { return Math.max(1, Math.ceil(this.listTotal / this.perPage)); },
+
+    get calCells() {
+      const first = new Date(this.year, this.month, 1);
+      const lastDay = new Date(this.year, this.month + 1, 0).getDate();
+      let startDow = first.getDay(); // 0=Sun
+      startDow = startDow === 0 ? 6 : startDow - 1; // shift to Mon=0
+
+      const cells = [];
+      for (let i = 0; i < startDow; i++) cells.push({ key: "e" + i, day: 0 });
+
+      const today = new Date();
+      const todayStr = today.getFullYear() + "-" + String(today.getMonth()+1).padStart(2,"0") + "-" + String(today.getDate()).padStart(2,"0");
+
+      for (let d = 1; d <= lastDay; d++) {
+        const dateStr = this.monthStr + "-" + String(d).padStart(2, "0");
+        cells.push({
+          key: dateStr, day: d,
+          isToday: dateStr === todayStr,
+          visits: this.calDays[dateStr] || [],
+        });
+      }
+      return cells;
+    },
+
+    prevMonth() {
+      if (this.month === 0) { this.month = 11; this.year--; }
+      else this.month--;
+      this.loadCalendar();
+    },
+    nextMonth() {
+      if (this.month === 11) { this.month = 0; this.year++; }
+      else this.month++;
+      this.loadCalendar();
+    },
+
+    loadCalendar() {
+      dashFetch(`/api/dashboard/visits/calendar?month=${this.monthStr}`).then(data => {
+        this.calDays = data.days || {};
+      });
+    },
+
+    load() {
+      if (this.view === "calendar") { this.loadCalendar(); return; }
+      let url = `/api/dashboard/visits?page=${this.page}&per_page=${this.perPage}`;
+      if (this.filterStatus) url += `&status=${this.filterStatus}`;
+      dashFetch(url).then(data => {
+        this.listItems = data.items;
+        this.listTotal = data.total;
+      });
+    },
+  };
+}
+</script>
+{% endblock %}

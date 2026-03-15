@@ -25,7 +25,7 @@ def _get_service():
     return build("calendar", "v3", credentials=creds, cache_discovery=False)
 
 
-def get_free_slots(days_ahead: int = 5, hour_start: int = 9, hour_end: int = 18) -> list:
+def get_free_slots(days_ahead: int = 5) -> list:
     """
     Return a list of free 1-hour slots over the next `days_ahead` working days.
     Each slot is a dict: {"date": "YYYY-MM-DD", "time": "HH:MM", "label": "lunes 10/3 a las 10:00"}
@@ -66,8 +66,8 @@ def get_free_slots(days_ahead: int = 5, hour_start: int = 9, hour_end: int = 18)
 
         while len(free_slots) < 6 and check_date <= end_window.date():
             weekday = check_date.weekday()
-            if weekday < 6:  # Mon–Sat
-                for hour in range(hour_start, hour_end):
+            if weekday < 5:  # Mon–Fri (matches prompt default)
+                for hour in list(range(9, 13)) + list(range(17, 20)):
                     slot_start = AR_TZ.localize(datetime(check_date.year, check_date.month, check_date.day, hour))
                     slot_end = slot_start + timedelta(hours=1)
 
