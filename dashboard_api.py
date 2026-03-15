@@ -10,7 +10,7 @@ from functools import wraps
 from flask import Blueprint, request, jsonify, session
 
 import analytics
-from config import DASHBOARD_PLAN
+from config import DASHBOARD_PLAN, GOOGLE_AI_API_KEY
 
 api = Blueprint("dashboard_api", __name__, url_prefix="/api/dashboard")
 
@@ -180,7 +180,7 @@ def api_media_generate_video():
             "usage": usage,
         }), 429
 
-    if not os.environ.get("GOOGLE_AI_API_KEY", ""):
+    if not GOOGLE_AI_API_KEY:
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
 
     data = request.get_json(silent=True) or {}
@@ -215,7 +215,7 @@ def api_media_generate_video():
 @_require_auth
 def api_media_generate_image():
     import media_studio
-    if not os.environ.get("GOOGLE_AI_API_KEY", ""):
+    if not GOOGLE_AI_API_KEY:
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada"}), 400
     data = request.get_json(silent=True) or {}
     prompt = data.get("prompt", "")
