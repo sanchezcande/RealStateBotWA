@@ -474,6 +474,14 @@ def run_valentina_tests():
     import os
     import sys
     import subprocess
+    import threading
+    import uuid
+    import time as _time
+
+    # simple in-memory job store (ephemeral)
+    if not hasattr(app, "_valentina_jobs"):
+        app._valentina_jobs = {}
+        app._valentina_jobs_lock = threading.Lock()
 
     expected = os.environ.get("VALENTINA_RUN_TOKEN", "")
     auth = request.headers.get("Authorization", "")
@@ -485,24 +493,58 @@ def run_valentina_tests():
     if category not in ("nuevos", "nuevos2"):
         return jsonify({"error": "invalid category"}), 400
 
+    job_id = uuid.uuid4().hex
     cmd = [sys.executable, "test_valentina.py", category]
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=900,
-        )
-        out = (result.stdout or "")[-4000:]
-        err = (result.stderr or "")[-2000:]
-        return jsonify({
-            "status": "ok" if result.returncode == 0 else "error",
-            "returncode": result.returncode,
-            "stdout_tail": out,
-            "stderr_tail": err,
-        }), 200 if result.returncode == 0 else 500
-    except subprocess.TimeoutExpired:
-        return jsonify({"status": "error", "error": "timeout"}), 504
+
+    def _run_job():
+        started = _time.time()
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=900,
+            )
+            out = (result.stdout or "")[-8000:]
+            err = (result.stderr or "")[-4000:]
+            payload = {
+                "status": "ok" if result.returncode == 0 else "error",
+                "returncode": result.returncode,
+                "stdout_tail": out,
+                "stderr_tail": err,
+                "elapsed": round(_time.time() - started, 2),
+            }
+        except subprocess.TimeoutExpired:
+            payload = {"status": "error", "error": "timeout", "elapsed": round(_time.time() - started, 2)}
+
+        with app._valentina_jobs_lock:
+            app._valentina_jobs[job_id] = payload
+
+    with app._valentina_jobs_lock:
+        app._valentina_jobs[job_id] = {"status": "running"}
+
+    threading.Thread(target=_run_job, daemon=True).start()
+    return jsonify({"status": "accepted", "job_id": job_id}), 202
+
+
+@app.get("/admin/run-valentina/status")
+def run_valentina_status():
+    import os
+    expected = os.environ.get("VALENTINA_RUN_TOKEN", "")
+    auth = request.headers.get("Authorization", "")
+    if not expected or auth != f"Bearer {expected}":
+        return jsonify({"error": "unauthorized"}), 403
+
+    job_id = request.args.get("job_id", "")
+    if not job_id:
+        return jsonify({"error": "missing job_id"}), 400
+    if not hasattr(app, "_valentina_jobs"):
+        return jsonify({"error": "not_found"}), 404
+    with app._valentina_jobs_lock:
+        payload = app._valentina_jobs.get(job_id)
+    if not payload:
+        return jsonify({"error": "not_found"}), 404
+    return jsonify(payload), 200
 
 
 if __name__ == "__main__":
