@@ -2,43 +2,14 @@
 {% block title %}Valentina{% if branch %} — {{ branch }}{% endif %} — Dashboard{% endblock %}
 
 {% block content %}
-<section class="owner-hero">
-  <div class="owner-hero-copy">
-    <span class="owner-eyebrow">Portal de propietarios</span>
-    <h1>Tu operación, clara y bajo control</h1>
-    <p class="owner-hero-text">
-      Seguimiento comercial de consultas, visitas y propiedades con una lectura simple, visual y profesional.
-    </p>
-    <div class="hero-inline-stats">
-      <div class="hero-inline-stat">
-        <strong>{{ kpis.total_conversations }}</strong>
-        <span>consultas activas en el período</span>
-      </div>
-      <div class="hero-inline-stat">
-        <strong>{{ kpis.total_visits }}</strong>
-        <span>visitas coordinadas</span>
-      </div>
-      <div class="hero-inline-stat">
-        <strong>{{ kpis.conv_to_lead_pct }}%</strong>
-        <span>conversión a lead</span>
-      </div>
-    </div>
+<div class="dash-header">
+  <h1 class="dash-title">Dashboard</h1>
+  <div class="period-btns">
+    <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}" data-i18n="n_days" data-i18n-p='{"n":"7"}'>7 días</a>
+    <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}" data-i18n="n_days" data-i18n-p='{"n":"30"}'>30 días</a>
+    <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}" data-i18n="n_days" data-i18n-p='{"n":"90"}'>90 días</a>
   </div>
-  <div class="owner-hero-side">
-    <div class="hero-panel">
-      <div class="hero-panel-label">Ventana de análisis</div>
-      <div class="hero-period-title" data-i18n="last_n_days" data-i18n-p='{"days": "{{ days }}"}'>Últimos {{ days }} días</div>
-      <div class="period-btns">
-        <a href="/dashboard?token={{ token }}&days=7" class="{{ 'active' if days == 7 }}" data-i18n="n_days" data-i18n-p='{"n":"7"}'>7 días</a>
-        <a href="/dashboard?token={{ token }}&days=30" class="{{ 'active' if days == 30 }}" data-i18n="n_days" data-i18n-p='{"n":"30"}'>30 días</a>
-        <a href="/dashboard?token={{ token }}&days=90" class="{{ 'active' if days == 90 }}" data-i18n="n_days" data-i18n-p='{"n":"90"}'>90 días</a>
-      </div>
-      <div class="hero-panel-note">
-        Vista pensada para entender rápido qué propiedades están moviendo interés y por qué canal.
-      </div>
-    </div>
-  </div>
-</section>
+</div>
 
 <!-- KPIs -->
 <section class="section-block">
