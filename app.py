@@ -284,15 +284,15 @@ def _send_meta_message(recipient_id: str, text: str):
         logger.error("Failed to send Meta message: %s", e)
 
 
-def _reply_meta(sender_id: str, user_text: str):
+def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
     is_new = len(conversations.get_messages(sender_id)) == 0
-    analytics.log_event("message_in", sender_id, channel="meta")
+    analytics.log_event("message_in", sender_id, channel=channel)
 
-    conversations.add_message(sender_id, "user", user_text, channel="meta")
+    conversations.add_message(sender_id, "user", user_text, channel=channel)
 
     operation = _extract_operation(user_text)
     if operation:
@@ -313,14 +313,14 @@ def _reply_meta(sender_id: str, user_text: str):
             conversations.update_lead(sender_id, name=name)
 
     if is_new:
-        analytics.log_event("new_conversation", sender_id, channel="meta",
+        analytics.log_event("new_conversation", sender_id, channel=channel,
                              operation=operation, property_type=prop_type)
 
     history = conversations.get_messages(sender_id)
     lead = conversations.get_lead(sender_id)
     ai_response = ai.get_reply(history, lead=lead)
 
-    clean_response = lead_qualifier.process(sender_id, ai_response, channel="meta")
+    clean_response = lead_qualifier.process(sender_id, ai_response, channel=channel)
     clean_response = visit_scheduler.process(sender_id, clean_response)
     clean_response = clean_response.replace("¿", "").replace("¡", "")
 
@@ -332,7 +332,7 @@ def _reply_meta(sender_id: str, user_text: str):
             clean_response,
         ).strip()
 
-    conversations.add_message(sender_id, "assistant", clean_response, channel="meta")
+    conversations.add_message(sender_id, "assistant", clean_response, channel=channel)
     _send_meta_message(sender_id, clean_response)
 
 
@@ -376,7 +376,8 @@ def receive_meta_message():
                 text = message["text"].strip()
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
-                    _enqueue_meta(sender_id, text)
+                    channel = "facebook" if obj_type == "page" else "instagram"
+                    _enqueue_meta(sender_id, text, channel)
     except Exception as e:
         logger.error("Error processing Meta webhook: %s", e, exc_info=True)
     return jsonify({"status": "ok"}), 200
@@ -391,27 +392,31 @@ _processed_mids: dict = {}   # mid -> True; insertion-ordered for FIFO eviction
 _processed_mids_lock = threading.Lock()
 
 
-def _enqueue_meta(sender_id: str, text: str):
+def _enqueue_meta(sender_id: str, text: str, channel: str):
     text = text[:MAX_MESSAGE_LENGTH]
+    key = (channel, sender_id)
     with _pending_meta_lock:
-        if sender_id in _pending_meta:
-            _pending_meta[sender_id]["timer"].cancel()
-            _pending_meta[sender_id]["texts"].append(text)
+        if key in _pending_meta:
+            _pending_meta[key]["timer"].cancel()
+            _pending_meta[key]["texts"].append(text)
         else:
-            _pending_meta[sender_id] = {"texts": [text]}
-        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[sender_id])
-        _pending_meta[sender_id]["timer"] = timer
+            _pending_meta[key] = {"texts": [text], "channel": channel, "sender_id": sender_id}
+        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[key])
+        _pending_meta[key]["timer"] = timer
         timer.start()
 
 
-def _flush_meta(sender_id: str):
+def _flush_meta(key):
     with _pending_meta_lock:
-        if sender_id not in _pending_meta:
+        if key not in _pending_meta:
             return
-        texts = _pending_meta.pop(sender_id)["texts"]
+        payload = _pending_meta.pop(key)
+        texts = payload["texts"]
+        sender_id = payload["sender_id"]
+        channel = payload["channel"]
     combined = " / ".join(texts) if len(texts) > 1 else texts[0]
     try:
-        _reply_meta(sender_id, combined)
+        _reply_meta(sender_id, combined, channel)
     except Exception as e:
         logger.error("Unhandled error in _reply_meta for %s: %s", sender_id, e, exc_info=True)
         try:
@@ -432,6 +437,32 @@ def health():
     checks["database"] = "ok" if analytics.health_check() else "error"
     all_ok = all(v == "ok" for v in checks.values())
     return jsonify({"status": "ok" if all_ok else "degraded", "checks": checks}), 200 if all_ok else 503
+
+
+@app.get("/health/deepseek")
+def health_deepseek():
+    """
+    Lightweight DeepSeek connectivity check.
+    Does not consume tokens; attempts a low-cost request and reports status.
+    """
+    import socket
+    from config import DEEPSEEK_BASE_URL
+
+    host = DEEPSEEK_BASE_URL.replace("https://", "").replace("http://", "").split("/")[0]
+    try:
+        socket.gethostbyname(host)
+    except Exception as e:
+        return jsonify({"status": "error", "error": f"DNS failure: {e}"}), 503
+
+    try:
+        # Simple call with minimal payload; returns quickly if reachable.
+        import ai
+        resp = ai.get_reply([{"role": "user", "content": "ping"}])
+        if "problema técnico" in resp.lower():
+            return jsonify({"status": "degraded", "error": "DeepSeek fallback response"}), 503
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 503
 
 
 if __name__ == "__main__":

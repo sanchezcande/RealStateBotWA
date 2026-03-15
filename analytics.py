@@ -156,7 +156,7 @@ def _seed_mock_data(conn):
     ]
     operations = ["comprar", "alquilar"]
     prop_types = ["departamento", "casa", "monoambiente", "PH"]
-    channels = ["whatsapp", "whatsapp", "whatsapp", "meta"]  # 75% WA
+    channels = ["whatsapp", "whatsapp", "whatsapp", "facebook", "instagram"]  # Mostly WA
     budgets = ["USD 80.000-120.000", "USD 150.000-200.000", "$300.000/mes",
                "$450.000/mes", "USD 250.000+", "$200.000-350.000/mes"]
     timelines = ["1-2 meses", "3-6 meses", "urgente", "explorando", "este mes"]
@@ -459,19 +459,29 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "values": [hour_map.get(h, 0) for h in range(24)],
             }
 
-            # --- Top properties by visits (filtered) ---
+            # --- Top properties by requested visits (filtered) ---
             rows = conn.execute(
-                """SELECT property, COUNT(*) as cnt
-                   FROM events
-                   WHERE event_type = 'visit_scheduled'
-                     AND property IS NOT NULL
-                     AND created_at >= ?
-                   GROUP BY property
-                   ORDER BY cnt DESC
+                """SELECT property_title, COALESCE(MAX(NULLIF(address, '')), ''), COUNT(*) as cnt
+                   FROM visits
+                   WHERE created_at >= ?
+                   GROUP BY property_title
+                   ORDER BY cnt DESC, property_title ASC
                    LIMIT 10""",
                 (cutoff,),
             ).fetchall()
-            top_properties = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
+            top_property_items = [
+                {
+                    "title": r[0],
+                    "address": r[1],
+                    "count": r[2],
+                }
+                for r in rows
+            ]
+            top_properties = {
+                "labels": [item["title"] for item in top_property_items],
+                "values": [item["count"] for item in top_property_items],
+                "items": top_property_items,
+            }
 
             # --- Operation split (filtered) ---
             rows = conn.execute(
@@ -492,7 +502,50 @@ def get_dashboard_data(days: int = 30) -> dict:
                    GROUP BY channel""",
                 (cutoff,),
             ).fetchall()
-            channel_split = {"labels": [r[0] for r in rows], "values": [r[1] for r in rows]}
+            channel_aliases = {
+                "whatsapp": ("whatsapp", "WhatsApp"),
+                "instagram": ("instagram", "Instagram"),
+                "facebook": ("facebook", "Facebook"),
+                "page": ("facebook", "Facebook"),
+                "messenger": ("facebook", "Facebook"),
+                "meta": ("social_legacy", "Instagram/Facebook"),
+            }
+            channel_counts = {}
+            for raw_channel, count in rows:
+                normalized = (raw_channel or "whatsapp").strip().lower()
+                key, label = channel_aliases.get(
+                    normalized,
+                    (normalized or "other", normalized.title() or "Otro"),
+                )
+                bucket = channel_counts.setdefault(key, {"label": label, "count": 0})
+                bucket["count"] += count
+
+            preferred_order = ["whatsapp", "instagram", "facebook", "social_legacy"]
+            ordered_channels = [
+                {"key": key, **channel_counts[key]}
+                for key in preferred_order
+                if key in channel_counts
+            ]
+            for key, item in channel_counts.items():
+                if key not in preferred_order:
+                    ordered_channels.append({"key": key, **item})
+
+            channel_breakdown = []
+            for item in ordered_channels:
+                count = item["count"]
+                pct = round(count / total_convs * 100, 1) if total_convs else 0
+                channel_breakdown.append({
+                    "key": item["key"],
+                    "label": item["label"],
+                    "count": count,
+                    "pct": pct,
+                })
+
+            channel_split = {
+                "labels": [item["label"] for item in channel_breakdown],
+                "values": [item["count"] for item in channel_breakdown],
+                "items": channel_breakdown,
+            }
 
             # --- Escalated to human vs resolved by bot (filtered) ---
             escalated = conn.execute(
@@ -560,6 +613,7 @@ def get_dashboard_data(days: int = 30) -> dict:
             "top_properties": top_properties,
             "op_split": op_split,
             "channel_split": channel_split,
+            "channel_breakdown": channel_breakdown,
             "escalation_split": escalation_split,
             "lead_quality_split": lead_quality_split,
             "period_comparison": period_comparison,

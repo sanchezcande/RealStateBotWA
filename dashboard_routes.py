@@ -132,6 +132,7 @@ def index():
             top_properties=data["top_properties"],
             op_split=data["op_split"],
             channel_split=data["channel_split"],
+            channel_breakdown=data["channel_breakdown"],
             escalation_split=data["escalation_split"],
             lead_quality_split=data["lead_quality_split"],
             period_comparison=data["period_comparison"],
