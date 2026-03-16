@@ -221,7 +221,6 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     image=img,
                     config=types.GenerateVideosConfig(
                         aspect_ratio="16:9",
-                        person_generation="dont_allow",
                         negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
                     ),
                 )
