@@ -156,7 +156,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             if operation.response and operation.response.generated_videos:
                 video = operation.response.generated_videos[0]
                 out_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
-                video.video.save(out_path)
+                _save_video(video, out_path)
                 clips.append(out_path)
 
         else:
@@ -197,7 +197,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 if operation.response and operation.response.generated_videos:
                     video = operation.response.generated_videos[0]
                     clip_path = str(UPLOAD_DIR / "videos" / f"{job_id}_clip{i}.mp4")
-                    video.video.save(clip_path)
+                    _save_video(video, clip_path)
                     clips.append(clip_path)
                 else:
                     logger.warning("No video generated for photo %d", clip_num)
@@ -350,6 +350,24 @@ def list_jobs() -> list[dict]:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _save_video(video, out_path: str):
+    """Save a generated video to disk, handling both local and remote videos."""
+    import requests as _requests
+    try:
+        # Try direct save first (works for local/inline videos)
+        video.video.save(out_path)
+    except Exception:
+        # Fallback: download from URI
+        uri = getattr(video.video, "uri", None)
+        if uri:
+            resp = _requests.get(uri, timeout=120)
+            resp.raise_for_status()
+            with open(out_path, "wb") as f:
+                f.write(resp.content)
+        else:
+            raise RuntimeError("No se pudo guardar el video generado")
+
 
 def _mime_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
