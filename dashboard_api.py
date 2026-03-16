@@ -186,6 +186,8 @@ def api_media_generate_video():
 
     gai_key = _get_google_ai_key()
     import logging
+    google_vars = {k: f"{v[:4]}...({len(v)})" for k, v in os.environ.items() if "GOOGLE" in k.upper()}
+    logging.info("GOOGLE env vars: %s", google_vars)
     logging.info("GOOGLE_AI_API_KEY present: %s, length: %d", bool(gai_key), len(gai_key) if gai_key else 0)
     if not gai_key:
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
