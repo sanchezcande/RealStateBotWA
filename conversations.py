@@ -3,6 +3,7 @@ Conversation store with write-through SQLite persistence.
 Keeps an in-memory cache for fast AI pipeline access while persisting
 every message and lead update to the analytics database.
 """
+import time as _time
 from collections import defaultdict
 from threading import Lock
 
@@ -86,6 +87,34 @@ def get_messages(phone: str) -> list:
     with _lock:
         _ensure_loaded(phone)
         return list(_store[phone]["messages"])
+
+
+_agent_takeover: dict = {}  # phone -> {"until": timestamp}
+_TAKEOVER_TTL = 30 * 60  # 30 minutes
+
+
+def set_agent_takeover(phone: str, duration: int = _TAKEOVER_TTL):
+    """Pause AI auto-replies for this conversation."""
+    with _lock:
+        _agent_takeover[phone] = {"until": _time.time() + duration}
+
+
+def clear_agent_takeover(phone: str):
+    """Resume AI auto-replies for this conversation."""
+    with _lock:
+        _agent_takeover.pop(phone, None)
+
+
+def is_agent_takeover(phone: str) -> bool:
+    """Check if AI is paused for this conversation."""
+    with _lock:
+        info = _agent_takeover.get(phone)
+        if not info:
+            return False
+        if _time.time() > info["until"]:
+            _agent_takeover.pop(phone, None)
+            return False
+        return True
 
 
 def get_conversation_summary(phone: str, n_messages: int = 4) -> str:

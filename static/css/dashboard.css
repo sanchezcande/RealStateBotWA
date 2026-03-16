@@ -415,7 +415,42 @@ tr:hover td { background: #f8fafc; }
   background: rgba(255,255,255,.92); margin-right: auto; border-bottom-left-radius: 4px;
   box-shadow: 0 10px 24px rgba(15,23,42,.05);
 }
+.msg-agent {
+  background: linear-gradient(135deg, #dbeafe, #e0e7ff);
+  margin-right: auto; border-bottom-left-radius: 4px;
+  box-shadow: 0 10px 24px rgba(15,23,42,.05);
+  border-left: 3px solid #3b82f6;
+}
+.agent-tag {
+  display: inline-block; background: #3b82f6; color: #fff; font-size: .6rem;
+  padding: 1px 5px; border-radius: 4px; margin-right: 4px; font-weight: 600;
+}
 .msg-time { font-size: .65rem; color: #999; margin-top: 2px; text-align: right; }
+
+/* Reply bar */
+.conv-reply-bar {
+  border-top: 1px solid #e5e7eb; padding: 12px 16px;
+  background: rgba(255,255,255,.92);
+}
+.conv-reply-input {
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.conv-reply-input textarea {
+  flex: 1; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 12px;
+  font-size: .88rem; resize: none; font-family: inherit; line-height: 1.4; max-height: 120px;
+}
+.conv-reply-input textarea:focus {
+  outline: none; border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,.15);
+}
+.btn-send {
+  padding: 10px 14px; background: #2563eb; color: white; border: none;
+  border-radius: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.btn-send:disabled { opacity: .5; cursor: not-allowed; }
+.btn-send:hover:not(:disabled) { background: #1d4ed8; }
+.conv-takeover-toggle { margin-bottom: 8px; font-size: .78rem; color: #6b7280; }
+.conv-takeover-toggle label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
 .conv-empty {
   display: flex; align-items: center; justify-content: center;
   height: 100%; color: #8da0ae; font-size: .95rem;

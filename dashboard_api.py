@@ -70,6 +70,81 @@ def api_conversation_thread(phone_hash):
     return jsonify(data)
 
 
+@api.route("/conversations/<phone_hash>/reply", methods=["POST"])
+@_require_auth
+def api_send_reply(phone_hash):
+    import conversations
+    import whatsapp
+
+    data = request.get_json(silent=True) or {}
+    message = (data.get("message") or "").strip()
+    pause_bot = data.get("pause_bot", True)
+
+    if not message:
+        return jsonify({"error": "Mensaje vacio"}), 400
+    if len(message) > 4000:
+        return jsonify({"error": "Mensaje demasiado largo (max 4000 caracteres)"}), 400
+
+    phone = analytics.resolve_phone_by_hash(phone_hash)
+    if not phone:
+        return jsonify({"error": "Conversacion no encontrada"}), 404
+
+    # Detect channel from last message
+    try:
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            row = conn.execute(
+                "SELECT channel FROM chat_messages WHERE phone_hash = ? ORDER BY id DESC LIMIT 1",
+                (phone_hash,),
+            ).fetchone()
+        channel = row[0] if row else "whatsapp"
+    except Exception:
+        channel = "whatsapp"
+
+    # Send via WhatsApp (or Meta for FB/IG)
+    if channel in ("instagram", "facebook"):
+        from app import _send_meta_message
+        _send_meta_message(phone, message)
+        success = True
+    else:
+        success = whatsapp.send_message(phone, message)
+
+    if not success:
+        return jsonify({"error": "Error enviando mensaje via WhatsApp"}), 502
+
+    # Record message with role "agent"
+    conversations.add_message(phone, "agent", message, channel=channel)
+
+    # Pause the AI bot for this conversation
+    if pause_bot:
+        conversations.set_agent_takeover(phone)
+
+    return jsonify({"ok": True, "paused": pause_bot})
+
+
+@api.route("/conversations/<phone_hash>/takeover", methods=["GET", "POST"])
+@_require_auth
+def api_takeover(phone_hash):
+    import conversations
+
+    phone = analytics.resolve_phone_by_hash(phone_hash)
+    if not phone:
+        return jsonify({"paused": False})
+
+    if request.method == "GET":
+        return jsonify({"paused": conversations.is_agent_takeover(phone)})
+
+    data = request.get_json(silent=True) or {}
+    action = data.get("action", "pause")
+
+    if action == "resume":
+        conversations.clear_agent_takeover(phone)
+        return jsonify({"ok": True, "paused": False})
+    else:
+        conversations.set_agent_takeover(phone)
+        return jsonify({"ok": True, "paused": True})
+
+
 @api.route("/leads")
 @_require_auth
 def api_leads():
@@ -184,12 +259,7 @@ def api_media_generate_video():
             "usage": usage,
         }), 429
 
-    gai_key = _get_google_ai_key()
-    import logging
-    google_vars = {k: f"{v[:4]}...({len(v)})" for k, v in os.environ.items() if "GOOGLE" in k.upper()}
-    logging.info("GOOGLE env vars: %s", google_vars)
-    logging.info("GOOGLE_AI_API_KEY present: %s, length: %d", bool(gai_key), len(gai_key) if gai_key else 0)
-    if not gai_key:
+    if not _get_google_ai_key():
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
 
     data = request.get_json(silent=True) or {}

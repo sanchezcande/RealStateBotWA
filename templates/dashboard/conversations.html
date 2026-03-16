@@ -87,12 +87,46 @@
           <div class="conv-messages" id="msgScroll">
             <template x-for="(m, i) in messages" :key="i">
               <div>
-                <div class="msg-bubble" :class="m.role === 'user' ? 'msg-user' : 'msg-assistant'"
-                     x-text="m.content"></div>
-                <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''"
-                     x-text="formatTime(m.time)"></div>
+                <div class="msg-bubble" :class="{
+                  'msg-user': m.role === 'user',
+                  'msg-assistant': m.role === 'assistant',
+                  'msg-agent': m.role === 'agent'
+                }" x-text="m.content"></div>
+                <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''">
+                  <span x-show="m.role === 'agent'" class="agent-tag" x-text="t('agent_label')"></span>
+                  <span x-text="formatTime(m.time)"></span>
+                </div>
               </div>
             </template>
+          </div>
+          <!-- Agent reply bar -->
+          <div class="conv-reply-bar">
+            <div class="conv-takeover-toggle">
+              <label class="toggle-label">
+                <input type="checkbox" x-model="botPaused" @change="toggleBotPause()">
+                <span x-text="botPaused ? t('bot_paused') : t('bot_active')"></span>
+              </label>
+            </div>
+            <div class="conv-reply-input">
+              <textarea x-model="replyText"
+                        :placeholder="t('type_reply')"
+                        @keydown.enter.meta="sendReply()"
+                        @keydown.enter.ctrl="sendReply()"
+                        rows="1"
+                        maxlength="4000"
+                        :disabled="sending"></textarea>
+              <button class="btn-send" @click="sendReply()" :disabled="!replyText.trim() || sending">
+                <template x-if="!sending">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                  </svg>
+                </template>
+                <template x-if="sending">
+                  <span x-text="t('sending')"></span>
+                </template>
+              </button>
+            </div>
           </div>
         </div>
       </template>
@@ -110,6 +144,7 @@ function convViewer() {
     search: "", filterChannel: "", filterStatus: "",
     selected: null, selectedName: "", selectedPhone: "", selectedLead: false,
     messages: [], leadInfo: null, loading: false,
+    replyText: "", sending: false, botPaused: false,
 
     get totalPages() { return Math.max(1, Math.ceil(this.total / this.perPage)); },
 
@@ -141,6 +176,7 @@ function convViewer() {
       this.selectedLead = c.is_lead;
       this.messages = [];
       this.leadInfo = null;
+      this.replyText = "";
 
       dashFetch(`/api/dashboard/conversations/${c.phone_hash}`).then(data => {
         this.messages = data.messages || [];
@@ -150,6 +186,60 @@ function convViewer() {
           if (el) el.scrollTop = el.scrollHeight;
         });
       });
+      // Check takeover status
+      dashFetch(`/api/dashboard/conversations/${c.phone_hash}/takeover`).then(data => {
+        this.botPaused = data.paused;
+      }).catch(() => {});
+    },
+
+    sendReply() {
+      if (!this.replyText.trim() || this.sending) return;
+      this.sending = true;
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      const url = `/api/dashboard/conversations/${this.selected}/reply?token=${encodeURIComponent(token)}`;
+      fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({
+          message: this.replyText.trim(),
+          pause_bot: this.botPaused,
+        }),
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          this.messages.push({
+            role: "agent",
+            content: this.replyText.trim(),
+            time: new Date().toISOString(),
+          });
+          this.replyText = "";
+          this.botPaused = data.paused;
+          this.$nextTick(() => {
+            const el = document.getElementById("msgScroll");
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        } else {
+          alert(data.error || "Error enviando mensaje");
+        }
+      })
+      .catch(() => alert(t("network_error")))
+      .finally(() => { this.sending = false; });
+    },
+
+    toggleBotPause() {
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      const url = `/api/dashboard/conversations/${this.selected}/takeover?token=${encodeURIComponent(token)}`;
+      fetch(url, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({action: this.botPaused ? "pause" : "resume"}),
+      })
+      .then(r => r.json())
+      .then(data => { this.botPaused = data.paused; })
+      .catch(() => {});
     },
   };
 }

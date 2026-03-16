@@ -195,6 +195,13 @@ def _extract_name(text: str):
 
 
 def _reply(phone: str, user_text: str):
+    # Check if human agent has taken over this conversation
+    if conversations.is_agent_takeover(phone):
+        conversations.add_message(phone, "user", user_text, channel="whatsapp")
+        analytics.log_event("message_in", phone, channel="whatsapp")
+        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", phone)
+        return
+
     # Track new conversations and all incoming messages
     is_new = len(conversations.get_messages(phone)) == 0
     analytics.log_event("message_in", phone, channel="whatsapp")
@@ -289,6 +296,14 @@ def _reply_meta(sender_id: str, user_text: str, channel: str):
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
+
+    # Check if human agent has taken over this conversation
+    if conversations.is_agent_takeover(sender_id):
+        conversations.add_message(sender_id, "user", user_text, channel=channel)
+        analytics.log_event("message_in", sender_id, channel=channel)
+        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", sender_id)
+        return
+
     is_new = len(conversations.get_messages(sender_id)) == 0
     analytics.log_event("message_in", sender_id, channel=channel)
 

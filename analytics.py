@@ -864,6 +864,21 @@ def get_conversation_thread(phone_hash: str) -> dict:
         return {"messages": [], "lead": None}
 
 
+def resolve_phone_by_hash(phone_hash: str) -> str | None:
+    """Resolve a phone_hash back to the real phone number."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                "SELECT DISTINCT phone FROM chat_messages WHERE phone_hash = ? LIMIT 1",
+                (phone_hash,),
+            ).fetchone()
+        return row[0] if row else None
+    except Exception as e:
+        logger.error("analytics.resolve_phone_by_hash error: %s", e)
+        return None
+
+
 def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
                    sort: str = "updated_at") -> dict:
     """Return paginated leads list."""

@@ -59,6 +59,10 @@ const I18N = {
     timeline_label: "Timeline:",
     previous: "Anterior",
     next: "Siguiente",
+    type_reply: "Escribi tu mensaje...",
+    bot_paused: "Bot pausado (modo agente)",
+    bot_active: "Bot activo",
+    agent_label: "Agente",
 
     // -- Leads page --
     all_operations: "Todas las operaciones",
@@ -237,6 +241,10 @@ const I18N = {
     timeline_label: "Timeline:",
     previous: "Previous",
     next: "Next",
+    type_reply: "Type your message...",
+    bot_paused: "Bot paused (agent mode)",
+    bot_active: "Bot active",
+    agent_label: "Agent",
 
     // -- Leads page --
     all_operations: "All operations",

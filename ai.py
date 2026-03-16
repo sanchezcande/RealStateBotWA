@@ -267,6 +267,12 @@ def get_reply(messages: list, lead: dict = None) -> str:
             today=_today_str(),
         )
 
+    # Normalize agent messages to assistant for LLM API compatibility
+    messages = [
+        {"role": "assistant", "content": m["content"]} if m["role"] == "agent" else m
+        for m in messages
+    ]
+
     has_prior_exchange = any(m["role"] == "assistant" for m in messages)
     if has_prior_exchange:
         system_prompt += "\n\nRECORDATORIO: conversación en curso. JAMÁS digas 'Hola! Soy Valentina, con quién hablo?' ni ninguna variante. JAMÁS te presentes de nuevo. Respondé directamente al último mensaje del cliente."
