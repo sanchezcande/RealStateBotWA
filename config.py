@@ -30,6 +30,10 @@ DASHBOARD_ADMIN_PASSWORD = os.environ.get("DASHBOARD_ADMIN_PASSWORD", "")
 GOOGLE_AI_API_KEY = os.environ.get("GOOGLE_AI_API_KEY", "")
 MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", "uploads")
 
+# Startup debug: list all GOOGLE* env vars
+_gvars = {k: f"{v[:8]}..." for k, v in os.environ.items() if "GOOGLE" in k.upper() and k != "GOOGLE_CREDENTIALS_JSON"}
+print(f"[config] GOOGLE env vars at startup: {_gvars}", flush=True)
+
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
 # Also subscribe the webhook to the page in Meta App Dashboard under
