@@ -1,8 +1,8 @@
 /* Shared chart helpers */
-const BLUE  = "rgba(37,99,235,0.85)";
+const BLUE  = "rgba(217,119,6,0.85)";
 const GREEN = "rgba(16,185,129,0.85)";
-const PAL   = ["#2563eb","#10b981","#f59e0b","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
-const CHANNEL_PAL = ["#16a34a", "#e11d48", "#2563eb", "#94a3b8"];
+const PAL   = ["#D97706","#10b981","#F97B72","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
+const CHANNEL_PAL = ["#16a34a", "#e11d48", "#D97706", "#94a3b8"];
 
 const OPTS_CLEAN  = { plugins: { legend: { display: false } } };
 const OPTS_LEGEND = { plugins: { legend: { position: "bottom" } } };
