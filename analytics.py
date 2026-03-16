@@ -111,6 +111,22 @@ def init_db():
             CREATE INDEX IF NOT EXISTS idx_visits_phone  ON visits(phone);
             CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status);
 
+            CREATE TABLE IF NOT EXISTS media_jobs (
+                id              TEXT PRIMARY KEY,
+                type            TEXT NOT NULL,
+                status          TEXT NOT NULL DEFAULT 'queued',
+                progress        TEXT DEFAULT '',
+                property        TEXT DEFAULT '',
+                photo_count     INTEGER DEFAULT 0,
+                prompt          TEXT DEFAULT '',
+                result_path     TEXT,
+                result_url      TEXT,
+                error           TEXT,
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_media_jobs_created ON media_jobs(created_at);
+
             CREATE TABLE IF NOT EXISTS media_usage (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
                 month           TEXT NOT NULL,
@@ -132,6 +148,21 @@ def init_db():
                         conn.execute(f"DELETE FROM {tbl}")
                     logger.info("Cleared existing data for demo reseed")
                 _seed_mock_data(conn)
+    # Cleanup old media jobs on startup
+    try:
+        cutoff = (datetime.now(AR_TZ) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+        old_files = conn.execute(
+            "SELECT result_path FROM media_jobs WHERE created_at < ?", (cutoff,)
+        ).fetchall()
+        for row in old_files:
+            if row[0]:
+                try:
+                    os.unlink(row[0])
+                except OSError:
+                    pass
+        conn.execute("DELETE FROM media_jobs WHERE created_at < ?", (cutoff,))
+    except Exception:
+        pass
     logger.info("Analytics DB initialised at %s", _DB_PATH)
 
 
@@ -1098,3 +1129,102 @@ def add_purchased_videos(count: int = 1) -> dict:
     except Exception as e:
         logger.error("analytics.add_purchased_videos error: %s", e)
         return get_media_usage(month)
+
+
+# ---------------------------------------------------------------------------
+# Media jobs persistence
+# ---------------------------------------------------------------------------
+
+def save_media_job(job: dict):
+    """Insert or update a media job in the DB."""
+    try:
+        now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+        with _db_lock:
+            conn = _get_conn()
+            conn.execute("""
+                INSERT INTO media_jobs (id, type, status, progress, property, photo_count, prompt, result_path, result_url, error, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    status=excluded.status, progress=excluded.progress,
+                    result_path=excluded.result_path, result_url=excluded.result_url,
+                    error=excluded.error, updated_at=excluded.updated_at
+            """, (
+                job.get("id"), job.get("type", ""),
+                job.get("status", "queued"), job.get("progress", ""),
+                job.get("property", ""), job.get("photo_count", 0),
+                job.get("prompt", ""),
+                job.get("result_path"), job.get("result_url"),
+                job.get("error"),
+                job.get("created_at", now), now,
+            ))
+    except Exception as e:
+        logger.error("analytics.save_media_job error: %s", e)
+
+
+def list_media_jobs(days: int = 7) -> list[dict]:
+    """Return media jobs from the last N days, newest first."""
+    try:
+        cutoff = (datetime.now(AR_TZ) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+        with _db_lock:
+            conn = _get_conn()
+            rows = conn.execute(
+                """SELECT id, type, status, progress, property, photo_count,
+                          result_path, result_url, error, created_at
+                   FROM media_jobs WHERE created_at >= ?
+                   ORDER BY created_at DESC""",
+                (cutoff,),
+            ).fetchall()
+        return [
+            {"id": r[0], "type": r[1], "status": r[2], "progress": r[3],
+             "property": r[4], "photo_count": r[5],
+             "result_path": r[6], "result_url": r[7], "error": r[8],
+             "created_at": r[9]}
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("analytics.list_media_jobs error: %s", e)
+        return []
+
+
+def get_media_job(job_id: str) -> dict | None:
+    """Return a single media job by ID."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                """SELECT id, type, status, progress, property, photo_count,
+                          result_path, result_url, error, created_at
+                   FROM media_jobs WHERE id = ?""",
+                (job_id,),
+            ).fetchone()
+        if not row:
+            return None
+        return {"id": row[0], "type": row[1], "status": row[2], "progress": row[3],
+                "property": row[4], "photo_count": row[5],
+                "result_path": row[6], "result_url": row[7], "error": row[8],
+                "created_at": row[9]}
+    except Exception as e:
+        logger.error("analytics.get_media_job error: %s", e)
+        return None
+
+
+def cleanup_old_media_jobs(days: int = 7):
+    """Delete jobs older than N days and their files."""
+    try:
+        cutoff = (datetime.now(AR_TZ) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+        with _db_lock:
+            conn = _get_conn()
+            rows = conn.execute(
+                "SELECT result_path FROM media_jobs WHERE created_at < ?",
+                (cutoff,),
+            ).fetchall()
+            for row in rows:
+                if row[0]:
+                    try:
+                        os.unlink(row[0])
+                    except OSError:
+                        pass
+            conn.execute("DELETE FROM media_jobs WHERE created_at < ?", (cutoff,))
+        logger.info("Cleaned up media jobs older than %d days", days)
+    except Exception as e:
+        logger.error("analytics.cleanup_old_media_jobs error: %s", e)

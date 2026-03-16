@@ -176,7 +176,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             video_prompt = _build_video_prompt(prompt, property_name)
 
             operation = client.models.generate_videos(
-                model="veo-2.0-generate-001",
+                model="veo-3.0-generate-001",
                 prompt=video_prompt,
                 image=first_image,
                 config=types.GenerateVideosConfig(
@@ -217,7 +217,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 clip_prompt = _build_video_prompt(prompt, property_name)
 
                 operation = client.models.generate_videos(
-                    model="veo-2.0-generate-001",
+                    model="veo-3.0-generate-001",
                     prompt=clip_prompt,
                     image=img,
                     config=types.GenerateVideosConfig(
@@ -279,19 +279,23 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
                         property_name: str = "") -> str:
     """Start async video generation. Returns job_id."""
     job_id = uuid.uuid4().hex[:12]
+    job = {
+        "id": job_id,
+        "type": "video_tour",
+        "status": "queued",
+        "progress": "En cola...",
+        "property": property_name,
+        "photo_count": len(photo_paths),
+        "prompt": _build_video_prompt(prompt, property_name),
+        "created_at": datetime.now(AR_TZ).isoformat(),
+        "result_path": None,
+        "result_url": None,
+        "error": None,
+    }
     with _jobs_lock:
-        _jobs[job_id] = {
-            "id": job_id,
-            "type": "video_tour",
-            "status": "queued",
-            "progress": "En cola...",
-            "property": property_name,
-            "photo_count": len(photo_paths),
-            "created_at": datetime.now(AR_TZ).isoformat(),
-            "result_path": None,
-            "result_url": None,
-            "error": None,
-        }
+        _jobs[job_id] = job
+    import analytics
+    analytics.save_media_job(job)
 
     thread = threading.Thread(
         target=_generate_video_task,
@@ -309,18 +313,23 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
 def generate_image(prompt: str, property_name: str = "") -> str:
     """Start async image generation. Returns job_id."""
     job_id = uuid.uuid4().hex[:12]
+    job = {
+        "id": job_id,
+        "type": "image",
+        "status": "queued",
+        "progress": "En cola...",
+        "property": property_name,
+        "photo_count": 0,
+        "prompt": prompt,
+        "created_at": datetime.now(AR_TZ).isoformat(),
+        "result_path": None,
+        "result_url": None,
+        "error": None,
+    }
     with _jobs_lock:
-        _jobs[job_id] = {
-            "id": job_id,
-            "type": "image",
-            "status": "queued",
-            "progress": "En cola...",
-            "property": property_name,
-            "created_at": datetime.now(AR_TZ).isoformat(),
-            "result_path": None,
-            "result_url": None,
-            "error": None,
-        }
+        _jobs[job_id] = job
+    import analytics
+    analytics.save_media_job(job)
 
     thread = threading.Thread(
         target=_generate_image_task,
@@ -369,23 +378,37 @@ def _generate_image_task(job_id: str, prompt: str, property_name: str):
 
 
 # ---------------------------------------------------------------------------
-# Job management
+# Job management (in-memory + SQLite persistence)
 # ---------------------------------------------------------------------------
 
 def _update_job(job_id: str, **kwargs):
     with _jobs_lock:
         if job_id in _jobs:
             _jobs[job_id].update(kwargs)
+            # Persist to DB
+            import analytics
+            analytics.save_media_job(_jobs[job_id])
 
 
 def get_job(job_id: str) -> Optional[dict]:
     with _jobs_lock:
-        return dict(_jobs[job_id]) if job_id in _jobs else None
+        if job_id in _jobs:
+            return dict(_jobs[job_id])
+    # Fallback to DB (for jobs from previous deploys)
+    import analytics
+    return analytics.get_media_job(job_id)
 
 
 def list_jobs() -> list[dict]:
+    # Merge in-memory (active) jobs with DB (historical) jobs
+    import analytics
+    db_jobs = analytics.list_media_jobs(days=7)
     with _jobs_lock:
-        return sorted(_jobs.values(), key=lambda j: j["created_at"], reverse=True)
+        # In-memory jobs take precedence (have latest status)
+        merged = {j["id"]: j for j in db_jobs}
+        for j in _jobs.values():
+            merged[j["id"]] = j
+    return sorted(merged.values(), key=lambda j: j["created_at"], reverse=True)
 
 
 # ---------------------------------------------------------------------------
