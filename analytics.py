@@ -1001,7 +1001,7 @@ def get_visits_calendar(month: str) -> dict:
 # Media usage tracking (video generation limits)
 # ---------------------------------------------------------------------------
 
-FREE_VIDEOS_PER_MONTH = 4
+FREE_VIDEOS_PER_MONTH = int(os.environ.get("FREE_VIDEOS_PER_MONTH", "4"))
 EXTRA_VIDEO_PRICE_USD = 25
 
 
