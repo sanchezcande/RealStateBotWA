@@ -358,10 +358,13 @@ def _save_video(video, out_path: str):
         # Try direct save first (works for local/inline videos)
         video.video.save(out_path)
     except Exception:
-        # Fallback: download from URI
+        # Fallback: download from URI with API key auth
         uri = getattr(video.video, "uri", None)
         if uri:
-            resp = _requests.get(uri, timeout=120)
+            key = os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
+            sep = "&" if "?" in uri else "?"
+            auth_uri = f"{uri}{sep}key={key}"
+            resp = _requests.get(auth_uri, timeout=120)
             resp.raise_for_status()
             with open(out_path, "wb") as f:
                 f.write(resp.content)
