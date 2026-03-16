@@ -186,12 +186,14 @@
         <div class="gen-panel">
           <h3 x-text="t('generate_video_tour')"></h3>
           <p style="font-size:.82rem;color:#666;margin-bottom:12px">
-            <span x-text="t('video_smooth_desc')"></span> <strong x-text="selectedIds.length"></strong> <span x-text="t('photos_selected')"></span>
             <template x-if="selectedIds.length === 1">
               <span x-text="t('single_photo_desc')"></span>
             </template>
-            <template x-if="selectedIds.length > 1">
-              <span><span x-text="t('multi_photo_desc_1')"></span> <span x-text="selectedIds.length"></span> <span x-text="t('multi_photo_desc_2')"></span> <span x-text="selectedIds.length - 1"></span> <span x-text="t('multi_photo_desc_3')"></span><span x-text="(selectedIds.length - 1) * 8"></span> <span x-text="t('multi_photo_desc_4')"></span></span>
+            <template x-if="selectedIds.length > 1 && selectedIds.length <= 5">
+              <span x-text="t('multi_photo_desc', {count: selectedIds.length, secs: selectedIds.length * 5})"></span>
+            </template>
+            <template x-if="selectedIds.length > 5">
+              <span x-text="t('multi_photo_capped', {count: selectedIds.length})"></span>
             </template>
           </p>
           <input type="text" :placeholder="t('property_name_opt')"

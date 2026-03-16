@@ -200,10 +200,19 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
         else:
             # Multiple photos: generate a clip from each photo
-            for i, photo_path in enumerate(photo_paths):
+            # Cap at 5 clips to avoid excessive API usage and cost
+            max_clips = 5
+            selected_paths = photo_paths[:max_clips]
+            if len(photo_paths) > max_clips:
+                # Evenly sample photos to cover the full set
+                step = len(photo_paths) / max_clips
+                selected_paths = [photo_paths[int(i * step)] for i in range(max_clips)]
+                logger.info("Sampling %d of %d photos for video generation", max_clips, len(photo_paths))
+
+            for i, photo_path in enumerate(selected_paths):
                 clip_num = i + 1
                 _update_job(job_id,
-                            progress=f"Generando clip {clip_num}/{len(photo_paths)}...")
+                            progress=f"Generando clip {clip_num}/{len(selected_paths)}...")
 
                 with open(photo_path, "rb") as f:
                     img_bytes = f.read()
@@ -215,31 +224,38 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
                 clip_prompt = _build_video_prompt(prompt, property_name)
 
-                operation = client.models.generate_videos(
-                    model="veo-3.0-generate-001",
-                    prompt=clip_prompt,
-                    image=img,
-                    config=types.GenerateVideosConfig(
-                        aspect_ratio="16:9",
-                        negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
-                    ),
-                )
+                try:
+                    operation = client.models.generate_videos(
+                        model="veo-3.0-generate-001",
+                        prompt=clip_prompt,
+                        image=img,
+                        config=types.GenerateVideosConfig(
+                            aspect_ratio="16:9",
+                            negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
+                        ),
+                    )
 
-                # Poll for completion
-                import time
-                while not operation.done:
-                    time.sleep(10)
-                    operation = client.operations.get(operation)
+                    # Poll for completion
+                    import time
+                    while not operation.done:
+                        time.sleep(10)
+                        operation = client.operations.get(operation)
+                        _update_job(job_id,
+                                    progress=f"Generando clip {clip_num}/{len(selected_paths)}... (1-3 min por clip)")
+
+                    if operation.response and operation.response.generated_videos:
+                        video = operation.response.generated_videos[0]
+                        clip_path = str(UPLOAD_DIR / "videos" / f"{job_id}_clip{i}.mp4")
+                        _save_video(video, clip_path)
+                        _trim_video(clip_path, CLIP_DURATION)
+                        clips.append(clip_path)
+                        logger.info("Clip %d/%d generated OK", clip_num, len(selected_paths))
+                    else:
+                        logger.warning("No video generated for photo %d", clip_num)
+                except Exception as clip_err:
+                    logger.error("Clip %d failed: %s", clip_num, clip_err)
                     _update_job(job_id,
-                                progress=f"Generando clip {clip_num}/{len(photo_paths)}... (1-3 min por clip)")
-
-                if operation.response and operation.response.generated_videos:
-                    video = operation.response.generated_videos[0]
-                    clip_path = str(UPLOAD_DIR / "videos" / f"{job_id}_clip{i}.mp4")
-                    _save_video(video, clip_path)
-                    clips.append(clip_path)
-                else:
-                    logger.warning("No video generated for photo %d", clip_num)
+                                progress=f"Clip {clip_num} falló, continuando...")
 
         if not clips:
             _update_job(job_id, status="error", error="No se generaron videos")
@@ -432,6 +448,29 @@ def _save_video(video, out_path: str):
                 f.write(resp.content)
         else:
             raise RuntimeError("No se pudo guardar el video generado")
+
+
+CLIP_DURATION = 5  # seconds per clip when combining multiple photos
+
+
+def _trim_video(input_path: str, duration: int = CLIP_DURATION):
+    """Trim a video to the given duration in-place using ffmpeg."""
+    import subprocess
+    trimmed = input_path + ".trimmed.mp4"
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", input_path, "-t", str(duration),
+             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+             "-an", "-movflags", "+faststart", trimmed],
+            check=True, capture_output=True, timeout=60,
+        )
+        os.replace(trimmed, input_path)
+    except Exception as e:
+        logger.warning("Trim failed, keeping original: %s", e)
+        try:
+            os.unlink(trimmed)
+        except OSError:
+            pass
 
 
 def _mime_type(path: str) -> str:
