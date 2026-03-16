@@ -160,36 +160,29 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 clips.append(out_path)
 
         else:
-            # Multiple photos: generate clips for each consecutive pair
-            for i in range(len(photo_paths) - 1):
-                pair_num = i + 1
+            # Multiple photos: generate a clip from each photo
+            for i, photo_path in enumerate(photo_paths):
+                clip_num = i + 1
                 _update_job(job_id,
-                            progress=f"Generando clip {pair_num}/{total_pairs}...")
+                            progress=f"Generando clip {clip_num}/{len(photo_paths)}...")
 
-                with open(photo_paths[i], "rb") as f:
-                    first_bytes = f.read()
-                with open(photo_paths[i + 1], "rb") as f:
-                    last_bytes = f.read()
+                with open(photo_path, "rb") as f:
+                    img_bytes = f.read()
 
-                first_image = types.Image(
-                    image_bytes=first_bytes,
-                    mime_type=_mime_type(photo_paths[i]),
-                )
-                last_image = types.Image(
-                    image_bytes=last_bytes,
-                    mime_type=_mime_type(photo_paths[i + 1]),
+                img = types.Image(
+                    image_bytes=img_bytes,
+                    mime_type=_mime_type(photo_path),
                 )
 
-                clip_prompt = prompt or f"Smooth cinematic camera transition in a property tour of {property_name}, professional real estate video, elegant and modern"
+                clip_prompt = prompt or f"Smooth cinematic camera pan in a property tour of {property_name}, professional real estate video, elegant and modern"
 
                 operation = client.models.generate_videos(
                     model="veo-2.0-generate-001",
                     prompt=clip_prompt,
-                    image=first_image,
+                    image=img,
                     config=types.GenerateVideosConfig(
                         aspect_ratio="16:9",
                         person_generation="dont_allow",
-                        last_frame=last_image,
                     ),
                 )
 
@@ -199,7 +192,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     time.sleep(10)
                     operation = client.operations.get(operation)
                     _update_job(job_id,
-                                progress=f"Generando clip {pair_num}/{total_pairs}... (1-3 min por clip)")
+                                progress=f"Generando clip {clip_num}/{len(photo_paths)}... (1-3 min por clip)")
 
                 if operation.response and operation.response.generated_videos:
                     video = operation.response.generated_videos[0]
@@ -207,7 +200,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     video.video.save(clip_path)
                     clips.append(clip_path)
                 else:
-                    logger.warning("No video generated for pair %d", pair_num)
+                    logger.warning("No video generated for photo %d", clip_num)
 
         if not clips:
             _update_job(job_id, status="error", error="No se generaron videos")
