@@ -14,6 +14,10 @@ from config import DASHBOARD_PLAN, GOOGLE_AI_API_KEY
 
 api = Blueprint("dashboard_api", __name__, url_prefix="/api/dashboard")
 
+def _get_google_ai_key() -> str:
+    # Read fresh from env to avoid stale import-time values
+    return os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
+
 
 def _require_auth(f):
     @wraps(f)
@@ -180,7 +184,7 @@ def api_media_generate_video():
             "usage": usage,
         }), 429
 
-    if not GOOGLE_AI_API_KEY:
+    if not _get_google_ai_key():
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
 
     data = request.get_json(silent=True) or {}
@@ -215,7 +219,7 @@ def api_media_generate_video():
 @_require_auth
 def api_media_generate_image():
     import media_studio
-    if not GOOGLE_AI_API_KEY:
+    if not _get_google_ai_key():
         return jsonify({"error": "GOOGLE_AI_API_KEY no configurada"}), 400
     data = request.get_json(silent=True) or {}
     prompt = data.get("prompt", "")
