@@ -40,6 +40,20 @@ MAX_PHOTO_SIZE = 10 * 1024 * 1024  # 10 MB
 _jobs: dict[str, dict] = {}
 _jobs_lock = threading.Lock()
 
+BASE_VIDEO_PROMPT = (
+    "Create a photorealistic real-estate video clip from the provided reference photo. "
+    "The reference photo is the single source of truth. "
+    "Show exactly the same room or space with the same layout, architecture, furniture, decor, materials, colors, object positions, window views, and lighting direction. "
+    "Do not add, remove, replace, restyle, or reposition anything. "
+    "Do not invent new rooms, angles, doors, windows, furniture, decorations, reflections, people, pets, text, logos, or architectural elements. "
+    "Preserve geometry perfectly: no warping, bending, stretching, morphing, or changing proportions. "
+    "Maintain frame-to-frame consistency: no flicker, flashing, exposure pulsing, color shifts, texture crawling, focus breathing, or detail instability. "
+    "Use only subtle stabilized camera motion, like a very slow dolly or pan. "
+    "No sudden movement, no jump cuts, no fast zoom, no whip pan, no dramatic parallax, no cinematic effects, no fake lens flares. "
+    "Keep natural real-estate lighting with stable brightness and stable white balance. "
+    "Output should feel like a high-end professional property video shot from the original photo, without changing the scene in any way."
+)
+
 
 def _get_client():
     """Lazy-init the Gemini client."""
@@ -48,6 +62,29 @@ def _get_client():
         raise RuntimeError("GOOGLE_AI_API_KEY no configurada")
     from google import genai
     return genai.Client(api_key=key)
+
+
+def _clean_prompt_text(text: str) -> str:
+    return " ".join((text or "").split())
+
+
+def _build_video_prompt(user_prompt: str = "", property_name: str = "") -> str:
+    prompt_parts = [BASE_VIDEO_PROMPT]
+
+    property_name = _clean_prompt_text(property_name)
+    if property_name:
+        prompt_parts.append(
+            f"The property name is '{property_name}'. Use it only as context; do not generate text overlays."
+        )
+
+    user_prompt = _clean_prompt_text(user_prompt)
+    if user_prompt:
+        prompt_parts.append(
+            "Additional preference that must never override scene fidelity or add new elements: "
+            f"{user_prompt}"
+        )
+
+    return " ".join(prompt_parts)
 
 
 # ---------------------------------------------------------------------------
@@ -136,13 +173,16 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 mime_type=_mime_type(photo_paths[0]),
             )
 
+            video_prompt = _build_video_prompt(prompt, property_name)
+
             operation = client.models.generate_videos(
                 model="veo-2.0-generate-001",
-                prompt=prompt or f"Cinematic real estate tour of {property_name}, slow smooth camera pan, professional lighting, 4K quality",
+                prompt=video_prompt,
                 image=first_image,
                 config=types.GenerateVideosConfig(
                     aspect_ratio="16:9",
                     person_generation="dont_allow",
+                    negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
                 ),
             )
 
@@ -174,7 +214,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     mime_type=_mime_type(photo_path),
                 )
 
-                clip_prompt = prompt or f"Smooth cinematic camera pan in a property tour of {property_name}, professional real estate video, elegant and modern"
+                clip_prompt = _build_video_prompt(prompt, property_name)
 
                 operation = client.models.generate_videos(
                     model="veo-2.0-generate-001",
@@ -183,6 +223,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     config=types.GenerateVideosConfig(
                         aspect_ratio="16:9",
                         person_generation="dont_allow",
+                        negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
                     ),
                 )
 
@@ -381,9 +422,8 @@ def _mime_type(path: str) -> str:
 
 
 def _concat_videos(clip_paths: list[str], output_path: str):
-    """Concatenate video clips using ffmpeg."""
+    """Concatenate video clips using ffmpeg with normalized encoding."""
     import subprocess
-    import tempfile
 
     # Write concat list
     list_path = output_path + ".list.txt"
@@ -394,7 +434,14 @@ def _concat_videos(clip_paths: list[str], output_path: str):
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
-             "-i", list_path, "-c", "copy", output_path],
+             "-i", list_path,
+             "-vf", "fps=30,format=yuv420p",
+             "-c:v", "libx264",
+             "-preset", "medium",
+             "-crf", "18",
+             "-movflags", "+faststart",
+             "-an",
+             output_path],
             check=True, capture_output=True, timeout=120,
         )
     except FileNotFoundError:
