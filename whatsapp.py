@@ -51,6 +51,7 @@ def send_message(to: str, text: str) -> bool:
         "type": "text",
         "text": {"preview_url": False, "body": text},
     }
+    resp = None
     try:
         resp = requests.post(API_URL, headers=headers, json=payload, timeout=10)
         if resp.status_code == 401:
@@ -63,7 +64,8 @@ def send_message(to: str, text: str) -> bool:
         logger.info("Message sent to %s", to)
         return True
     except requests.HTTPError as e:
-        logger.error("WhatsApp API error sending to %s: %s — %s", to, e, resp.text)
+        body = resp.text if resp is not None else "(no response)"
+        logger.error("WhatsApp API error sending to %s: %s — %s", to, e, body)
         return False
     except Exception as e:
         logger.error("Unexpected error sending to %s: %s", to, e)

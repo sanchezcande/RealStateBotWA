@@ -1,7 +1,18 @@
 import os
+import sys
 from dotenv import load_dotenv
+import pytz
 
 load_dotenv()
+
+# Timezone used across the app
+AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
+
+_REQUIRED_VARS = ["WHATSAPP_TOKEN", "PHONE_NUMBER_ID", "NOTIFY_NUMBER", "DEEPSEEK_API_KEY"]
+_missing = [v for v in _REQUIRED_VARS if not os.environ.get(v)]
+if _missing:
+    print(f"ERROR: Missing required environment variables: {', '.join(_missing)}", file=sys.stderr)
+    sys.exit(1)
 
 WHATSAPP_TOKEN = os.environ["WHATSAPP_TOKEN"]
 PHONE_NUMBER_ID = os.environ["PHONE_NUMBER_ID"]

@@ -13,13 +13,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import pytz
-
-from config import GOOGLE_AI_API_KEY, MEDIA_UPLOAD_DIR
+from config import GOOGLE_AI_API_KEY, MEDIA_UPLOAD_DIR, AR_TZ
 
 logger = logging.getLogger(__name__)
-
-AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
 
 # ---------------------------------------------------------------------------
 # Upload directory setup
@@ -473,6 +469,34 @@ def _trim_video(input_path: str, duration: int = CLIP_DURATION):
             pass
 
 
+def _normalize_video_for_concat(input_path: str):
+    """Re-encode a clip to stable concat-friendly settings."""
+    import subprocess
+
+    normalized = input_path + ".normalized.mp4"
+    try:
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", input_path,
+             "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,"
+                    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p",
+             "-r", "30",
+             "-c:v", "libx264",
+             "-preset", "medium",
+             "-crf", "18",
+             "-an",
+             "-movflags", "+faststart",
+             normalized],
+            check=True, capture_output=True, timeout=120,
+        )
+        os.replace(normalized, input_path)
+    except Exception as e:
+        logger.warning("Normalize failed, keeping original clip: %s", e)
+        try:
+            os.unlink(normalized)
+        except OSError:
+            pass
+
+
 def _mime_type(path: str) -> str:
     ext = os.path.splitext(path)[1].lower()
     return {
@@ -485,20 +509,25 @@ def _concat_videos(clip_paths: list[str], output_path: str):
     """Concatenate video clips using ffmpeg with normalized encoding."""
     import subprocess
 
+    for clip_path in clip_paths:
+        _normalize_video_for_concat(clip_path)
+
     # Write concat list
     list_path = output_path + ".list.txt"
     with open(list_path, "w") as f:
         for cp in clip_paths:
-            f.write(f"file '{cp}'\n")
+            safe_path = cp.replace("'", "'\\''")
+            f.write(f"file '{safe_path}'\n")
 
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
              "-i", list_path,
-             "-vf", "fps=30,format=yuv420p",
              "-c:v", "libx264",
              "-preset", "medium",
              "-crf", "18",
+             "-pix_fmt", "yuv420p",
+             "-r", "30",
              "-movflags", "+faststart",
              "-an",
              output_path],

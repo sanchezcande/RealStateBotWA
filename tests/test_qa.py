@@ -354,6 +354,22 @@ class TestVisitScheduler:
         mock_cancel.assert_called_once_with("evt999")
         lead = conversations.get_lead("5491112345678")
         assert "Depto X|2026-03-20|10:00" not in lead["scheduled_visits"]
+        assert lead["visit_scheduled"] is False
+
+    @patch("calendar_client.cancel_visit_event", return_value=True)
+    @patch("whatsapp.send_message", return_value=True)
+    def test_process_cancellation_without_event_id(self, mock_send, mock_cancel):
+        import visit_scheduler
+        import conversations
+        conversations.update_lead("5491112345678",
+            scheduled_visits=["Depto Y|2026-03-22|11:00"],
+            visit_events={})
+        text = '<!--cancel_visit:{"property":"Depto Y","date":"2026-03-22","time":"11:00"}-->'
+        visit_scheduler.process("5491112345678", text)
+        mock_cancel.assert_not_called()
+        lead = conversations.get_lead("5491112345678")
+        assert "Depto Y|2026-03-22|11:00" not in lead["scheduled_visits"]
+        assert lead["visit_scheduled"] is False
 
     @patch("calendar_client.create_visit_event", return_value="e1")
     @patch("whatsapp.send_message", return_value=True)
@@ -722,6 +738,45 @@ class TestEdgeCases:
         # Text type but no body
         _handle_message({"type": "text", "from": "5491112345678", "text": {}})
         # Should not raise
+    
+    @patch("app._enqueue")
+    def test_interactive_button_reply_handling(self, mock_enqueue):
+        from app import _handle_message
+        msg = {
+            "type": "interactive",
+            "from": "5491112345678",
+            "interactive": {
+                "type": "button_reply",
+                "button_reply": {"id": "yes", "title": "Sí"},
+            },
+        }
+        _handle_message(msg)
+        mock_enqueue.assert_called_once_with("5491112345678", "Sí")
+
+    @patch("app._enqueue")
+    def test_interactive_list_reply_handling(self, mock_enqueue):
+        from app import _handle_message
+        msg = {
+            "type": "interactive",
+            "from": "5491112345678",
+            "interactive": {
+                "type": "list_reply",
+                "list_reply": {"id": "opt_1", "title": "Opción 1"},
+            },
+        }
+        _handle_message(msg)
+        mock_enqueue.assert_called_once_with("5491112345678", "Opción 1")
+
+    @patch("app._enqueue")
+    def test_button_type_handling(self, mock_enqueue):
+        from app import _handle_message
+        msg = {
+            "type": "button",
+            "from": "5491112345678",
+            "button": {"text": "Quiero info"},
+        }
+        _handle_message(msg)
+        mock_enqueue.assert_called_once_with("5491112345678", "Quiero info")
 
     def test_unicode_in_extraction(self):
         from app import _extract_name

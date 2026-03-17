@@ -23,15 +23,19 @@ _store = defaultdict(lambda: {
         "visit_events": {},      # dict mapping "property|date|time" -> Google Calendar event ID
     },
     "_loaded": False,  # whether we've loaded from DB for this phone
+    "_last_access": 0,
 })
 _lock = Lock()
 
 MAX_HISTORY = 40  # messages kept per conversation (~20 exchanges)
+_MAX_CACHED = 500  # max conversations kept in memory
+_CACHE_TTL = 24 * 60 * 60  # evict after 24h of inactivity
 
 
 def _ensure_loaded(phone: str):
     """Lazy-load from DB on first access after restart. Must be called inside _lock."""
     entry = _store[phone]
+    entry["_last_access"] = _time.time()
     if entry["_loaded"]:
         return
     entry["_loaded"] = True
@@ -45,6 +49,17 @@ def _ensure_loaded(phone: str):
         for k, v in db_lead.items():
             if v is not None:
                 entry["lead"][k] = v
+    # Evict stale entries if cache is too large
+    if len(_store) > _MAX_CACHED:
+        _evict_stale()
+
+
+def _evict_stale():
+    """Remove oldest inactive conversations from cache. Must be called inside _lock."""
+    now = _time.time()
+    stale = [p for p, e in _store.items() if now - e["_last_access"] > _CACHE_TTL]
+    for p in stale:
+        del _store[p]
 
 
 def get(phone: str) -> dict:

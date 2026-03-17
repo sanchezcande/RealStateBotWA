@@ -6,13 +6,10 @@ The calendar must be shared with the service account email.
 import json
 import logging
 from datetime import datetime, timedelta, date
-import pytz
 
-from config import GOOGLE_CREDENTIALS_JSON, GOOGLE_CALENDAR_ID
+from config import GOOGLE_CREDENTIALS_JSON, GOOGLE_CALENDAR_ID, AR_TZ
 
 logger = logging.getLogger(__name__)
-
-AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
 
 
 def _get_service():

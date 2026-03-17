@@ -8,7 +8,6 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import pytz
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import analytics
@@ -16,16 +15,17 @@ import calendar_client
 import conversations
 import sheets
 import whatsapp
-from config import NOTIFY_NUMBER
+from config import NOTIFY_NUMBER, AR_TZ
 
 logger = logging.getLogger(__name__)
-
-AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
 
 VISIT_TAG_RE = re.compile(r"<!--visit:(.*?)-->", re.DOTALL)
 CANCEL_TAG_RE = re.compile(r"<!--cancel_visit:(.*?)-->", re.DOTALL)
 
-_scheduler = BackgroundScheduler(timezone=AR_TZ)
+_scheduler = BackgroundScheduler(
+    timezone=AR_TZ,
+    job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 600},
+)
 _scheduler.start()
 
 
@@ -166,15 +166,23 @@ def process(phone: str, ai_text: str) -> str:
         event_id = visit_events.get(visit_key)
         if event_id:
             success = calendar_client.cancel_visit_event(event_id)
-            if success:
-                scheduled_visits = [k for k in scheduled_visits if k != visit_key]
-                visit_events = {k: v for k, v in visit_events.items() if k != visit_key}
-                conversations.update_lead(phone, scheduled_visits=scheduled_visits, visit_events=visit_events)
-                logger.info("Visit cancelled for %s: %s", phone, visit_key)
-            else:
+            if not success:
                 logger.error("Could not delete calendar event for visit: %s", visit_key)
         else:
             logger.warning("No event_id stored for visit_key '%s' — skipping calendar delete", visit_key)
+
+        if visit_key in scheduled_visits or visit_key in visit_events:
+            scheduled_visits = [k for k in scheduled_visits if k != visit_key]
+            visit_events = {k: v for k, v in visit_events.items() if k != visit_key}
+            conversations.update_lead(
+                phone,
+                scheduled_visits=scheduled_visits,
+                visit_events=visit_events,
+                visit_scheduled=bool(scheduled_visits),
+            )
+            logger.info("Visit cancelled for %s: %s", phone, visit_key)
+        else:
+            logger.warning("Cancellation received for unknown visit_key '%s'", visit_key)
         analytics.log_event("visit_cancelled", phone, property=property_title)
         analytics.cancel_visit(phone, property_title, date_str, time_str)
         _notify_cancellation(property_title, client_name, date_str, time_str, phone=phone)
@@ -190,7 +198,7 @@ def process(phone: str, ai_text: str) -> str:
             continue
 
         visit_key = f"{property_title}|{date_str}|{time_str}"
-        if visit_key in scheduled_visits:
+        if visit_key in scheduled_visits or visit_key in visit_events:
             logger.info("Duplicate visit detected for %s, skipping: %s", phone, visit_key)
             continue
 

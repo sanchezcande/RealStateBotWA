@@ -9,7 +9,7 @@ import re
 import time
 import threading
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY
 import analytics
 import conversations
@@ -33,6 +33,11 @@ from dashboard_routes import dashboard as dashboard_bp
 from dashboard_api import api as dashboard_api_bp
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(dashboard_api_bp)
+
+# Landing page
+@app.route("/")
+def landing():
+    return render_template("landing.html")
 
 # Serve uploaded media files
 from config import MEDIA_UPLOAD_DIR
@@ -108,10 +113,44 @@ def _handle_message(msg: dict):
             return
         logger.info("Incoming message from %s: %s", phone, text)
         _enqueue(phone, text)
-    elif msg_type in ("image", "audio", "video", "document"):
+        return
+
+    if msg_type == "interactive":
+        text = _extract_interactive_text(msg)
+        if text:
+            logger.info("Incoming interactive message from %s: %s", phone, text)
+            _enqueue(phone, text)
+            return
+        logger.info("Interactive message without text from %s", phone)
+        return
+
+    if msg_type == "button":
+        text = (msg.get("button") or {}).get("text", "").strip()
+        if text:
+            logger.info("Incoming button message from %s: %s", phone, text)
+            _enqueue(phone, text)
+            return
+        logger.info("Button message without text from %s", phone)
+        return
+
+    if msg_type in ("image", "audio", "video", "document"):
         _enqueue(phone, "[archivo recibido — solo proceso texto]")
-    else:
-        logger.info("Unsupported message type '%s' from %s", msg_type, phone)
+        return
+
+    logger.info("Unsupported message type '%s' from %s", msg_type, phone)
+
+
+def _extract_interactive_text(msg: dict) -> str:
+    """Extract user-visible text from WhatsApp interactive payloads."""
+    interactive = msg.get("interactive") or {}
+    i_type = interactive.get("type")
+    if i_type == "button_reply":
+        payload = interactive.get("button_reply") or {}
+        return (payload.get("title") or payload.get("id") or "").strip()
+    if i_type == "list_reply":
+        payload = interactive.get("list_reply") or {}
+        return (payload.get("title") or payload.get("description") or payload.get("id") or "").strip()
+    return ""
 
 
 def _enqueue(phone: str, text: str):
@@ -194,77 +233,68 @@ def _extract_name(text: str):
     return None
 
 
-def _reply(phone: str, user_text: str):
+def _process_reply(identifier: str, user_text: str, channel: str, send_fn):
+    """Shared AI pipeline for all channels (WhatsApp, Facebook, Instagram)."""
     # Check if human agent has taken over this conversation
-    if conversations.is_agent_takeover(phone):
-        conversations.add_message(phone, "user", user_text, channel="whatsapp")
-        analytics.log_event("message_in", phone, channel="whatsapp")
-        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", phone)
+    if conversations.is_agent_takeover(identifier):
+        conversations.add_message(identifier, "user", user_text, channel=channel)
+        analytics.log_event("message_in", identifier, channel=channel)
+        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
         return
 
-    # Track new conversations and all incoming messages
-    is_new = len(conversations.get_messages(phone)) == 0
-    analytics.log_event("message_in", phone, channel="whatsapp")
+    is_new = len(conversations.get_messages(identifier)) == 0
+    analytics.log_event("message_in", identifier, channel=channel)
+    conversations.add_message(identifier, "user", user_text, channel=channel)
 
-    # Store user message
-    conversations.add_message(phone, "user", user_text, channel="whatsapp")
-
-    # Extract operation and property type directly from user text
+    # Extract operation, property type, and name from user text
     operation = _extract_operation(user_text)
     if operation:
-        current = conversations.get_lead(phone)
+        current = conversations.get_lead(identifier)
         if not current.get("operation"):
-            conversations.update_lead(phone, operation=operation)
-            logger.info("Operation extracted from user text for %s: %s", phone, operation)
+            conversations.update_lead(identifier, operation=operation)
+            logger.info("Operation extracted for %s: %s", identifier, operation)
 
     prop_type = _extract_property_type(user_text)
     if prop_type:
-        current = conversations.get_lead(phone)
+        current = conversations.get_lead(identifier)
         if not current.get("property_type"):
-            conversations.update_lead(phone, property_type=prop_type)
-            logger.info("Property type extracted from user text for %s: %s", phone, prop_type)
+            conversations.update_lead(identifier, property_type=prop_type)
+            logger.info("Property type extracted for %s: %s", identifier, prop_type)
 
     name = _extract_name(user_text)
     if name:
-        current = conversations.get_lead(phone)
+        current = conversations.get_lead(identifier)
         if not current.get("name"):
-            conversations.update_lead(phone, name=name)
-            logger.info("Name extracted from user text for %s: %s", phone, name)
+            conversations.update_lead(identifier, name=name)
+            logger.info("Name extracted for %s: %s", identifier, name)
 
     if is_new:
-        analytics.log_event("new_conversation", phone, channel="whatsapp",
+        analytics.log_event("new_conversation", identifier, channel=channel,
                              operation=operation, property_type=prop_type)
 
-    # Get full history for context
-    history = conversations.get_messages(phone)
-
-    # Call AI
-    lead = conversations.get_lead(phone)
+    history = conversations.get_messages(identifier)
+    lead = conversations.get_lead(identifier)
     ai_response = ai.get_reply(history, lead=lead)
 
-    # Process lead qualification (extracts hidden tag, maybe notifies agent)
-    clean_response = lead_qualifier.process(phone, ai_response, channel="whatsapp")
-
-    # Process visit scheduling (extracts visit tag, creates calendar event)
-    clean_response = visit_scheduler.process(phone, clean_response)
-
-    # Remove forbidden opening punctuation the model sometimes adds
+    clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
+    clean_response = visit_scheduler.process(identifier, clean_response)
     clean_response = clean_response.replace("¿", "").replace("¡", "")
 
     # Safety net: strip re-introduction if conversation is already in progress
-    history_after = conversations.get_messages(phone)
+    history_after = conversations.get_messages(identifier)
     if len(history_after) > 2:
         clean_response = re.sub(
             r'Hola[!.]?\s*[Ss]oy Valentina[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
             '',
-            clean_response
+            clean_response,
         ).strip()
 
-    # Store assistant reply (clean version)
-    conversations.add_message(phone, "assistant", clean_response, channel="whatsapp")
+    conversations.add_message(identifier, "assistant", clean_response, channel=channel)
+    send_fn(identifier, clean_response)
 
-    # Send reply to user
-    whatsapp.send_message(phone, clean_response)
+
+def _reply(phone: str, user_text: str):
+    _process_reply(phone, user_text, "whatsapp", whatsapp.send_message)
 
 
 # ---------------------------------------------------------------------------
@@ -296,59 +326,7 @@ def _reply_meta(sender_id: str, user_text: str, channel: str):
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
-
-    # Check if human agent has taken over this conversation
-    if conversations.is_agent_takeover(sender_id):
-        conversations.add_message(sender_id, "user", user_text, channel=channel)
-        analytics.log_event("message_in", sender_id, channel=channel)
-        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", sender_id)
-        return
-
-    is_new = len(conversations.get_messages(sender_id)) == 0
-    analytics.log_event("message_in", sender_id, channel=channel)
-
-    conversations.add_message(sender_id, "user", user_text, channel=channel)
-
-    operation = _extract_operation(user_text)
-    if operation:
-        current = conversations.get_lead(sender_id)
-        if not current.get("operation"):
-            conversations.update_lead(sender_id, operation=operation)
-
-    prop_type = _extract_property_type(user_text)
-    if prop_type:
-        current = conversations.get_lead(sender_id)
-        if not current.get("property_type"):
-            conversations.update_lead(sender_id, property_type=prop_type)
-
-    name = _extract_name(user_text)
-    if name:
-        current = conversations.get_lead(sender_id)
-        if not current.get("name"):
-            conversations.update_lead(sender_id, name=name)
-
-    if is_new:
-        analytics.log_event("new_conversation", sender_id, channel=channel,
-                             operation=operation, property_type=prop_type)
-
-    history = conversations.get_messages(sender_id)
-    lead = conversations.get_lead(sender_id)
-    ai_response = ai.get_reply(history, lead=lead)
-
-    clean_response = lead_qualifier.process(sender_id, ai_response, channel=channel)
-    clean_response = visit_scheduler.process(sender_id, clean_response)
-    clean_response = clean_response.replace("¿", "").replace("¡", "")
-
-    history_after = conversations.get_messages(sender_id)
-    if len(history_after) > 2:
-        clean_response = re.sub(
-            r'Hola[!.]?\s*[Ss]oy Valentina[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
-            '',
-            clean_response,
-        ).strip()
-
-    conversations.add_message(sender_id, "assistant", clean_response, channel=channel)
-    _send_meta_message(sender_id, clean_response)
+    _process_reply(sender_id, user_text, channel, _send_meta_message)
 
 
 @app.get("/webhook/meta")

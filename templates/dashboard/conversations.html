@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Valentina — {{ "Conversations" if request.args.get('lang') == 'en' else "Conversaciones" }}{% endblock %}
+{% block title %}PropBot — {{ "Conversations" if request.args.get('lang') == 'en' else "Conversaciones" }}{% endblock %}
 
 {% block content %}
 <div x-data="convViewer()" x-init="loadList()">

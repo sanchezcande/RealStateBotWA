@@ -12,11 +12,9 @@ import threading
 from datetime import datetime, timedelta
 from typing import Optional
 
-import pytz
+from config import AR_TZ
 
 logger = logging.getLogger(__name__)
-
-AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
 _DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
 _conn: Optional[sqlite3.Connection] = None
 _db_lock = threading.Lock()
@@ -427,11 +425,15 @@ def log_event(event_type: str, phone: str, channel: str = "whatsapp", **kwargs):
                 if event_type == "new_conversation" and kwargs.get("property_type"):
                     updates["property_type"] = kwargs["property_type"]
 
-                set_clause = ", ".join(f"{k} = ?" for k in updates)
-                conn.execute(
-                    f"UPDATE conversations SET {set_clause} WHERE phone_hash = ?",
-                    (*updates.values(), phone_hash),
-                )
+                _ALLOWED_CONV_COLS = {"last_seen_at", "message_count", "became_lead",
+                                     "visit_count", "operation", "property_type"}
+                safe_updates = {k: v for k, v in updates.items() if k in _ALLOWED_CONV_COLS}
+                if safe_updates:
+                    set_clause = ", ".join(f"{k} = ?" for k in safe_updates)
+                    conn.execute(
+                        f"UPDATE conversations SET {set_clause} WHERE phone_hash = ?",
+                        (*safe_updates.values(), phone_hash),
+                    )
 
     except Exception as e:
         logger.error("analytics.log_event error (%s): %s", event_type, e)

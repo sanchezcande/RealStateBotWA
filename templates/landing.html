@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropBot — Automatizá las consultas de tu inmobiliaria con IA</title>
+<meta name="description" content="Bot inteligente que responde consultas de ventas y alquileres por WhatsApp, Facebook e Instagram leyendo tu Google Sheet o Excel. Activo 24/7, sin código.">
+<meta name="keywords" content="bot inmobiliaria, bot whatsapp propiedades, automatización inmobiliaria, chatbot real estate, responder consultas inmobiliaria, bot google sheets propiedades">
+<meta property="og:title" content="PropBot — Automatizá las consultas de tu inmobiliaria con IA">
+<meta property="og:description" content="Bot inteligente que responde consultas de ventas y alquileres por WhatsApp, Facebook e Instagram. Activo 24/7, sin código.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2392400E'/><stop offset='1' stop-color='%23D97706'/></linearGradient></defs><rect width='44' height='44' rx='13' fill='url(%23g)'/><path d='M12 30V16l10-5 10 5v14' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M18 30v-8h8v8' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M12 30h20' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="/static/css/landing.css">
+</head>
+<body>
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
+<header class="pb-header">
+  <div class="pb-logo-wrap">
+    <div class="pb-logo-icon">
+      <div class="pb-logo-square">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="26" height="26">
+          <path d="M3 21V7l9-4 9 4v14"/><path d="M9 21V11h6v10"/><path d="M3 21h18"/>
+        </svg>
+      </div>
+      <div class="pb-logo-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+          <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>
+          <path d="M9.5 14a5 5 0 0 0 5 0"/>
+        </svg>
+      </div>
+    </div>
+    <span class="pb-logo-text"><span class="w">Prop</span><span class="y">Bot</span></span>
+  </div>
+  <a href="https://wa.me/5491123485638" target="_blank" rel="noopener noreferrer" class="pb-header-cta">
+    <i class="fa-brands fa-whatsapp"></i> Consultar
+  </a>
+</header>
+
+<!-- ═══ HERO ═════════════════════════════════════════════════════════ -->
+<section class="pb-hero">
+  <div class="pb-hero-pattern"></div>
+  <div class="pb-hero-orb1"></div>
+  <div class="pb-hero-orb2"></div>
+  <div class="pb-hero-inner">
+    <div class="pb-hero-pills">
+      <div class="pb-hero-pill" style="border:1px solid rgba(37,211,102,.25);color:#25D366">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+      </div>
+      <div class="pb-hero-pill" style="border:1px solid rgba(0,132,255,.25);color:#0084FF">
+        <i class="fa-brands fa-facebook-messenger"></i> Messenger
+      </div>
+      <div class="pb-hero-pill" style="border:1px solid rgba(225,48,108,.25);color:#E1306C">
+        <i class="fa-brands fa-instagram"></i> Instagram
+      </div>
+    </div>
+    <h1>Cada consulta sin responder es <span class="shimmer-text">una venta que se pierde</span></h1>
+    <p class="pb-hero-sub">
+      PropBot responde por WhatsApp, Instagram y Facebook en <strong>menos de 5 segundos</strong> — ventas, alquileres, agendado de visitas — las 24 horas, sin que tu equipo mueva un dedo.
+    </p>
+    <div class="pb-hero-ctas">
+      <a href="#contacto" class="pb-hero-cta-primary">
+        <i class="fa-solid fa-bolt"></i> Quiero el bot — gratis los primeros 14 días
+      </a>
+      <a href="#como-funciona" class="pb-hero-cta-secondary">Ver cómo funciona</a>
+    </div>
+    <div class="pb-hero-metrics">
+      <div style="text-align:center"><div class="pb-hero-metric-num">&lt; 5s</div><div class="pb-hero-metric-label">Primera respuesta</div></div>
+      <div style="text-align:center"><div class="pb-hero-metric-num">24/7</div><div class="pb-hero-metric-label">Todos los días del año</div></div>
+      <div style="text-align:center"><div class="pb-hero-metric-num">0</div><div class="pb-hero-metric-label">Leads sin contestar</div></div>
+      <div style="text-align:center"><div class="pb-hero-metric-num">48hs</div><div class="pb-hero-metric-label">Setup incluido</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TRUST BAR ═══════════════════════════════════════════════════ -->
+<div class="pb-trust">
+  <div class="pb-trust-item"><span>✅</span> Sin contratos</div>
+  <div class="pb-trust-item"><span>🔄</span> Cancelás cuando querés</div>
+  <div class="pb-trust-item"><span>⚡</span> Setup en 48hs</div>
+  <div class="pb-trust-item"><span>🛡️</span> Garantía 30 días</div>
+  <div class="pb-trust-item"><span>🏢</span> +127 inmobiliarias activas</div>
+</div>
+
+<!-- ═══ COSTO DE NO RESPONDER ═══════════════════════════════════════ -->
+<section class="pb-cost">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:rgba(239,68,68,.1);color:#EF4444">El costo de no responder</span>
+    </div>
+    <h2 class="section-title anim-card">Cada hora de silencio le cuesta ventas a tu inmobiliaria</h2>
+    <p class="section-sub">Los clientes no esperan. Si no respondés en minutos, ya están hablando con la competencia.</p>
+    <div class="pb-cost-grid">
+      <div class="anim-card feature-card pb-cost-card" style="border:1px solid rgba(239,68,68,.12);border-top:4px solid #EF4444">
+        <div style="font-size:2.2rem;margin-bottom:.6rem">⏱️</div>
+        <div style="font-size:2.8rem;font-weight:900;color:#EF4444;line-height:1;margin-bottom:.4rem">78%</div>
+        <div style="font-size:1rem;font-weight:700;color:#1F2937;margin-bottom:.75rem">elige a quien responde primero</div>
+        <div style="font-size:.9rem;color:#6B7280;line-height:1.65">De los compradores y locatarios que contactan por chat, casi 8 de 10 terminan eligiendo la inmobiliaria que respondió más rápido.</div>
+      </div>
+      <div class="anim-card feature-card pb-cost-card" style="border:1px solid rgba(245,158,11,.12);border-top:4px solid #F59E0B">
+        <div style="font-size:2.2rem;margin-bottom:.6rem">💨</div>
+        <div style="font-size:2.8rem;font-weight:900;color:#F59E0B;line-height:1;margin-bottom:.4rem">8 min</div>
+        <div style="font-size:1rem;font-weight:700;color:#1F2937;margin-bottom:.75rem">es lo que esperan antes de irse</div>
+        <div style="font-size:.9rem;color:#6B7280;line-height:1.65">Después de 8 minutos sin respuesta, la mayoría abandona la conversación y busca otra opción. Para siempre.</div>
+      </div>
+      <div class="anim-card feature-card pb-cost-card" style="border:1px solid rgba(139,92,246,.12);border-top:4px solid #8B5CF6">
+        <div style="font-size:2.2rem;margin-bottom:.6rem">🔁</div>
+        <div style="font-size:2.8rem;font-weight:900;color:#8B5CF6;line-height:1;margin-bottom:.4rem">3hs</div>
+        <div style="font-size:1rem;font-weight:700;color:#1F2937;margin-bottom:.75rem">por día en respuestas repetidas</div>
+        <div style="font-size:.9rem;color:#6B7280;line-height:1.65">Tu equipo pasa horas respondiendo "tiene cochera", "cuántos ambientes", "cuál es el precio". PropBot lo hace en 5 segundos.</div>
+      </div>
+    </div>
+    <div class="anim-card pb-cost-banner">
+      <div>
+        <div style="font-size:1.2rem;font-weight:800;color:#fff;margin-bottom:.4rem">PropBot responde en menos de 5 segundos. Siempre.</div>
+        <div style="font-size:.92rem;color:rgba(255,255,255,.6)">A las 3 AM del domingo, en feriados, mientras tu equipo está en una visita.</div>
+      </div>
+      <a href="#contacto" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.85rem 2rem;border-radius:999px;font-weight:700;font-size:.95rem;white-space:nowrap;flex-shrink:0;box-shadow:0 6px 20px rgba(217,119,6,.4);display:inline-flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-bolt"></i> Quiero el bot ahora
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ DEMO CONVERSACIONES ═════════════════════════════════════════ -->
+<section class="pb-demo">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Demo en vivo</span>
+    </div>
+    <h2 class="section-title anim-card" style="text-align:center">Así responde el bot a tus clientes</h2>
+    <p class="section-sub">Seleccioná la plataforma y mirá cómo se ve una conversación real</p>
+    <div class="pb-tabs">
+      <button class="pb-tab active" data-tab="whatsapp" style="border-color:#25D366;background:#25D366;color:#fff;box-shadow:0 6px 20px rgba(37,211,102,.25)">
+        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+      </button>
+      <button class="pb-tab" data-tab="messenger">
+        <i class="fa-brands fa-facebook-messenger"></i> Messenger
+      </button>
+      <button class="pb-tab" data-tab="instagram">
+        <i class="fa-brands fa-instagram"></i> Instagram
+      </button>
+    </div>
+    <div class="anim-card pb-chat-window">
+      <div class="pb-chat-header" id="chat-header" style="background:linear-gradient(135deg,#128C7E,#25D366)">
+        <div class="pb-chat-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div>
+          <div style="font-weight:700;font-size:.95rem">PropBot · Tu Inmobiliaria</div>
+          <div style="font-size:.75rem;opacity:.85;display:flex;align-items:center;gap:4px">
+            <span class="pb-chat-status"></span> En línea · Responde al instante
+          </div>
+        </div>
+        <div style="margin-left:auto;font-size:1.4rem;opacity:.9">
+          <i class="fa-brands fa-whatsapp" id="chat-platform-icon"></i>
+        </div>
+      </div>
+      <div class="pb-chat-messages" id="chat-messages"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CÓMO FUNCIONA ═══════════════════════════════════════════════ -->
+<section id="como-funciona" class="pb-steps">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Proceso simple</span>
+    </div>
+    <h2 class="section-title anim-card">De tu planilla a tus clientes en 4 pasos</h2>
+    <p class="section-sub">Sin código, sin complicaciones. Solo conectás y el bot empieza a trabajar.</p>
+    <div class="pb-steps-grid">
+      <div class="anim-card step-card pb-step-card" style="border:2px solid rgba(217,119,6,.12)">
+        <div class="pb-step-num" style="color:rgba(217,119,6,.08)">01</div>
+        <div class="pb-step-icon" style="background:rgba(217,119,6,.08);color:#D97706"><i class="fa-solid fa-table"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Completás nuestra plantilla</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.6">Te mandamos nuestra plantilla de Google Sheets ya armada. La completás con tus propiedades e incluís el link a la carpeta de Drive con las fotos de cada una.</p>
+      </div>
+      <div class="anim-card step-card pb-step-card" style="border:2px solid rgba(59,130,246,.12)">
+        <div class="pb-step-num" style="color:rgba(59,130,246,.08)">02</div>
+        <div class="pb-step-icon" style="background:rgba(59,130,246,.08);color:#3B82F6"><i class="fa-solid fa-robot"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Configuramos el bot</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.6">Conectamos el bot a tu WhatsApp Business, página de Facebook e Instagram. Lo personalizamos con el tono de tu inmobiliaria.</p>
+      </div>
+      <div class="anim-card step-card pb-step-card" style="border:2px solid rgba(16,185,129,.12)">
+        <div class="pb-step-num" style="color:rgba(16,185,129,.08)">03</div>
+        <div class="pb-step-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-bolt"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Live en 48 hs</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.6">En 48 horas el bot está activo recibiendo y respondiendo consultas. Hacemos pruebas con vos antes de activar para asegurarnos que todo funcione perfecto.</p>
+      </div>
+      <div class="anim-card step-card pb-step-card" style="border:2px solid rgba(139,92,246,.12)">
+        <div class="pb-step-num" style="color:rgba(139,92,246,.08)">04</div>
+        <div class="pb-step-icon" style="background:rgba(139,92,246,.08);color:#8B5CF6"><i class="fa-solid fa-chart-line"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Medís resultados</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.6">Dashboard con métricas de consultas recibidas, propiedades más buscadas, horarios pico y tasa de conversión a visitas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FORMATO DE PLANILLA ═════════════════════════════════════════ -->
+<section class="pb-sheet">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:rgba(15,157,88,.15);color:#0F9D58">Google Sheets / Excel</span>
+    </div>
+    <h2 class="section-title light anim-card">Tu plantilla, lista para completar</h2>
+    <p class="section-sub light">Te damos la plantilla con todas las columnas armadas. Solo la completás con tus propiedades y agregás el link de Drive con las fotos de cada una.</p>
+    <div class="anim-card pb-sheet-table">
+      <div class="pb-sheet-header">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="#0F9D58"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/><path d="M19 3h-4v2h2v2h2V3zm-14 0v4h2V5h2V3H5zm0 16h4v-2H7v-2H5v4zm14-4h-2v2h-2v2h4v-4z" opacity=".5"/></svg>
+        <span style="font-size:.88rem;font-weight:600;color:rgba(255,255,255,.85)">Propiedades_inmobiliaria.xlsx — Hoja 1</span>
+      </div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Columna</th>
+              <th>Ejemplo</th>
+              <th>Qué hace el bot con esto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>titulo</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">Casa familiar con jardín</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Título descriptivo de la propiedad</td></tr>
+            <tr><td><code>precio_usd</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">120000 / 500</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Precio en USD (venta) o mensual (alquiler)</td></tr>
+            <tr><td><code>tipo_operacion</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">venta / alquiler</td><td style="color:rgba(255,255,255,.5);line-height:1.5">El bot filtra por esta columna</td></tr>
+            <tr><td><code>tipo_propiedad</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">casa / departamento / chalet…</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Tipo de inmueble</td></tr>
+            <tr><td><code>barrio</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">Palermo / Centro</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Zona de búsqueda del cliente</td></tr>
+            <tr><td><code>ambientes / dormitorios / banos</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">3 / 2 / 1</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Filtros numéricos automáticos</td></tr>
+            <tr><td><code>cochera / pileta / balcon…</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">sí / no</td><td style="color:rgba(255,255,255,.5);line-height:1.5">+15 características reconocidas</td></tr>
+            <tr><td><code>fotos_drive</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">drive.google.com/carpeta/…</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Link de carpeta de Drive con las fotos de esa propiedad. El bot las envía al cliente automáticamente.</td></tr>
+            <tr><td><code>horarios_visita</code></td><td style="color:rgba(255,255,255,.65);white-space:nowrap">Lunes 9-12, Sáb 10-13</td><td style="color:rgba(255,255,255,.5);line-height:1.5">Incluidos en la respuesta del bot</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:1.5rem;color:rgba(255,255,255,.5);font-size:.88rem">
+      Pedí la plantilla gratis. <a href="#contacto" style="color:#FCD34D;text-decoration:underline">La recibís lista para completar</a> con todas las columnas, incluida la de fotos en Drive.
+    </p>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ════════════════════════════════════════════════════ -->
+<section class="pb-features">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Funcionalidades</span>
+    </div>
+    <h2 class="section-title anim-card">Todo lo que el bot hace por vos</h2>
+    <p class="section-sub">Diseñado específicamente para el negocio inmobiliario argentino.</p>
+    <div class="pb-features-grid">
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(15,157,88,.08);color:#0F9D58">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="#0F9D58"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/></svg>
+        </div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Completás nuestra plantilla</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Te damos la plantilla de Google Sheets ya armada con todas las columnas. Solo la completás con tus propiedades y ponés el link de la carpeta de Drive con las fotos de cada una.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(217,119,6,.08);color:#D97706"><i class="fa-solid fa-filter"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Filtros inteligentes por consulta</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Si el cliente dice "busco depto 2 amb con balcón en alquiler en Palermo", el bot filtra tipo_operacion, tipo_propiedad, ambientes, balcon y barrio en tiempo real.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(59,130,246,.08);color:#3B82F6"><i class="fa-solid fa-sync"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Actualización en tiempo real</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Modificás la planilla y el bot ya tiene los datos nuevos. Agregás una propiedad a la mañana y al mediodía ya aparece en las respuestas. Sin reinicios.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(139,92,246,.08);color:#8B5CF6"><i class="fa-solid fa-mobile-alt"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Tres canales, un solo bot</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">El mismo bot atiende WhatsApp Business, Facebook Messenger e Instagram DMs simultáneamente. Un solo setup, tres canales activos.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(245,158,11,.08);color:#F59E0B"><i class="fa-solid fa-clock"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Atención 24/7 sin descanso</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Consultas a las 2 AM del domingo? El bot responde igual. Con los horarios de visita de cada propiedad incluidos en la respuesta automáticamente.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-shield-alt"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Escala a humano cuando hace falta</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Cuando el cliente quiere cerrar trato, el bot transfiere la conversación al asesor disponible con todo el contexto de la consulta ya registrado.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MOTOR DE BÚSQUEDA INTELIGENTE ══════════════════════════════ -->
+<section class="pb-search">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#EDE9FE;color:#8B5CF6">Motor de búsqueda inteligente</span>
+    </div>
+    <h2 class="section-title anim-card">El bot entiende lenguaje natural</h2>
+    <p class="section-sub">No necesita comandos exactos. Interpreta cómo habla la gente.</p>
+    <div class="pb-search-grid">
+      <div class="anim-card feature-card pb-search-card">
+        <div class="pb-search-query" style="border-left:3px solid #25D366">
+          <i class="fa-solid fa-comments" style="color:#25D366;margin-right:6px"></i>
+          "busco depto 2 amb con balcón en alquiler en Palermo"
+        </div>
+        <div style="font-size:.78rem;color:#6B7280;margin-bottom:.5rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Filtros aplicados automáticamente:</div>
+        <div class="pb-search-filters">
+          <span class="pb-search-filter" style="background:rgba(37,211,102,.07);color:#25D366;border:1px solid rgba(37,211,102,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_operacion: alquiler</span>
+          <span class="pb-search-filter" style="background:rgba(37,211,102,.07);color:#25D366;border:1px solid rgba(37,211,102,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_propiedad: departamento</span>
+          <span class="pb-search-filter" style="background:rgba(37,211,102,.07);color:#25D366;border:1px solid rgba(37,211,102,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> ambientes: 2</span>
+          <span class="pb-search-filter" style="background:rgba(37,211,102,.07);color:#25D366;border:1px solid rgba(37,211,102,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> balcon: sí</span>
+          <span class="pb-search-filter" style="background:rgba(37,211,102,.07);color:#25D366;border:1px solid rgba(37,211,102,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> barrio: Palermo</span>
+        </div>
+      </div>
+      <div class="anim-card feature-card pb-search-card">
+        <div class="pb-search-query" style="border-left:3px solid #0084FF">
+          <i class="fa-solid fa-comments" style="color:#0084FF;margin-right:6px"></i>
+          "quiero comprar casa con pileta, máximo 200 mil dólares"
+        </div>
+        <div style="font-size:.78rem;color:#6B7280;margin-bottom:.5rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Filtros aplicados automáticamente:</div>
+        <div class="pb-search-filters">
+          <span class="pb-search-filter" style="background:rgba(0,132,255,.07);color:#0084FF;border:1px solid rgba(0,132,255,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_operacion: venta</span>
+          <span class="pb-search-filter" style="background:rgba(0,132,255,.07);color:#0084FF;border:1px solid rgba(0,132,255,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_propiedad: casa</span>
+          <span class="pb-search-filter" style="background:rgba(0,132,255,.07);color:#0084FF;border:1px solid rgba(0,132,255,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> pileta: sí</span>
+          <span class="pb-search-filter" style="background:rgba(0,132,255,.07);color:#0084FF;border:1px solid rgba(0,132,255,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> precio_usd: ≤ 200000</span>
+        </div>
+      </div>
+      <div class="anim-card feature-card pb-search-card">
+        <div class="pb-search-query" style="border-left:3px solid #E1306C">
+          <i class="fa-solid fa-comments" style="color:#E1306C;margin-right:6px"></i>
+          "local comercial en microcentro para alquilar"
+        </div>
+        <div style="font-size:.78rem;color:#6B7280;margin-bottom:.5rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Filtros aplicados automáticamente:</div>
+        <div class="pb-search-filters">
+          <span class="pb-search-filter" style="background:rgba(225,48,108,.07);color:#E1306C;border:1px solid rgba(225,48,108,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_operacion: alquiler</span>
+          <span class="pb-search-filter" style="background:rgba(225,48,108,.07);color:#E1306C;border:1px solid rgba(225,48,108,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> tipo_propiedad: local</span>
+          <span class="pb-search-filter" style="background:rgba(225,48,108,.07);color:#E1306C;border:1px solid rgba(225,48,108,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> barrio: Microcentro</span>
+        </div>
+      </div>
+      <div class="anim-card feature-card pb-search-card">
+        <div class="pb-search-query" style="border-left:3px solid #D97706">
+          <i class="fa-solid fa-comments" style="color:#D97706;margin-right:6px"></i>
+          "3 dormitorios, suite, cochera, apto crédito"
+        </div>
+        <div style="font-size:.78rem;color:#6B7280;margin-bottom:.5rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Filtros aplicados automáticamente:</div>
+        <div class="pb-search-filters">
+          <span class="pb-search-filter" style="background:rgba(217,119,6,.07);color:#D97706;border:1px solid rgba(217,119,6,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> dormitorios: 3</span>
+          <span class="pb-search-filter" style="background:rgba(217,119,6,.07);color:#D97706;border:1px solid rgba(217,119,6,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> suite: sí</span>
+          <span class="pb-search-filter" style="background:rgba(217,119,6,.07);color:#D97706;border:1px solid rgba(217,119,6,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> cochera: sí</span>
+          <span class="pb-search-filter" style="background:rgba(217,119,6,.07);color:#D97706;border:1px solid rgba(217,119,6,.19)"><i class="fa-solid fa-circle-check" style="font-size:.7rem"></i> apto_credito: sí</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ TESTIMONIOS ═════════════════════════════════════════════════ -->
+<section class="pb-testimonials">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:rgba(217,119,6,.15);color:#D97706">Testimonios</span>
+    </div>
+    <h2 class="section-title light anim-card">Lo que dicen las inmobiliarias que ya lo usan</h2>
+    <div class="pb-testimonials-grid">
+      <div class="anim-card pb-testimonial">
+        <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Antes perdíamos consultas de WhatsApp los fines de semana. Desde que tenemos el bot, cada mensaje tiene respuesta inmediata y los clientes ya van pre-filtrados cuando llaman.</p>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+        </div>
+        <div style="font-weight:700;color:#fff;font-size:.92rem">Marcela Gómez</div>
+        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Dueña, Inmobiliaria del Norte</div>
+      </div>
+      <div class="anim-card pb-testimonial">
+        <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">La planilla ya la teníamos en Google Sheets. En dos días el bot estaba andando. El 40% de nuestras visitas ahora vienen del chat automático de Instagram.</p>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+        </div>
+        <div style="font-weight:700;color:#fff;font-size:.92rem">Roberto Peralta</div>
+        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Gerente comercial, PropiedadesYA</div>
+      </div>
+      <div class="anim-card pb-testimonial">
+        <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Lo que más nos sorprendió es que el bot entiende cuando alguien pregunta "algo con patio para un perro" y filtra las propiedades con patio trasero. Es como tener un asesor más.</p>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+          <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
+        </div>
+        <div style="font-weight:700;color:#fff;font-size:.92rem">Daniela Rizzo</div>
+        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Directora, Grupo Rizzo Inmuebles</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMPARACIÓN ═════════════════════════════════════════════════ -->
+<section class="pb-compare">
+  <div style="max-width:860px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">PropBot vs. la alternativa</span>
+    </div>
+    <h2 class="section-title anim-card">¿Cuánto cuesta atender redes con una persona?</h2>
+    <p class="section-sub">Antes de ver los precios, mirá la comparación real.</p>
+    <div class="anim-card pb-compare-table">
+      <div class="pb-compare-row">
+        <div style="padding:1.1rem 1.5rem;background:#F9FAFB;border-bottom:2px solid #E5E7EB">
+          <span style="font-size:.8rem;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.06em">Característica</span>
+        </div>
+        <div style="padding:1.1rem 1.5rem;background:#FEF2F2;border-bottom:2px solid #FECACA;text-align:center">
+          <div style="font-size:.88rem;font-weight:700;color:#DC2626">❌ Sin bot</div>
+          <div style="font-size:.72rem;color:#9CA3AF">Asesor de redes</div>
+        </div>
+        <div style="padding:1.1rem 1.5rem;background:linear-gradient(135deg,#D97706,#F59E0B);border-bottom:2px solid #D97706;text-align:center">
+          <div style="font-size:.88rem;font-weight:700;color:#fff">✅ PropBot</div>
+          <div style="font-size:.72rem;color:rgba(255,255,255,.8)">Automatizado</div>
+        </div>
+      </div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Horario de atención</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">8hs × 5 días</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">24 / 7 · 365 días</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Tiempo de 1ª respuesta</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">15–60 minutos</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">&lt; 5 segundos</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Canales cubiertos</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">1 (difícil cubrir 3)</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">WhatsApp + IG + FB</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Tiempo libre del equipo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">0 — todos atentos al chat</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">3+ horas/día recuperadas</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Feriados y fines de semana</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Sin cobertura</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Funciona igual</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Escala a humano</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Siempre manual</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático con contexto</div></div>
+      <div class="pb-compare-row" style="border-bottom:none"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Vacaciones / bajas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Para todo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">No aplica</div></div>
+    </div>
+    <p style="text-align:center;margin-top:1.2rem;font-size:.82rem;color:#9CA3AF">* Estimación para Argentina 2025. PropBot no tiene aportes, aguinaldo ni vacaciones.</p>
+  </div>
+</section>
+
+<!-- ═══ PRECIOS ═════════════════════════════════════════════════════ -->
+<section class="pb-pricing">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Paquetes</span>
+    </div>
+    <h2 class="section-title anim-card">Tres paquetes, un precio a medida</h2>
+    <p class="section-sub">Cada inmobiliaria es distinta. Agendá una llamada y te armamos la propuesta según tu volumen de consultas y canales.</p>
+    <div class="anim-card pb-pricing-guarantees">
+      <div class="pb-guarantee"><span>🛡️</span> Garantía 30 días o te devolvemos el dinero</div>
+      <div class="pb-guarantee"><span>⚡</span> 14 días gratis para probar</div>
+      <div class="pb-guarantee"><span>🔓</span> Sin contratos, cancelás cuando querés</div>
+    </div>
+    <div class="pb-plans">
+      <!-- Starter -->
+      <div class="anim-card price-card pb-plan" style="background:#fff;border:2px solid rgba(0,0,0,.07);box-shadow:0 4px 20px rgba(0,0,0,.07)">
+        <div style="margin-bottom:1.2rem">
+          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.5rem">Starter</h3>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(37,211,102,.09);border:1px solid rgba(37,211,102,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#25D366">
+            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+          </div>
+        </div>
+        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">El bot, punto. Para inmobiliarias que quieren automatizar consultas sin complicarse.</p>
+        <div style="margin-bottom:1.8rem;flex-grow:1">
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Bot 24/7 por WhatsApp Business</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Responde consultas y filtra propiedades</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Agenda visitas automáticamente</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Escala a humano con contexto completo</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Plantilla de Google Sheets incluida</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Setup completo en 48hs</div>
+        </div>
+        <a href="#contacto" class="pb-plan-cta" style="background:rgba(37,211,102,.08);border:2px solid rgba(37,211,102,.25);color:#25D366">
+          <i class="fa-solid fa-comments"></i> Agenda una llamada
+        </a>
+      </div>
+      <!-- Pro -->
+      <div class="anim-card price-card pb-plan" style="background:linear-gradient(155deg,#1a2a1a 0%,#0d1f0d 100%);border:2px solid #8B5CF6;box-shadow:0 12px 40px rgba(139,92,246,.2)">
+        <div class="pb-plan-badge" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);box-shadow:0 4px 15px rgba(139,92,246,.4)">⭐ Más elegido</div>
+        <div style="margin-bottom:1.2rem">
+          <h3 style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:.5rem">Pro</h3>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,.09);border:1px solid rgba(139,92,246,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#8B5CF6">
+            <i class="fa-brands fa-whatsapp"></i><i class="fa-brands fa-instagram"></i><i class="fa-brands fa-facebook-messenger"></i> WhatsApp + Instagram + Facebook
+          </div>
+        </div>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.65);margin-bottom:1.5rem;line-height:1.6">Los tres canales activos más el dashboard para entender qué está pasando con tus leads.</p>
+        <div style="margin-bottom:1.8rem;flex-grow:1">
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Starter</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Instagram Direct integrado</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Facebook Messenger integrado</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Dashboard: consultas, propiedades más buscadas y horarios pico</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Tasa de conversión consulta → visita</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Múltiples sucursales / planillas</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Soporte prioritario</div>
+        </div>
+        <a href="#contacto" class="pb-plan-cta" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.4)">
+          <i class="fa-solid fa-comments"></i> Agenda una llamada
+        </a>
+      </div>
+      <!-- Premium -->
+      <div class="anim-card price-card pb-plan" style="background:#fff;border:2px solid rgba(0,0,0,.07);box-shadow:0 4px 20px rgba(0,0,0,.07)">
+        <div class="pb-plan-badge" style="background:linear-gradient(135deg,#D97706,#F59E0B);box-shadow:0 4px 15px rgba(217,119,6,.4)">✨ Completo</div>
+        <div style="margin-bottom:1.2rem">
+          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.5rem">Premium</h3>
+          <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(217,119,6,.09);border:1px solid rgba(217,119,6,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#D97706">
+            🎬 Pro + Analytics + Video IA
+          </div>
+        </div>
+        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">Para inmobiliarias que quieren tomar decisiones con datos y contenido generado automáticamente.</p>
+        <div style="margin-bottom:1.8rem;flex-grow:1">
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Pro</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Analytics avanzadas: leads calificados, tiempo hasta cierre, comparativa por período</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Exportación de reportes PDF / CSV</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> 4 videos de propiedades/mes generados con IA</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Fotos + música + texto automáticos listos para publicar</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Ideal para desarrolladoras y carteras grandes</div>
+        </div>
+        <a href="#contacto" class="pb-plan-cta" style="background:rgba(217,119,6,.08);border:2px solid rgba(217,119,6,.25);color:#D97706">
+          <i class="fa-solid fa-comments"></i> Agenda una llamada
+        </a>
+      </div>
+    </div>
+    <!-- Video IA note -->
+    <div class="anim-card pb-video-note">
+      <span style="font-size:1.8rem">🎬</span>
+      <div>
+        <div style="font-weight:700;color:#2B2B2B;font-size:.95rem;margin-bottom:2px">Premium incluye 4 videos de propiedades por mes generados con IA</div>
+        <div style="font-size:.85rem;color:#6B7280">Fotos de la planilla + música + texto → video listo para Instagram y Facebook. Videos adicionales disponibles por unidad.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ VIDEO IA DEMO ═══════════════════════════════════════════════ -->
+<section class="pb-video">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Premium · Video IA</span>
+    </div>
+    <h2 class="section-title anim-card">De fotos de la planilla a video listo para redes</h2>
+    <p class="section-sub">El bot toma las fotos de cada propiedad, aplica efectos cinematográficos, suma música y texto automático. Resultado: un video profesional para Instagram y Facebook sin editar nada.</p>
+    <div class="anim-card pb-video-grid">
+      <div>
+        <div class="pb-video-step">
+          <div class="pb-video-step-num">1</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#2B2B2B;margin-bottom:2px">📸 Link de fotos en Drive</div>
+            <div style="font-size:.86rem;color:#6B7280;line-height:1.55">En la columna fotos_drive de la plantilla ponés el link de la carpeta de Drive con las fotos de esa propiedad.</div>
+          </div>
+        </div>
+        <div class="pb-video-step">
+          <div class="pb-video-step-num">2</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#2B2B2B;margin-bottom:2px">🤖 IA aplica Ken Burns + texto</div>
+            <div style="font-size:.86rem;color:#6B7280;line-height:1.55">Cada foto recibe zoom, paneo y texto descriptivo generado automáticamente: título, precio, barrio, características clave.</div>
+          </div>
+        </div>
+        <div class="pb-video-step">
+          <div class="pb-video-step-num">3</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#2B2B2B;margin-bottom:2px">🎵 Música de fondo automática</div>
+            <div style="font-size:.86rem;color:#6B7280;line-height:1.55">Selección de música ambiente según el tipo de propiedad: moderna para departamentos, cálida para casas de familia.</div>
+          </div>
+        </div>
+        <div class="pb-video-step">
+          <div class="pb-video-step-num">4</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#2B2B2B;margin-bottom:2px">📲 Video listo en minutos</div>
+            <div style="font-size:.86rem;color:#6B7280;line-height:1.55">Formato vertical (Reels/Stories) u horizontal (Feed). Listo para publicar directamente desde el bot.</div>
+          </div>
+        </div>
+        <div style="background:#F8FAFC;border-radius:12px;padding:1rem 1.2rem;border:1px solid rgba(217,119,6,.2);font-size:.88rem;color:#4B5563;line-height:1.6">
+          <span style="font-weight:700;color:#2B2B2B">Plan Premium incluye 4 videos/mes.</span> Videos adicionales disponibles por unidad. Sin límite de fotos por propiedad.
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:1rem">
+        <div class="pb-video-phone" id="video-phone"></div>
+        <div class="pb-video-progress" id="video-progress">
+          <div class="pb-video-progress-bar" id="video-progress-bar" style="width:0%"></div>
+        </div>
+        <button class="pb-video-play" id="video-play-btn">▶ Ver demo del video</button>
+        <p style="font-size:.78rem;color:#9CA3AF;text-align:center;max-width:280px;line-height:1.5;margin:0">
+          Demo simulada. El video real se genera con las fotos de tu planilla y se entrega listo para publicar.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FAQ ═════════════════════════════════════════════════════════ -->
+<section class="pb-faq">
+  <div style="max-width:780px;margin:0 auto">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:#FEF3C7;color:#D97706">Preguntas frecuentes</span>
+    </div>
+    <h2 class="section-title anim-card">Respuestas a las dudas más comunes</h2>
+    <div style="margin-top:2rem">
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Necesito saber programar para usarlo?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Para nada. Vos manejás la planilla de Google Sheets como siempre. Nosotros nos encargamos de toda la parte técnica: conexión, configuración y mantenimiento del bot.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Cómo cargo mis propiedades?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Nosotros te damos la plantilla de Google Sheets ya armada con todas las columnas. Vos la completás con tus propiedades, ponés el link a la carpeta de Drive con las fotos de cada una, y listo. Sin adaptar nada ni migrar datos.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Qué pasa si el cliente hace una pregunta muy específica que el bot no entiende?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">El bot detecta cuando no puede resolver la consulta y transfiere al asesor humano con un resumen de lo que el cliente buscó. No deja a nadie sin respuesta.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Cuánto tarda la implementación?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Generalmente 48-72 horas desde que nos pasás la planilla y damos acceso a los canales. Incluye pruebas y ajustes antes del lanzamiento.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Puedo tener varias sucursales con sus propias planillas?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Sí, el plan Pro y Enterprise soportan múltiples planillas. El bot puede segmentar las propiedades por sucursal y responder según la fuente de la consulta.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Qué pasa si agrego o saco propiedades de la planilla?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Los cambios se reflejan automáticamente. El bot lee la planilla en tiempo real, por lo que no necesitás notificarnos ni hacer ninguna actualización manual del sistema.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACTO / CALENDLY ════════════════════════════════════════ -->
+<section id="contacto" class="pb-contact">
+  <div class="pb-contact-orb"></div>
+  <div style="position:relative;z-index:2;max-width:1100px;margin:0 auto">
+    <div style="text-align:center;margin-bottom:3rem">
+      <span class="badge" style="background:rgba(217,119,6,.2);color:#D97706">Reservá tu lugar</span>
+      <h2 style="font-size:clamp(1.9rem,4vw,2.6rem);font-weight:900;margin-top:.6rem;margin-bottom:.8rem;line-height:1.2;color:#fff">Agendá una llamada de 15 minutos</h2>
+      <p style="color:rgba(255,255,255,.65);max-width:480px;margin:0 auto;line-height:1.7;font-size:1rem">Te mostramos el bot en vivo con propiedades reales y te armamos la propuesta según tu volumen de consultas.</p>
+    </div>
+    <div class="pb-contact-grid">
+      <div>
+        <div style="font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-bottom:1.2rem">En 15 minutos vas a ver</div>
+        <div class="pb-contact-bullet"><span style="font-size:1.2rem;flex-shrink:0;line-height:1">🤖</span><span style="font-size:.88rem;color:rgba(255,255,255,.78);line-height:1.5">El bot respondiendo consultas en vivo con propiedades reales</span></div>
+        <div class="pb-contact-bullet"><span style="font-size:1.2rem;flex-shrink:0;line-height:1">📊</span><span style="font-size:.88rem;color:rgba(255,255,255,.78);line-height:1.5">Cómo se integra con tu Google Sheet o la plantilla que te damos</span></div>
+        <div class="pb-contact-bullet"><span style="font-size:1.2rem;flex-shrink:0;line-height:1">⚡</span><span style="font-size:.88rem;color:rgba(255,255,255,.78);line-height:1.5">El proceso de setup de 48hs explicado paso a paso</span></div>
+        <div class="pb-contact-bullet"><span style="font-size:1.2rem;flex-shrink:0;line-height:1">💰</span><span style="font-size:.88rem;color:rgba(255,255,255,.78);line-height:1.5">Precio final según tu cantidad de canales y propiedades</span></div>
+        <div class="pb-contact-bullet"><span style="font-size:1.2rem;flex-shrink:0;line-height:1">🛡️</span><span style="font-size:.88rem;color:rgba(255,255,255,.78);line-height:1.5">Garantía 30 días — si no te convence, te devolvemos el dinero</span></div>
+        <div style="margin-top:1.5rem;padding:1rem;background:rgba(217,119,6,.12);border:1px solid rgba(217,119,6,.3);border-radius:10px;font-size:.85rem;color:#FCD34D;line-height:1.5">
+          🔒 Sin compromiso. Si no es para vos, no hay problema.
+        </div>
+      </div>
+      <div class="pb-calendly-wrap">
+        <div class="pb-calendly-loader" id="calendly-loader">
+          <div class="pb-calendly-spinner"></div>
+          <span style="color:#9CA3AF;font-size:.88rem">Cargando calendario…</span>
+        </div>
+        <div id="calendly-widget" class="calendly-inline-widget" data-url="https://calendly.com/sanchezgcandelaria/15min?hide_event_type_details=1&hide_gdpr_banner=1&text_color=0f172a&primary_color=d97706" style="min-width:100%;height:630px"></div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:2rem">
+      <a href="https://calendly.com/sanchezgcandelaria/15min" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:8px;font-size:.85rem;color:rgba(255,255,255,.45);text-decoration:underline">
+        ¿No carga el calendario? Abrilo acá →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STICKY CTA BAR ═════════════════════════════════════════════ -->
+<div class="pb-sticky">
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font-size:1.4rem">⚡</span>
+    <div>
+      <div style="font-size:.88rem;font-weight:700;color:#fff;line-height:1.3">14 días gratis · Setup en 48hs · Garantía 30 días</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5)">Respondé cada consulta en menos de 5 segundos</div>
+    </div>
+  </div>
+  <a href="#contacto" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.7rem 2rem;border-radius:999px;font-weight:700;font-size:.9rem;white-space:nowrap;box-shadow:0 4px 16px rgba(217,119,6,.45);display:inline-flex;align-items:center;gap:7px">
+    <i class="fa-solid fa-bolt"></i> Empezar gratis
+  </a>
+</div>
+
+<!-- ═══ SCROLL TO TOP ══════════════════════════════════════════════ -->
+<button class="pb-scroll-top" aria-label="Volver arriba">
+  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+</button>
+
+<!-- ═══ WA FLOTANTE ════════════════════════════════════════════════ -->
+<a href="https://wa.me/5491123485638" target="_blank" rel="noopener noreferrer" class="pb-wa-float" aria-label="Escribinos por WhatsApp">
+  <i class="fa-brands fa-whatsapp" style="color:#fff;font-size:1.7rem"></i>
+</a>
+
+<!-- ═══ FOOTER ═════════════════════════════════════════════════════ -->
+<footer class="pb-footer">
+  <div class="pb-footer-logo">
+    <div class="pb-footer-icon">
+      <div class="pb-footer-square">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <path d="M3 21V7l9-4 9 4v14"/><path d="M9 21V11h6v10"/><path d="M3 21h18"/>
+        </svg>
+      </div>
+      <div class="pb-footer-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+          <path d="M18 4a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3h-5l-5 3v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3z"/>
+          <path d="M9.5 14a5 5 0 0 0 5 0"/>
+        </svg>
+      </div>
+    </div>
+    <span class="pb-footer-text"><span style="color:#fff">Prop</span><span style="color:#FCD34D">Bot</span></span>
+  </div>
+  <p style="color:rgba(255,255,255,.3);font-size:.78rem;margin:0">© 2025 PropBot · Todos los derechos reservados.</p>
+</footer>
+
+<!-- ═══ SCRIPTS ════════════════════════════════════════════════════ -->
+<script src="https://assets.calendly.com/assets/external/widget.js" async onload="if(window.onCalendlyLoad)window.onCalendlyLoad()"></script>
+<script src="/static/js/landing.js"></script>
+</body>
+</html>

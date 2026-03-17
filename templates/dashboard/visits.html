@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Valentina — {{ "Visits" if request.args.get('lang') == 'en' else "Visitas" }}{% endblock %}
+{% block title %}PropBot — {{ "Visits" if request.args.get('lang') == 'en' else "Visitas" }}{% endblock %}
 
 {% block content %}
 <div x-data="visitsView()" x-init="load()">
