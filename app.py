@@ -284,7 +284,7 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn):
     history_after = conversations.get_messages(identifier)
     if len(history_after) > 2:
         clean_response = re.sub(
-            r'Hola[!.]?\s*[Ss]oy Valentina[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
+            r'Hola[!.]?\s*[Ss]oy Vera[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
             '',
             clean_response,
         ).strip()
@@ -458,11 +458,11 @@ def health_deepseek():
         return jsonify({"status": "error", "error": str(e)}), 503
 
 
-@app.post("/admin/run-valentina")
-def run_valentina_tests():
+@app.post("/admin/run-vera")
+def run_vera_tests():
     """
-    Run Valentina stress tests (manual, protected).
-    Requires VALENTINA_RUN_TOKEN env var and matching Bearer token.
+    Run Vera stress tests (manual, protected).
+    Requires VERA_RUN_TOKEN env var and matching Bearer token.
     """
     import os
     import sys
@@ -472,11 +472,11 @@ def run_valentina_tests():
     import time as _time
 
     # simple in-memory job store (ephemeral)
-    if not hasattr(app, "_valentina_jobs"):
-        app._valentina_jobs = {}
-        app._valentina_jobs_lock = threading.Lock()
+    if not hasattr(app, "_vera_jobs"):
+        app._vera_jobs = {}
+        app._vera_jobs_lock = threading.Lock()
 
-    expected = os.environ.get("VALENTINA_RUN_TOKEN", "")
+    expected = os.environ.get("VERA_RUN_TOKEN", "")
     auth = request.headers.get("Authorization", "")
     if not expected or auth != f"Bearer {expected}":
         return jsonify({"error": "unauthorized"}), 403
@@ -487,7 +487,7 @@ def run_valentina_tests():
         return jsonify({"error": "invalid category"}), 400
 
     job_id = uuid.uuid4().hex
-    cmd = [sys.executable, "test_valentina.py", category]
+    cmd = [sys.executable, "test_vera.py", category]
 
     def _run_job():
         started = _time.time()
@@ -510,20 +510,20 @@ def run_valentina_tests():
         except subprocess.TimeoutExpired:
             payload = {"status": "error", "error": "timeout", "elapsed": round(_time.time() - started, 2)}
 
-        with app._valentina_jobs_lock:
-            app._valentina_jobs[job_id] = payload
+        with app._vera_jobs_lock:
+            app._vera_jobs[job_id] = payload
 
-    with app._valentina_jobs_lock:
-        app._valentina_jobs[job_id] = {"status": "running"}
+    with app._vera_jobs_lock:
+        app._vera_jobs[job_id] = {"status": "running"}
 
     threading.Thread(target=_run_job, daemon=True).start()
     return jsonify({"status": "accepted", "job_id": job_id}), 202
 
 
-@app.get("/admin/run-valentina/status")
-def run_valentina_status():
+@app.get("/admin/run-vera/status")
+def run_vera_status():
     import os
-    expected = os.environ.get("VALENTINA_RUN_TOKEN", "")
+    expected = os.environ.get("VERA_RUN_TOKEN", "")
     auth = request.headers.get("Authorization", "")
     if not expected or auth != f"Bearer {expected}":
         return jsonify({"error": "unauthorized"}), 403
@@ -531,10 +531,10 @@ def run_valentina_status():
     job_id = request.args.get("job_id", "")
     if not job_id:
         return jsonify({"error": "missing job_id"}), 400
-    if not hasattr(app, "_valentina_jobs"):
+    if not hasattr(app, "_vera_jobs"):
         return jsonify({"error": "not_found"}), 404
-    with app._valentina_jobs_lock:
-        payload = app._valentina_jobs.get(job_id)
+    with app._vera_jobs_lock:
+        payload = app._vera_jobs.get(job_id)
     if not payload:
         return jsonify({"error": "not_found"}), 404
     return jsonify(payload), 200

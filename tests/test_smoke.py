@@ -65,7 +65,7 @@ class TestLiveDashboard:
             "token": DASHBOARD_TOKEN,
         }, timeout=10)
         assert resp.status_code == 200
-        assert "Valentina" in resp.text
+        assert "Vera" in resp.text
 
     def test_dashboard_rejects_no_token(self):
         resp = requests.get(f"{BOT_URL}/dashboard", timeout=10)

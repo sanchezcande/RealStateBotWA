@@ -124,11 +124,11 @@ class TestConversations:
     def test_add_and_get_messages(self):
         import conversations
         conversations.add_message("5491112345678", "user", "hola")
-        conversations.add_message("5491112345678", "assistant", "Hola! Soy Valentina")
+        conversations.add_message("5491112345678", "assistant", "Hola! Soy Vera")
         msgs = conversations.get_messages("5491112345678")
         assert len(msgs) == 2
         assert msgs[0]["role"] == "user"
-        assert msgs[1]["content"] == "Hola! Soy Valentina"
+        assert msgs[1]["content"] == "Hola! Soy Vera"
 
     def test_max_history_trimming(self):
         import conversations
@@ -496,7 +496,7 @@ class TestDashboard:
     def test_dashboard_valid_token(self, flask_client):
         resp = flask_client.get("/dashboard", query_string={"token": "test-dashboard-token"})
         assert resp.status_code == 200
-        assert b"Valentina" in resp.data
+        assert b"Vera" in resp.data
 
     def test_dashboard_invalid_days_defaults(self, flask_client):
         resp = flask_client.get("/dashboard", query_string={
@@ -823,7 +823,7 @@ class TestEdgeCases:
             _processed_mids.clear()
 
     @patch("whatsapp.send_message", return_value=True)
-    @patch("ai.get_reply", return_value="Hola! Soy Valentina, con quien hablo?")
+    @patch("ai.get_reply", return_value="Hola! Soy Vera, con quien hablo?")
     def test_full_reply_pipeline(self, mock_ai, mock_send):
         """Integration: full _reply pipeline without external calls."""
         from app import _reply
@@ -838,20 +838,20 @@ class TestEdgeCases:
         assert lead["property_type"] == "departamento"
 
     @patch("whatsapp.send_message", return_value=True)
-    @patch("ai.get_reply", return_value="Hola! Soy Valentina, con quien hablo?")
+    @patch("ai.get_reply", return_value="Hola! Soy Vera, con quien hablo?")
     def test_reply_strips_reintro_on_existing_conversation(self, mock_ai, mock_send):
         """After initial exchange, re-introduction should be stripped."""
         from app import _reply
         import conversations
         # Simulate existing conversation
         conversations.add_message("5491112345678", "user", "hola")
-        conversations.add_message("5491112345678", "assistant", "Hola! Soy Valentina, con quién hablo?")
+        conversations.add_message("5491112345678", "assistant", "Hola! Soy Vera, con quién hablo?")
         # Now AI re-introduces (should be stripped)
-        mock_ai.return_value = "Hola! Soy Valentina, con quién hablo? Como te puedo ayudar?"
+        mock_ai.return_value = "Hola! Soy Vera, con quién hablo? Como te puedo ayudar?"
         _reply("5491112345678", "me llamo Juan")
         msgs = conversations.get_messages("5491112345678")
         last_msg = msgs[-1]["content"]
-        assert "Soy Valentina" not in last_msg
+        assert "Soy Vera" not in last_msg
 
     def test_visit_incomplete_data_skipped(self):
         """Visit with missing date or time should be skipped."""

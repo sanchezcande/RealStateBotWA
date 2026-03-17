@@ -16,27 +16,27 @@ document.addEventListener("DOMContentLoaded", function () {
   const conversations = {
     whatsapp: [
       { type: "user", text: "Hola! Busco un departamento en alquiler en el centro, 2 ambientes, con balcón." },
-      { type: "bot", text: "¡Hola! 👋 Encontré 3 propiedades que coinciden con tu búsqueda en Centro. Acá va la primera:" },
+      { type: "bot", text: "Hola! Con quién hablo? Encontré 3 propiedades que coinciden con lo que buscás en Centro. Te paso la primera:" },
       { type: "card", icon: "fa-building", titulo: "Depto 2 amb con balcón", precio: "USD 550/mes", tags: ["2 amb", "Balcón", "Piso 5"], direccion: "Rivadavia 2340, Centro" },
-      { type: "bot", text: "¿Querés que te mande más opciones o te interesa agendar una visita? Los horarios disponibles son: martes a jueves 10-13 y 15-18. 📅" },
-      { type: "user", text: "Sí, me interesa! ¿Tiene cochera?" },
-      { type: "bot", text: "Sí tiene cochera incluida 🚗. Las fotos completas están acá: drive.google.com/… ¿Confirmamos turno?" },
+      { type: "bot", text: "Tiene balcón al frente, piso 5 con mucha luz. Los horarios de visita son martes a jueves 10-13 y 15-18. Te interesa agendar?" },
+      { type: "user", text: "Sí, me interesa! Soy Martín. Tiene cochera?" },
+      { type: "bot", text: "Dale Martín, sí tiene cochera incluida en el precio. Te mando las fotos: drive.google.com/… Qué día te viene bien para la visita?" },
     ],
     messenger: [
       { type: "user", text: "Buenas, busco casa en venta con pileta y quincho, presupuesto hasta USD 250.000." },
-      { type: "bot", text: "¡Buenas! 🏠 Tengo exactamente lo que buscás. Mirá estas opciones que encontré en la base:" },
+      { type: "bot", text: "Buenas! Con quién tengo el gusto? Tengo opciones que te van a gustar. Mirá esta:" },
       { type: "card", icon: "fa-home", titulo: "Casa con pileta y quincho", precio: "USD 220.000", tags: ["5 amb", "Pileta", "Quincho", "350 m²"], direccion: "Bello Horizonte" },
-      { type: "bot", text: "Esta propiedad tiene pileta, quincho, jardín, 4 dormitorios y 3 baños. Acepta crédito hipotecario ✅. ¿Te envío las fotos y más detalles?" },
+      { type: "bot", text: "Tiene pileta, quincho, jardín, 4 dormitorios y 3 baños. Acepta crédito hipotecario. Te paso las fotos y más detalles?" },
       { type: "user", text: "Perfecto, sí mándame todo." },
-      { type: "bot", text: "📸 Fotos: drive.google.com/… \n📍 Dirección completa: Estados Unidos 5314\n📞 Para coordinar visita: miércoles 10-13 o viernes 10-13. ¿Cuál te viene mejor?" },
+      { type: "bot", text: "Ahí van las fotos: drive.google.com/…\nDirección: Estados Unidos 5314. Para visitar se puede miércoles 10-13 o viernes 10-13, cuál te queda mejor?" },
     ],
     instagram: [
-      { type: "user", text: "Hola! Vi el post del chalet en barrio privado. ¿Cuánto sale?" },
-      { type: "bot", text: "¡Hola! 🏡 El chalet en Las Golondrinas está a USD 310.000. Es un emprendimiento a estrenar con:" },
+      { type: "user", text: "Hola! Vi el post del chalet en barrio privado. Cuánto sale?" },
+      { type: "bot", text: "Hola! El chalet en Las Golondrinas está a USD 310.000. Es a estrenar, te cuento:" },
       { type: "card", icon: "fa-key", titulo: "Chalet en barrio privado", precio: "USD 310.000", tags: ["5 amb", "500 m²", "Seguridad 24hs", "A estrenar"], direccion: "Ecuador 9999 · Las Golondrinas" },
-      { type: "bot", text: "Incluye: 4 dormitorios, 3 baños, pileta, quincho, jardín y cochera 🌟. Barrio privado con seguridad 24hs. ¿Querés que un asesor te contacte?" },
+      { type: "bot", text: "Tiene 4 dormitorios, 3 baños, pileta, quincho, jardín y cochera doble. Barrio privado con seguridad 24hs. Querés que un asesor te contacte?" },
       { type: "user", text: "Sí por favor, soy de otra provincia y no puedo ir pronto." },
-      { type: "bot", text: "Sin problema 😊 Te conecto con el asesor para una videollamada. Dejame tu número y te escribimos por WhatsApp para coordinar. 📱" },
+      { type: "bot", text: "Sin problema, te conecto con el asesor para una videollamada. Pasame tu número y te escribimos por WhatsApp para coordinar." },
     ],
   };
 

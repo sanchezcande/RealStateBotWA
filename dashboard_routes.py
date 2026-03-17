@@ -224,7 +224,7 @@ def export_csv():
         "mensajes", "lead_calificado", "visitas", "operacion", "tipo_propiedad",
     ])
     writer.writerows(rows)
-    branch_slug = BRANCH_NAME.lower().replace(" ", "_") if BRANCH_NAME else "valentina"
+    branch_slug = BRANCH_NAME.lower().replace(" ", "_") if BRANCH_NAME else "vera"
     filename = f"{branch_slug}_leads_{days}d.csv"
     return output.getvalue(), 200, {
         "Content-Type": "text/csv; charset=utf-8",

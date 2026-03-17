@@ -20,8 +20,9 @@ def test_build_video_prompt_enforces_fidelity_rules():
 
 
 @patch("media_studio._normalize_video_for_concat")
+@patch("os.unlink")
 @patch("subprocess.run")
-def test_concat_videos_reencodes_instead_of_stream_copy(mock_run, mock_normalize, tmp_path):
+def test_concat_videos_reencodes_instead_of_stream_copy(mock_run, mock_unlink, mock_normalize, tmp_path):
     from media_studio import _concat_videos
 
     clip_a = tmp_path / "a.mp4"
@@ -33,7 +34,11 @@ def test_concat_videos_reencodes_instead_of_stream_copy(mock_run, mock_normalize
     _concat_videos([str(clip_a), str(clip_b)], str(out))
 
     cmd = mock_run.call_args.args[0]
+    list_path = str(out) + ".list.txt"
+    list_contents = (tmp_path / "out.mp4.list.txt").read_text()
+
     assert mock_normalize.call_count == 2
+    assert mock_unlink.called
     assert "-c:v" in cmd
     assert "libx264" in cmd
     assert "-pix_fmt" in cmd
@@ -41,6 +46,9 @@ def test_concat_videos_reencodes_instead_of_stream_copy(mock_run, mock_normalize
     assert "-r" in cmd
     assert "30" in cmd
     assert "-c" not in cmd
+    assert list_path in cmd
+    assert str(clip_a.resolve()) in list_contents
+    assert str(clip_b.resolve()) in list_contents
 
 
 @patch("media_studio._normalize_video_for_concat")

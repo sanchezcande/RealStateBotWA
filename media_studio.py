@@ -573,7 +573,8 @@ def _concat_videos(clip_paths: list[str], output_path: str):
     list_path = output_path + ".list.txt"
     with open(list_path, "w") as f:
         for cp in clip_paths:
-            safe_path = cp.replace("'", "'\\''")
+            abs_path = str(Path(cp).resolve())
+            safe_path = abs_path.replace("'", "'\\''")
             f.write(f"file '{safe_path}'\n")
 
     try:
