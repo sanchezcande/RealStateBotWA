@@ -56,3 +56,65 @@ def test_concat_videos_raises_if_ffmpeg_missing(mock_run, mock_normalize, tmp_pa
 
     with pytest.raises(RuntimeError, match="ffmpeg no esta instalado"):
         _concat_videos([str(clip_a), str(clip_b)], str(out))
+
+
+def test_generate_video_task_errors_when_not_all_clips_are_generated(tmp_path):
+    import media_studio
+
+    photo_a = tmp_path / "a.jpg"
+    photo_b = tmp_path / "b.jpg"
+    photo_a.write_bytes(b"a")
+    photo_b.write_bytes(b"b")
+
+    statuses = []
+
+    class FakeImage:
+        def __init__(self, image_bytes=None, mime_type=None):
+            self.image_bytes = image_bytes
+            self.mime_type = mime_type
+
+    class FakeTypes:
+        Image = FakeImage
+
+        class GenerateVideosConfig:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+    class FakeOperation:
+        def __init__(self, has_video):
+            self.done = True
+            self.response = type(
+                "Resp",
+                (),
+                {"generated_videos": [object()] if has_video else []},
+            )()
+
+    class FakeModels:
+        def __init__(self):
+            self.calls = 0
+
+        def generate_videos(self, **kwargs):
+            self.calls += 1
+            return FakeOperation(has_video=self.calls == 1)
+
+    class FakeClient:
+        def __init__(self):
+            self.models = FakeModels()
+
+    def record_update(job_id, **kwargs):
+        statuses.append(kwargs)
+
+    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
+         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
+         patch.object(media_studio, "_update_job", side_effect=record_update), \
+         patch.object(media_studio, "_save_video"), \
+         patch.object(media_studio, "_trim_video"):
+        media_studio._generate_video_task(
+            "job123",
+            [str(photo_a), str(photo_b)],
+            prompt="",
+            property_name="",
+        )
+
+    assert statuses[-1]["status"] == "error"
+    assert "No se guardo un video parcial" in statuses[-1]["error"]

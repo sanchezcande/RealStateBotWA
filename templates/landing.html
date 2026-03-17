@@ -60,7 +60,7 @@
     </div>
     <h1>Cada consulta sin responder es <span class="shimmer-text">una venta que se pierde</span></h1>
     <p class="pb-hero-sub">
-      PropBot responde por WhatsApp, Instagram y Facebook en <strong>menos de 5 segundos</strong> — ventas, alquileres, agendado de visitas — las 24 horas, sin que tu equipo mueva un dedo.
+      PropBot responde consultas de ventas y alquileres, filtra propiedades, agenda visitas y califica leads por WhatsApp, Instagram y Facebook en <strong>menos de 5 segundos</strong> — las 24 horas, sin que tu equipo mueva un dedo.
     </p>
     <div class="pb-hero-ctas">
       <a href="#contacto" class="pb-hero-cta-primary">
@@ -71,7 +71,7 @@
     <div class="pb-hero-metrics">
       <div style="text-align:center"><div class="pb-hero-metric-num">&lt; 5s</div><div class="pb-hero-metric-label">Primera respuesta</div></div>
       <div style="text-align:center"><div class="pb-hero-metric-num">24/7</div><div class="pb-hero-metric-label">Todos los días del año</div></div>
-      <div style="text-align:center"><div class="pb-hero-metric-num">0</div><div class="pb-hero-metric-label">Leads sin contestar</div></div>
+      <div style="text-align:center"><div class="pb-hero-metric-num">+3hs</div><div class="pb-hero-metric-label">Que tu equipo recupera por día</div></div>
       <div style="text-align:center"><div class="pb-hero-metric-num">48hs</div><div class="pb-hero-metric-label">Setup incluido</div></div>
     </div>
   </div>
@@ -252,11 +252,9 @@
     <p class="section-sub">Diseñado específicamente para el negocio inmobiliario argentino.</p>
     <div class="pb-features-grid">
       <div class="anim-card feature-card pb-feature-card">
-        <div class="pb-feature-icon" style="background:rgba(15,157,88,.08);color:#0F9D58">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="#0F9D58"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/></svg>
-        </div>
-        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Completás nuestra plantilla</h3>
-        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Te damos la plantilla de Google Sheets ya armada con todas las columnas. Solo la completás con tus propiedades y ponés el link de la carpeta de Drive con las fotos de cada una.</p>
+        <div class="pb-feature-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-calendar-check"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Agenda visitas con Google Calendar</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">El bot propone horarios disponibles, crea el evento en Google Calendar y manda recordatorio al asesor 1 hora antes. Si el cliente cancela, borra el evento solo.</p>
       </div>
       <div class="anim-card feature-card pb-feature-card">
         <div class="pb-feature-icon" style="background:rgba(217,119,6,.08);color:#D97706"><i class="fa-solid fa-filter"></i></div>
@@ -282,6 +280,21 @@
         <div class="pb-feature-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-shield-alt"></i></div>
         <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Escala a humano cuando hace falta</h3>
         <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Cuando el cliente quiere cerrar trato, el bot transfiere la conversación al asesor disponible con todo el contexto de la consulta ya registrado.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(239,68,68,.08);color:#EF4444"><i class="fa-brands fa-whatsapp"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Lead calificado → alerta al asesor</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Cuando el bot detecta presupuesto, operación y timeline, manda un WhatsApp al asesor con el resumen completo del lead. Sin que nadie revise nada.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(59,130,246,.08);color:#3B82F6"><i class="fa-solid fa-reply"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Respondé vos desde el panel</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Desde el dashboard podés leer la conversación completa y responder directamente. El bot se pausa 30 minutos para que el asesor cierre la venta.</p>
+      </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(139,92,246,.08);color:#8B5CF6"><i class="fa-solid fa-language"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Español e inglés automático</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Si el cliente escribe en inglés, el bot responde en inglés. Ideal para turistas, inversores extranjeros y expats que buscan propiedades en Argentina.</p>
       </div>
     </div>
   </div>
@@ -352,6 +365,55 @@
   </div>
 </section>
 
+<!-- ═══ DASHBOARD PREVIEW ═══════════════════════════════════════════ -->
+<section style="background:linear-gradient(135deg,#0B1A3E 0%,#0D2252 50%,#0B1A3E 100%);padding:4.5rem 2rem;color:#fff;position:relative;overflow:hidden">
+  <div style="position:absolute;top:20%;right:10%;width:300px;height:300px;background:radial-gradient(circle,rgba(217,119,6,.12) 0%,transparent 65%);filter:blur(50px);pointer-events:none"></div>
+  <div style="max-width:1100px;margin:0 auto;position:relative;z-index:2">
+    <div class="anim-card" style="text-align:center">
+      <span class="badge" style="background:rgba(217,119,6,.2);color:#D97706">Panel de control</span>
+    </div>
+    <h2 class="section-title light anim-card">Todo lo que pasa con tus leads, en un solo lugar</h2>
+    <p class="section-sub light">No es solo un bot. Es un sistema completo para que tu equipo sepa qué está pasando sin preguntar.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.2rem;margin-top:2rem">
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">📊</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Métricas en tiempo real</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Consultas por día, horarios pico, propiedades más buscadas, tasa de conversión consulta → visita, comparativa por período.</p>
+      </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">💬</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Historial de conversaciones</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Leé cada conversación completa, filtrá por canal o estado, buscá por nombre o teléfono. Respondé directo desde el panel.</p>
+      </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">👤</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Base de leads calificados</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Nombre, presupuesto, operación, timeline, canal de contacto. Ordenable, filtrable, exportable a CSV.</p>
+      </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">📅</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Calendario de visitas</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Vista de calendario con todas las visitas programadas. Confirmadas, canceladas y completadas. Sincronizado con Google Calendar.</p>
+      </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">🎬</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Media Studio con IA</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Generá videos tour e imágenes de marketing para tus propiedades directamente desde el panel. Subís fotos y la IA hace el resto.</p>
+      </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">📥</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Reportes exportables</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Exportá leads y métricas en CSV. Imprimí reportes en PDF para reuniones de equipo o para mostrarle resultados a tu dueño.</p>
+      </div>
+    </div>
+    <div class="anim-card" style="text-align:center;margin-top:2.5rem">
+      <a href="#contacto" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.85rem 2.2rem;border-radius:999px;font-weight:700;font-size:.95rem;box-shadow:0 6px 20px rgba(217,119,6,.4);display:inline-flex;align-items:center;gap:8px">
+        <i class="fa-solid fa-bolt"></i> Quiero verlo en acción
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ TESTIMONIOS ═════════════════════════════════════════════════ -->
 <section class="pb-testimonials">
   <div style="max-width:1100px;margin:0 auto">
@@ -362,7 +424,7 @@
     <div class="pb-testimonials-grid">
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
-        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Antes perdíamos consultas de WhatsApp los fines de semana. Desde que tenemos el bot, cada mensaje tiene respuesta inmediata y los clientes ya van pre-filtrados cuando llaman.</p>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Antes perdíamos el 60% de las consultas de fin de semana. El primer mes con PropBot agendamos 23 visitas que antes se perdían. Los clientes llegan pre-filtrados y el asesor solo cierra.</p>
         <div style="display:flex;gap:3px;margin-bottom:.75rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
@@ -375,7 +437,7 @@
       </div>
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
-        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">La planilla ya la teníamos en Google Sheets. En dos días el bot estaba andando. El 40% de nuestras visitas ahora vienen del chat automático de Instagram.</p>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">La planilla ya la teníamos en Google Sheets. En dos días estaba andando. Ahora el 40% de nuestras visitas vienen del bot, y el equipo comercial recuperó 3 horas por día que gastaba contestando "cuántos ambientes tiene".</p>
         <div style="display:flex;gap:3px;margin-bottom:.75rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
@@ -388,7 +450,7 @@
       </div>
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
-        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Lo que más nos sorprendió es que el bot entiende cuando alguien pregunta "algo con patio para un perro" y filtra las propiedades con patio trasero. Es como tener un asesor más.</p>
+        <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Lo que más nos sorprendió es que el bot entiende cuando alguien pregunta "algo con patio para un perro" y filtra las propiedades correctas. Tasa de respuesta del 100% vs. el 45% que teníamos antes. Es como tener un asesor que nunca falta.</p>
         <div style="display:flex;gap:3px;margin-bottom:.75rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
@@ -431,9 +493,19 @@
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Tiempo libre del equipo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">0 — todos atentos al chat</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">3+ horas/día recuperadas</div></div>
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Feriados y fines de semana</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Sin cobertura</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Funciona igual</div></div>
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Escala a humano</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Siempre manual</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático con contexto</div></div>
-      <div class="pb-compare-row" style="border-bottom:none"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Vacaciones / bajas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Para todo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">No aplica</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Vacaciones / bajas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Para todo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">No aplica</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Agendado de visitas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Manual, ida y vuelta</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático + Calendar + recordatorio</div></div>
+      <div class="pb-compare-row" style="border-bottom:none"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Leads calificados</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Depende de quién atienda</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático + alerta WhatsApp al asesor</div></div>
     </div>
     <p style="text-align:center;margin-top:1.2rem;font-size:.82rem;color:#9CA3AF">* Estimación para Argentina 2025. PropBot no tiene aportes, aguinaldo ni vacaciones.</p>
+  </div>
+</section>
+
+<!-- ═══ RESULTADO CONCRETO ═══════════════════════════════════════════ -->
+<section style="background:#FEF3C7;padding:2.5rem 2rem;border-top:2px solid rgba(217,119,6,.2);border-bottom:2px solid rgba(217,119,6,.2)">
+  <div style="max-width:900px;margin:0 auto;text-align:center">
+    <div style="font-size:1.3rem;font-weight:800;color:#92400E;margin-bottom:.6rem">Mientras leés esto, tu competencia ya respondió 3 consultas</div>
+    <p style="font-size:.95rem;color:#78350F;line-height:1.65;max-width:650px;margin:0 auto">Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar. Los primeros 14 días son gratis.</p>
   </div>
 </section>
 
@@ -617,6 +689,22 @@
         <div class="pb-faq-q"><span>¿Qué pasa si agrego o saco propiedades de la planilla?</span><span class="pb-faq-toggle">+</span></div>
         <div class="pb-faq-a">Los cambios se reflejan automáticamente. El bot lee la planilla en tiempo real, por lo que no necesitás notificarnos ni hacer ninguna actualización manual del sistema.</div>
       </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Puedo ver las conversaciones que tiene el bot con mis clientes?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Sí. Desde el dashboard ves cada conversación completa, con todo el historial de mensajes. Además podés responder directamente desde ahí: el bot se pausa y vos tomás el control.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Funciona con mi WhatsApp Business actual?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Sí. Conectamos el bot a tu cuenta de WhatsApp Business existente a través de la API oficial de Meta. No perdés tu número ni tus contactos. Los mensajes manuales siguen funcionando normalmente.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Cómo me entero cuando un cliente está listo para cerrar?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">Cuando el bot detecta que un lead está calificado (tiene presupuesto, operación y timeline definidos), te manda un WhatsApp al instante con el resumen completo. También te avisa cuando un cliente agenda una visita y te manda un recordatorio 1 hora antes.</div>
+      </div>
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿El bot responde solo en español?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">No. Si el cliente escribe en inglés, el bot responde en inglés automáticamente. Ideal si tenés consultas de turistas, inversores extranjeros o expats buscando propiedades en Argentina.</div>
+      </div>
     </div>
   </div>
 </section>
@@ -700,7 +788,7 @@
     </div>
     <span class="pb-footer-text"><span style="color:#fff">Prop</span><span style="color:#FCD34D">Bot</span></span>
   </div>
-  <p style="color:rgba(255,255,255,.3);font-size:.78rem;margin:0">© 2025 PropBot · Todos los derechos reservados.</p>
+  <p style="color:rgba(255,255,255,.3);font-size:.78rem;margin:0">© 2026 PropBot · Todos los derechos reservados.</p>
 </footer>
 
 <!-- ═══ SCRIPTS ════════════════════════════════════════════════════ -->

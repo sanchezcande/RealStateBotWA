@@ -149,16 +149,20 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                          property_name: str):
     """Background task that generates a video tour from photos using Veo."""
     try:
+        logger.info(
+            "Starting video job %s with %d photo(s) for property=%r",
+            job_id, len(photo_paths), property_name,
+        )
         _update_job(job_id, status="processing", progress="Conectando con Gemini...")
 
         client = _get_client()
         from google.genai import types
 
         clips = []
-        total_pairs = max(len(photo_paths) - 1, 1)
 
         if len(photo_paths) == 1:
             # Single photo: generate video from that image
+            logger.info("Video job %s using single photo %s", job_id, photo_paths[0])
             _update_job(job_id, progress="Generando video desde foto...")
 
             with open(photo_paths[0], "rb") as f:
@@ -193,6 +197,9 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 out_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
                 _save_video(video, out_path)
                 clips.append(out_path)
+                logger.info("Video job %s saved single clip to %s", job_id, out_path)
+            else:
+                logger.warning("Video job %s returned no generated videos for single photo", job_id)
 
         else:
             # Multiple photos: generate a clip from each photo
@@ -204,9 +211,17 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 step = len(photo_paths) / max_clips
                 selected_paths = [photo_paths[int(i * step)] for i in range(max_clips)]
                 logger.info("Sampling %d of %d photos for video generation", max_clips, len(photo_paths))
+            logger.info(
+                "Video job %s selected %d photo(s) for clips: %s",
+                job_id, len(selected_paths), selected_paths,
+            )
 
             for i, photo_path in enumerate(selected_paths):
                 clip_num = i + 1
+                logger.info(
+                    "Video job %s starting clip %d/%d from %s",
+                    job_id, clip_num, len(selected_paths), photo_path,
+                )
                 _update_job(job_id,
                             progress=f"Generando clip {clip_num}/{len(selected_paths)}...")
 
@@ -245,13 +260,39 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                         _save_video(video, clip_path)
                         _trim_video(clip_path, CLIP_DURATION)
                         clips.append(clip_path)
-                        logger.info("Clip %d/%d generated OK", clip_num, len(selected_paths))
+                        logger.info(
+                            "Video job %s clip %d/%d generated OK at %s",
+                            job_id, clip_num, len(selected_paths), clip_path,
+                        )
                     else:
-                        logger.warning("No video generated for photo %d", clip_num)
+                        logger.warning(
+                            "Video job %s generated no video for clip %d/%d from %s",
+                            job_id, clip_num, len(selected_paths), photo_path,
+                        )
                 except Exception as clip_err:
-                    logger.error("Clip %d failed: %s", clip_num, clip_err)
+                    logger.error(
+                        "Video job %s clip %d/%d failed for %s: %s",
+                        job_id, clip_num, len(selected_paths), photo_path, clip_err,
+                    )
                     _update_job(job_id,
                                 progress=f"Clip {clip_num} falló, continuando...")
+
+            if len(clips) != len(selected_paths):
+                logger.warning(
+                    "Video job %s produced %d/%d clips; aborting partial result",
+                    job_id, len(clips), len(selected_paths),
+                )
+                for clip_path in clips:
+                    try:
+                        os.unlink(clip_path)
+                    except OSError:
+                        pass
+                _update_job(
+                    job_id,
+                    status="error",
+                    error=f"Solo se pudieron generar {len(clips)} de {len(selected_paths)} clips. No se guardo un video parcial.",
+                )
+                return
 
         if not clips:
             _update_job(job_id, status="error", error="No se generaron videos")
@@ -261,6 +302,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         if len(clips) > 1:
             _update_job(job_id, progress="Uniendo clips...")
             final_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
+            logger.info("Video job %s concatenating %d clips into %s", job_id, len(clips), final_path)
             _concat_videos(clips, final_path)
             # Clean up individual clips
             for c in clips:
@@ -278,7 +320,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             result_path=final_path,
             result_url=f"/uploads/videos/{os.path.basename(final_path)}",
         )
-        logger.info("Video tour generated: %s", final_path)
+        logger.info("Video job %s completed successfully: %s", job_id, final_path)
 
     except Exception as e:
         logger.error("Video generation failed for job %s: %s", job_id, e, exc_info=True)
@@ -431,6 +473,7 @@ def _save_video(video, out_path: str):
     try:
         # Try direct save first (works for local/inline videos)
         video.video.save(out_path)
+        logger.info("Saved generated video directly to %s", out_path)
     except Exception:
         # Fallback: download from URI with API key auth
         uri = getattr(video.video, "uri", None)
@@ -438,6 +481,7 @@ def _save_video(video, out_path: str):
             key = os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
             sep = "&" if "?" in uri else "?"
             auth_uri = f"{uri}{sep}key={key}"
+            logger.info("Downloading generated video from remote URI to %s", out_path)
             resp = _requests.get(auth_uri, timeout=120)
             resp.raise_for_status()
             with open(out_path, "wb") as f:
@@ -462,7 +506,13 @@ def _trim_video(input_path: str, duration: int = CLIP_DURATION):
         )
         os.replace(trimmed, input_path)
     except Exception as e:
-        logger.warning("Trim failed, keeping original: %s", e)
+        stderr = ""
+        if hasattr(e, "stderr") and e.stderr:
+            try:
+                stderr = e.stderr.decode(errors="ignore")
+            except Exception:
+                stderr = str(e.stderr)
+        logger.warning("Trim failed for %s, keeping original: %s %s", input_path, e, stderr)
         try:
             os.unlink(trimmed)
         except OSError:
@@ -490,7 +540,13 @@ def _normalize_video_for_concat(input_path: str):
         )
         os.replace(normalized, input_path)
     except Exception as e:
-        logger.warning("Normalize failed, keeping original clip: %s", e)
+        stderr = ""
+        if hasattr(e, "stderr") and e.stderr:
+            try:
+                stderr = e.stderr.decode(errors="ignore")
+            except Exception:
+                stderr = str(e.stderr)
+        logger.warning("Normalize failed for %s, keeping original clip: %s %s", input_path, e, stderr)
         try:
             os.unlink(normalized)
         except OSError:
@@ -509,6 +565,7 @@ def _concat_videos(clip_paths: list[str], output_path: str):
     """Concatenate video clips using ffmpeg with normalized encoding."""
     import subprocess
 
+    logger.info("Preparing concat for %d clip(s) into %s", len(clip_paths), output_path)
     for clip_path in clip_paths:
         _normalize_video_for_concat(clip_path)
 
@@ -533,10 +590,11 @@ def _concat_videos(clip_paths: list[str], output_path: str):
              output_path],
             check=True, capture_output=True, timeout=120,
         )
+        logger.info("Concat completed successfully into %s", output_path)
     except FileNotFoundError:
         raise RuntimeError("ffmpeg no esta instalado; no se pueden unir multiples clips")
     except subprocess.CalledProcessError as e:
-        logger.error("ffmpeg concat failed: %s", e.stderr.decode())
+        logger.error("ffmpeg concat failed for %s: %s", output_path, e.stderr.decode(errors="ignore"))
         raise RuntimeError("ffmpeg fallo al unir los clips del video")
     finally:
         try:
