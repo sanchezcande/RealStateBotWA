@@ -534,13 +534,10 @@ def _concat_videos(clip_paths: list[str], output_path: str):
             check=True, capture_output=True, timeout=120,
         )
     except FileNotFoundError:
-        logger.warning("ffmpeg not found, falling back to first clip only")
-        import shutil
-        shutil.copy2(clip_paths[0], output_path)
+        raise RuntimeError("ffmpeg no esta instalado; no se pueden unir multiples clips")
     except subprocess.CalledProcessError as e:
         logger.error("ffmpeg concat failed: %s", e.stderr.decode())
-        import shutil
-        shutil.copy2(clip_paths[0], output_path)
+        raise RuntimeError("ffmpeg fallo al unir los clips del video")
     finally:
         try:
             os.unlink(list_path)

@@ -135,8 +135,7 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button :class="{ active: tab === 'video' }" @click="tab = 'video'" x-text="t('generate_video')"></button>
-    <button :class="{ active: tab === 'jobs' }" @click="tab = 'jobs'; loadJobs()" x-text="t('history')"></button>
+    <button :class="{ active: tab === 'jobs' }" @click="tab = tab === 'jobs' ? 'video' : 'jobs'; if(tab === 'jobs') loadJobs()" x-text="tab === 'jobs' ? '← ' + t('generate_video') : t('history')"></button>
   </div>
 
   <!-- ======================== VIDEO TOUR TAB ======================== -->

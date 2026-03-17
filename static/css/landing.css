@@ -212,7 +212,7 @@ img{max-width:100%}
 .pb-scroll-top.sticky-active{bottom:88px}
 
 /* ── Footer ──────────────────────────────────────────────────────── */
-.pb-footer{background:#060F24;border-top:1px solid rgba(255,255,255,.06);padding:2.2rem 2rem;text-align:center}
+.pb-footer{background:#060F24;border-top:1px solid rgba(255,255,255,.06);padding:2.2rem 2rem 5rem;text-align:center}
 .pb-footer-logo{display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:.65rem}
 .pb-footer-icon{position:relative;width:34px;height:34px}
 .pb-footer-square{width:34px;height:34px;background:linear-gradient(145deg,#92400E,#D97706);border-radius:10px;display:flex;align-items:center;justify-content:center}
