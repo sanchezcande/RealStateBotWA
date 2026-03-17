@@ -19,6 +19,14 @@ def test_build_video_prompt_enforces_fidelity_rules():
     assert "Estilo elegante y premium" in prompt
 
 
+def test_get_video_format_config_defaults_to_vertical():
+    from media_studio import _get_video_format_config
+
+    assert _get_video_format_config("vertical")["aspect_ratio"] == "9:16"
+    assert _get_video_format_config("horizontal")["aspect_ratio"] == "16:9"
+    assert _get_video_format_config("unknown")["aspect_ratio"] == "9:16"
+
+
 @patch("media_studio._normalize_video_for_concat")
 @patch("os.unlink")
 @patch("subprocess.run")
@@ -126,3 +134,82 @@ def test_generate_video_task_errors_when_not_all_clips_are_generated(tmp_path):
 
     assert statuses[-1]["status"] == "error"
     assert "No se guardo un video parcial" in statuses[-1]["error"]
+
+
+def test_generate_video_task_aborts_on_quota_exhausted(tmp_path):
+    import media_studio
+
+    photo_a = tmp_path / "a.jpg"
+    photo_b = tmp_path / "b.jpg"
+    photo_c = tmp_path / "c.jpg"
+    photo_a.write_bytes(b"a")
+    photo_b.write_bytes(b"b")
+    photo_c.write_bytes(b"c")
+
+    statuses = []
+
+    class FakeImage:
+        def __init__(self, image_bytes=None, mime_type=None):
+            self.image_bytes = image_bytes
+            self.mime_type = mime_type
+
+    class FakeTypes:
+        Image = FakeImage
+
+        class GenerateVideosConfig:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+    class FakeOperation:
+        def __init__(self):
+            self.done = True
+            self.response = type("Resp", (), {"generated_videos": [object()]})()
+
+    class FakeModels:
+        def __init__(self):
+            self.calls = 0
+
+        def generate_videos(self, **kwargs):
+            self.calls += 1
+            if self.calls == 1:
+                return FakeOperation()
+            raise RuntimeError("429 RESOURCE_EXHAUSTED")
+
+    class FakeClient:
+        def __init__(self):
+            self.models = FakeModels()
+
+    def record_update(job_id, **kwargs):
+        statuses.append(kwargs)
+
+    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
+         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
+         patch.object(media_studio, "_update_job", side_effect=record_update), \
+         patch.object(media_studio, "_save_video"), \
+         patch.object(media_studio, "_trim_video"), \
+         patch("os.unlink"):
+        media_studio._generate_video_task(
+            "job456",
+            [str(photo_a), str(photo_b), str(photo_c)],
+            prompt="",
+            property_name="",
+        )
+
+    assert statuses[-1]["status"] == "error"
+    assert "RESOURCE_EXHAUSTED" in statuses[-1]["error"]
+
+
+def test_generate_video_tour_stores_selected_video_format():
+    import media_studio
+
+    with patch("threading.Thread") as mock_thread, \
+         patch("analytics.save_media_job"):
+        media_studio.generate_video_tour(
+            ["uploads/photos/a.png"],
+            prompt="",
+            property_name="Demo",
+            video_format="horizontal",
+        )
+
+    args = mock_thread.call_args.kwargs["args"]
+    assert args[-1] == "horizontal"

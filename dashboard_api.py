@@ -266,6 +266,7 @@ def api_media_generate_video():
     photo_ids = data.get("photo_ids", [])
     prompt = data.get("prompt", "")
     property_name = data.get("property", "")
+    video_format = data.get("video_format", "vertical")
 
     if not photo_ids:
         return jsonify({"error": "Selecciona al menos una foto"}), 400
@@ -286,7 +287,12 @@ def api_media_generate_video():
             "usage": analytics.get_media_usage(),
         }), 429
 
-    job_id = media_studio.generate_video_tour(paths, prompt=prompt, property_name=property_name)
+    job_id = media_studio.generate_video_tour(
+        paths,
+        prompt=prompt,
+        property_name=property_name,
+        video_format=video_format,
+    )
     return jsonify({"job_id": job_id, "status": "queued", "usage": analytics.get_media_usage()})
 
 

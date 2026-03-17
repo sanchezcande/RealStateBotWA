@@ -75,6 +75,17 @@
     font-size: .85rem; font-weight: 600; cursor: pointer; color: #555;
   }
   .tabs button.active { background: #D97706; color: #fff; }
+  .format-toggle {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  }
+  .format-toggle button {
+    border: 1px solid #d1d5db; background: #fff; color: #555;
+    border-radius: 999px; padding: 8px 14px; font-size: .8rem; font-weight: 600;
+    cursor: pointer;
+  }
+  .format-toggle button.active {
+    background: #111827; color: #fff; border-color: #111827;
+  }
 </style>
 {% endblock %}
 
@@ -197,6 +208,20 @@
           </p>
           <input type="text" :placeholder="t('property_name_opt')"
                  x-model="videoProperty">
+          <div>
+            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px" x-text="t('video_format')"></div>
+            <div class="format-toggle">
+              <button type="button"
+                      :class="{ active: videoFormat === 'vertical' }"
+                      @click="videoFormat = 'vertical'"
+                      x-text="t('format_vertical')"></button>
+              <button type="button"
+                      :class="{ active: videoFormat === 'horizontal' }"
+                      @click="videoFormat = 'horizontal'"
+                      x-text="t('format_horizontal')"></button>
+            </div>
+            <div style="font-size:.78rem;color:#666;margin-top:6px" x-text="t('video_format_help')"></div>
+          </div>
           <textarea :placeholder="t('custom_prompt_opt')"
                     x-model="videoPrompt"></textarea>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -286,7 +311,7 @@ function mediaStudio() {
     photos: [],
     selectedIds: [],
     // Video gen
-    videoPrompt: "", videoProperty: "",
+    videoPrompt: "", videoProperty: "", videoFormat: "vertical",
     generating: false, genProgress: "", genError: "", genResult: "",
     // Jobs
     jobs: [],
@@ -382,6 +407,7 @@ function mediaStudio() {
           photo_ids: this.selectedIds,
           prompt: this.videoPrompt,
           property: this.videoProperty,
+          video_format: this.videoFormat,
         }),
       }).then(d => {
         if (d.usage) this.usage = d.usage;

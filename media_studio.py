@@ -17,6 +17,21 @@ from config import GOOGLE_AI_API_KEY, MEDIA_UPLOAD_DIR, AR_TZ
 
 logger = logging.getLogger(__name__)
 
+VIDEO_MODEL = "veo-3.0-fast-generate-001"
+DEFAULT_VIDEO_FORMAT = "vertical"
+VIDEO_FORMATS = {
+    "vertical": {
+        "aspect_ratio": "9:16",
+        "width": 720,
+        "height": 1280,
+    },
+    "horizontal": {
+        "aspect_ratio": "16:9",
+        "width": 1280,
+        "height": 720,
+    },
+}
+
 # ---------------------------------------------------------------------------
 # Upload directory setup
 # ---------------------------------------------------------------------------
@@ -83,6 +98,10 @@ def _build_video_prompt(user_prompt: str = "", property_name: str = "") -> str:
     return " ".join(prompt_parts)
 
 
+def _get_video_format_config(video_format: str | None) -> dict:
+    return VIDEO_FORMATS.get((video_format or "").lower(), VIDEO_FORMATS[DEFAULT_VIDEO_FORMAT])
+
+
 # ---------------------------------------------------------------------------
 # Photo upload
 # ---------------------------------------------------------------------------
@@ -146,12 +165,13 @@ def delete_photo(photo_id: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
-                         property_name: str):
+                         property_name: str, video_format: str = DEFAULT_VIDEO_FORMAT):
     """Background task that generates a video tour from photos using Veo."""
     try:
+        video_cfg = _get_video_format_config(video_format)
         logger.info(
-            "Starting video job %s with %d photo(s) for property=%r",
-            job_id, len(photo_paths), property_name,
+            "Starting video job %s with %d photo(s) for property=%r format=%s model=%s",
+            job_id, len(photo_paths), property_name, video_format, VIDEO_MODEL,
         )
         _update_job(job_id, status="processing", progress="Conectando con Gemini...")
 
@@ -176,11 +196,11 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             video_prompt = _build_video_prompt(prompt, property_name)
 
             operation = client.models.generate_videos(
-                model="veo-3.0-generate-001",
+                model=VIDEO_MODEL,
                 prompt=video_prompt,
                 image=first_image,
                 config=types.GenerateVideosConfig(
-                    aspect_ratio="16:9",
+                    aspect_ratio=video_cfg["aspect_ratio"],
                     negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
                 ),
             )
@@ -206,6 +226,8 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             # Cap at 5 clips to avoid excessive API usage and cost
             max_clips = 5
             selected_paths = photo_paths[:max_clips]
+            quota_exhausted = False
+            quota_error_message = ""
             if len(photo_paths) > max_clips:
                 # Evenly sample photos to cover the full set
                 step = len(photo_paths) / max_clips
@@ -237,11 +259,11 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
                 try:
                     operation = client.models.generate_videos(
-                        model="veo-3.0-generate-001",
+                        model=VIDEO_MODEL,
                         prompt=clip_prompt,
                         image=img,
                         config=types.GenerateVideosConfig(
-                            aspect_ratio="16:9",
+                            aspect_ratio=video_cfg["aspect_ratio"],
                             negative_prompt="people, pets, animals, text, logos, watermarks, new furniture, new objects, changed layout, different room, morphing, warping, flickering, color shifts",
                         ),
                     )
@@ -274,8 +296,28 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                         "Video job %s clip %d/%d failed for %s: %s",
                         job_id, clip_num, len(selected_paths), photo_path, clip_err,
                     )
+                    if _is_quota_exhausted_error(clip_err):
+                        quota_exhausted = True
+                        quota_error_message = (
+                            "Google AI devolvio 429 RESOURCE_EXHAUSTED mientras generaba el video. "
+                            "Te quedaste sin cuota o rate limit del trial. Probalo mas tarde o con menos fotos."
+                        )
+                        logger.warning(
+                            "Video job %s aborted after quota exhaustion on clip %d/%d",
+                            job_id, clip_num, len(selected_paths),
+                        )
+                        break
                     _update_job(job_id,
                                 progress=f"Clip {clip_num} falló, continuando...")
+
+            if quota_exhausted:
+                for clip_path in clips:
+                    try:
+                        os.unlink(clip_path)
+                    except OSError:
+                        pass
+                _update_job(job_id, status="error", error=quota_error_message)
+                return
 
             if len(clips) != len(selected_paths):
                 logger.warning(
@@ -303,7 +345,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             _update_job(job_id, progress="Uniendo clips...")
             final_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
             logger.info("Video job %s concatenating %d clips into %s", job_id, len(clips), final_path)
-            _concat_videos(clips, final_path)
+            _concat_videos(clips, final_path, video_format=video_format)
             # Clean up individual clips
             for c in clips:
                 try:
@@ -328,9 +370,10 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
 
 def generate_video_tour(photo_paths: list[str], prompt: str = "",
-                        property_name: str = "") -> str:
+                        property_name: str = "", video_format: str = DEFAULT_VIDEO_FORMAT) -> str:
     """Start async video generation. Returns job_id."""
     job_id = uuid.uuid4().hex[:12]
+    normalized_format = (video_format or DEFAULT_VIDEO_FORMAT).lower()
     job = {
         "id": job_id,
         "type": "video_tour",
@@ -338,6 +381,7 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
         "progress": "En cola...",
         "property": property_name,
         "photo_count": len(photo_paths),
+        "video_format": normalized_format,
         "prompt": _build_video_prompt(prompt, property_name),
         "created_at": datetime.now(AR_TZ).isoformat(),
         "result_path": None,
@@ -351,7 +395,7 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
 
     thread = threading.Thread(
         target=_generate_video_task,
-        args=(job_id, photo_paths, prompt, property_name),
+        args=(job_id, photo_paths, prompt, property_name, normalized_format),
         daemon=True,
     )
     thread.start()
@@ -519,16 +563,17 @@ def _trim_video(input_path: str, duration: int = CLIP_DURATION):
             pass
 
 
-def _normalize_video_for_concat(input_path: str):
+def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
     """Re-encode a clip to stable concat-friendly settings."""
     import subprocess
 
+    video_cfg = _get_video_format_config(video_format)
     normalized = input_path + ".normalized.mp4"
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-i", input_path,
-             "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,"
-                    "pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p",
+             "-vf", f"scale={video_cfg['width']}:{video_cfg['height']}:force_original_aspect_ratio=decrease,"
+                    f"pad={video_cfg['width']}:{video_cfg['height']}:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p",
              "-r", "30",
              "-c:v", "libx264",
              "-preset", "medium",
@@ -561,13 +606,18 @@ def _mime_type(path: str) -> str:
     }.get(ext, "image/jpeg")
 
 
-def _concat_videos(clip_paths: list[str], output_path: str):
+def _is_quota_exhausted_error(err: Exception) -> bool:
+    text = str(err).upper()
+    return "429" in text and "RESOURCE_EXHAUSTED" in text
+
+
+def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
     """Concatenate video clips using ffmpeg with normalized encoding."""
     import subprocess
 
     logger.info("Preparing concat for %d clip(s) into %s", len(clip_paths), output_path)
     for clip_path in clip_paths:
-        _normalize_video_for_concat(clip_path)
+        _normalize_video_for_concat(clip_path, video_format=video_format)
 
     # Write concat list
     list_path = output_path + ".list.txt"
