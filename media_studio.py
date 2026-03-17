@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import threading
 import uuid
@@ -102,6 +103,45 @@ def _get_video_format_config(video_format: str | None) -> dict:
     return VIDEO_FORMATS.get((video_format or "").lower(), VIDEO_FORMATS[DEFAULT_VIDEO_FORMAT])
 
 
+def _build_video_filter(video_format: str = DEFAULT_VIDEO_FORMAT, duration: float | None = None) -> str:
+    video_cfg = _get_video_format_config(video_format)
+    filter_parts = [
+        f"scale={video_cfg['width']}:{video_cfg['height']}:force_original_aspect_ratio=increase",
+        f"crop={video_cfg['width']}:{video_cfg['height']}",
+        "fps=30",
+        "format=yuv420p",
+    ]
+    if duration and duration > 1:
+        fade_in = min(0.4, duration / 3)
+        fade_out = min(0.6, duration / 3)
+        fade_out_start = max(duration - fade_out, fade_in)
+        filter_parts.append(f"fade=t=in:st=0:d={fade_in:.2f}")
+        filter_parts.append(f"fade=t=out:st={fade_out_start:.2f}:d={fade_out:.2f}")
+    return ",".join(filter_parts)
+
+
+def _video_progress_message(step: str, current: int = 0, total: int = 0) -> str:
+    est_min = max(total, 1)
+    est_max = max(total * 3, 3)
+    est_text = f"Esto puede tardar {est_min}-{est_max} min en total."
+    if step == "connecting":
+        return f"Preparando generacion... {est_text}"
+    if step == "single":
+        return "Generando video... Esto puede tardar 1-3 min en total."
+    if step == "multi_start":
+        return f"Generando video... {est_text}"
+    if step == "multi_processing":
+        if total:
+            progress = max(min(math.floor((current / total) * 100), 95), 10)
+            return f"Generando video... {progress}% completado. {est_text}"
+        return f"Generando video... {est_text}"
+    if step == "finishing":
+        return "Mejorando y finalizando el video..."
+    if step == "retrying":
+        return f"Seguimos generando tu video... {est_text}"
+    return "Procesando video..."
+
+
 # ---------------------------------------------------------------------------
 # Photo upload
 # ---------------------------------------------------------------------------
@@ -173,7 +213,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             "Starting video job %s with %d photo(s) for property=%r format=%s model=%s",
             job_id, len(photo_paths), property_name, video_format, VIDEO_MODEL,
         )
-        _update_job(job_id, status="processing", progress="Conectando con Gemini...")
+        _update_job(job_id, status="processing", progress=_video_progress_message("connecting"))
 
         client = _get_client()
         from google.genai import types
@@ -183,7 +223,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         if len(photo_paths) == 1:
             # Single photo: generate video from that image
             logger.info("Video job %s using single photo %s", job_id, photo_paths[0])
-            _update_job(job_id, progress="Generando video desde foto...")
+            _update_job(job_id, progress=_video_progress_message("single"))
 
             with open(photo_paths[0], "rb") as f:
                 image_bytes = f.read()
@@ -210,7 +250,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             while not operation.done:
                 time.sleep(10)
                 operation = client.operations.get(operation)
-                _update_job(job_id, progress="Generando video... (esto tarda 1-3 min)")
+                _update_job(job_id, progress=_video_progress_message("single"))
 
             if operation.response and operation.response.generated_videos:
                 video = operation.response.generated_videos[0]
@@ -245,7 +285,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                     job_id, clip_num, len(selected_paths), photo_path,
                 )
                 _update_job(job_id,
-                            progress=f"Generando clip {clip_num}/{len(selected_paths)}...")
+                            progress=_video_progress_message("multi_start", clip_num, len(selected_paths)))
 
                 with open(photo_path, "rb") as f:
                     img_bytes = f.read()
@@ -274,7 +314,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                         time.sleep(10)
                         operation = client.operations.get(operation)
                         _update_job(job_id,
-                                    progress=f"Generando clip {clip_num}/{len(selected_paths)}... (1-3 min por clip)")
+                                    progress=_video_progress_message("multi_processing", clip_num, len(selected_paths)))
 
                     if operation.response and operation.response.generated_videos:
                         video = operation.response.generated_videos[0]
@@ -308,7 +348,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                         )
                         break
                     _update_job(job_id,
-                                progress=f"Clip {clip_num} falló, continuando...")
+                                progress=_video_progress_message("retrying"))
 
             if quota_exhausted:
                 for clip_path in clips:
@@ -342,7 +382,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
         # If multiple clips, concatenate with ffmpeg
         if len(clips) > 1:
-            _update_job(job_id, progress="Uniendo clips...")
+            _update_job(job_id, progress=_video_progress_message("finishing"))
             final_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
             logger.info("Video job %s concatenating %d clips into %s", job_id, len(clips), final_path)
             _concat_videos(clips, final_path, video_format=video_format)
@@ -355,6 +395,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         else:
             final_path = clips[0]
 
+        _polish_final_video(final_path, video_format=video_format)
         _update_job(
             job_id,
             status="completed",
@@ -563,17 +604,72 @@ def _trim_video(input_path: str, duration: int = CLIP_DURATION):
             pass
 
 
+def _get_video_duration(input_path: str) -> float | None:
+    """Return video duration in seconds using ffprobe."""
+    import subprocess
+
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe", "-v", "error",
+                "-show_entries", "format=duration",
+                "-of", "default=noprint_wrappers=1:nokey=1",
+                input_path,
+            ],
+            check=True, capture_output=True, timeout=30,
+            text=True,
+        )
+        return float((result.stdout or "").strip())
+    except Exception as e:
+        logger.warning("Could not read duration for %s: %s", input_path, e)
+        return None
+
+
+def _polish_final_video(input_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
+    """Apply final framing and smooth fade in/out to the completed video."""
+    import subprocess
+
+    duration = _get_video_duration(input_path)
+    polished = input_path + ".polished.mp4"
+    try:
+        subprocess.run(
+            [
+                "ffmpeg", "-y", "-i", input_path,
+                "-vf", _build_video_filter(video_format, duration=duration),
+                "-r", "30",
+                "-c:v", "libx264",
+                "-preset", "medium",
+                "-crf", "18",
+                "-an",
+                "-movflags", "+faststart",
+                polished,
+            ],
+            check=True, capture_output=True, timeout=180,
+        )
+        os.replace(polished, input_path)
+    except Exception as e:
+        stderr = ""
+        if hasattr(e, "stderr") and e.stderr:
+            try:
+                stderr = e.stderr.decode(errors="ignore")
+            except Exception:
+                stderr = str(e.stderr)
+        logger.warning("Final polish failed for %s, keeping original: %s %s", input_path, e, stderr)
+        try:
+            os.unlink(polished)
+        except OSError:
+            pass
+
+
 def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
     """Re-encode a clip to stable concat-friendly settings."""
     import subprocess
 
-    video_cfg = _get_video_format_config(video_format)
     normalized = input_path + ".normalized.mp4"
     try:
         subprocess.run(
             ["ffmpeg", "-y", "-i", input_path,
-             "-vf", f"scale={video_cfg['width']}:{video_cfg['height']}:force_original_aspect_ratio=decrease,"
-                    f"pad={video_cfg['width']}:{video_cfg['height']}:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p",
+             "-vf", _build_video_filter(video_format),
              "-r", "30",
              "-c:v", "libx264",
              "-preset", "medium",

@@ -27,6 +27,18 @@ def test_get_video_format_config_defaults_to_vertical():
     assert _get_video_format_config("unknown")["aspect_ratio"] == "9:16"
 
 
+def test_build_video_filter_uses_cover_crop_and_fades():
+    from media_studio import _build_video_filter
+
+    video_filter = _build_video_filter("vertical", duration=8.0)
+
+    assert "scale=720:1280:force_original_aspect_ratio=increase" in video_filter
+    assert "crop=720:1280" in video_filter
+    assert "pad=" not in video_filter
+    assert "fade=t=in" in video_filter
+    assert "fade=t=out" in video_filter
+
+
 @patch("media_studio._normalize_video_for_concat")
 @patch("os.unlink")
 @patch("subprocess.run")
@@ -213,3 +225,55 @@ def test_generate_video_tour_stores_selected_video_format():
 
     args = mock_thread.call_args.kwargs["args"]
     assert args[-1] == "horizontal"
+
+
+def test_generate_video_task_polishes_final_video(tmp_path):
+    import media_studio
+
+    photo_a = tmp_path / "a.jpg"
+    photo_a.write_bytes(b"a")
+
+    class FakeImage:
+        def __init__(self, image_bytes=None, mime_type=None):
+            self.image_bytes = image_bytes
+            self.mime_type = mime_type
+
+    class FakeTypes:
+        Image = FakeImage
+
+        class GenerateVideosConfig:
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+    class FakeVideoFile:
+        def save(self, out_path):
+            pass
+
+    class FakeVideo:
+        video = FakeVideoFile()
+
+    class FakeOperation:
+        done = True
+        response = type("Resp", (), {"generated_videos": [FakeVideo()]})()
+
+    class FakeModels:
+        def generate_videos(self, **kwargs):
+            return FakeOperation()
+
+    class FakeClient:
+        models = FakeModels()
+
+    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
+         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
+         patch.object(media_studio, "_save_video"), \
+         patch.object(media_studio, "_polish_final_video") as mock_polish, \
+         patch.object(media_studio, "_update_job"):
+        media_studio._generate_video_task(
+            "job789",
+            [str(photo_a)],
+            prompt="",
+            property_name="",
+            video_format="vertical",
+        )
+
+    assert mock_polish.called
