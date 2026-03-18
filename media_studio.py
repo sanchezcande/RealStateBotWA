@@ -791,26 +791,21 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         else:
             final_path = clips[0]
 
-        # Generate voiceover if explicit voiceover text provided
-        voiceover_path = ""
-        if voiceover_text and voiceover_text.strip():
-            _update_job(job_id, progress=_video_progress_message("voiceover"))
-            vo_path = str(UPLOAD_DIR / "videos" / f"{job_id}_voiceover.mp3")
-            if _generate_voiceover(voiceover_text, vo_path, voice=voice):
-                voiceover_path = vo_path
+        # Voiceover disabled — AI voices sound robotic, revisit when quality improves
+        # voiceover_path = ""
+        # if voiceover_text and voiceover_text.strip():
+        #     _update_job(job_id, progress=_video_progress_message("voiceover"))
+        #     vo_path = str(UPLOAD_DIR / "videos" / f"{job_id}_voiceover.mp3")
+        #     if _generate_voiceover(voiceover_text, vo_path, voice=voice):
+        #         voiceover_path = vo_path
 
-        # Final polish (framing, logo, voiceover, music)
-        _polish_final_video(final_path, video_format=video_format, voiceover_path=voiceover_path)
+        # Final polish (framing, logo)
+        _polish_final_video(final_path, video_format=video_format)
 
         # Clean up temp files
         for tf in temp_enhanced:
             try:
                 os.unlink(tf)
-            except OSError:
-                pass
-        if voiceover_path:
-            try:
-                os.unlink(voiceover_path)
             except OSError:
                 pass
 
