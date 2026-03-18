@@ -19,6 +19,7 @@ payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
 
 def _get_sdk() -> mercadopago.SDK:
     token = os.environ.get("MP_ACCESS_TOKEN", "")
+    logger.info("MP_ACCESS_TOKEN present: %s, length: %d", bool(token), len(token))
     if not token:
         raise ValueError("MP_ACCESS_TOKEN no configurado")
     return mercadopago.SDK(token)
@@ -174,6 +175,34 @@ def mp_webhook():
     if info["status"] == "approved":
         analytics.add_purchased_videos(info["count"])
         logger.info("Payment %s approved — credited %d videos", info["payment_id"], info["count"])
+
+        # Notify owner via email
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            owner_email = os.environ.get("OWNER_EMAIL", "")
+            smtp_host = os.environ.get("SMTP_HOST", "")
+            smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+            smtp_user = os.environ.get("SMTP_USER", "")
+            smtp_pass = os.environ.get("SMTP_PASS", "")
+            if owner_email and smtp_host:
+                amount_fmt = f"${info['amount']:,.0f} ARS" if info["currency"] == "ARS" else f"USD {info['amount']}"
+                msg = MIMEText(
+                    f"Videos: {info['count']}\n"
+                    f"Monto: {amount_fmt}\n"
+                    f"Email cliente: {info['payer_email'] or 'no disponible'}\n"
+                    f"Payment ID: {info['payment_id']}"
+                )
+                msg["Subject"] = f"Nuevo pago - {info['count']} video(s) - {amount_fmt}"
+                msg["From"] = smtp_user
+                msg["To"] = owner_email
+                with smtplib.SMTP(smtp_host, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_pass)
+                    server.send_message(msg)
+                logger.info("Payment notification sent to %s", owner_email)
+        except Exception as e:
+            logger.error("Failed to send payment email: %s", e)
 
     return jsonify({"ok": True}), 200
 
