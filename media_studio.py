@@ -395,7 +395,7 @@ def _apply_voiceover(video_path: str, voiceover_path: str, music_path: str = "")
     if music_path and os.path.isfile(music_path):
         music_fade_start = max(duration - 2, 0)
         filter_complex = (
-            f"[1:a]afade=t=in:st=0:d=0.3,afade=t=out:st={fade_start:.1f}:d=1.5,volume=1.0[vo];"
+            f"[1:a]atrim=0:{duration},afade=t=in:st=0:d=0.3,afade=t=out:st={fade_start:.1f}:d=1.5,volume=1.0[vo];"
             f"[2:a]atrim=0:{duration},afade=t=in:st=0:d=1,afade=t=out:st={music_fade_start:.1f}:d=2,volume=0.12[mu];"
             f"[vo][mu]amix=inputs=2:duration=first[a]"
         )
@@ -406,12 +406,13 @@ def _apply_voiceover(video_path: str, voiceover_path: str, music_path: str = "")
             "-map", "0:v", "-map", "[a]",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "128k",
+            "-t", f"{duration}",
             "-movflags", "+faststart",
             output,
         ]
     else:
         filter_complex = (
-            f"[1:a]afade=t=in:st=0:d=0.3,afade=t=out:st={fade_start:.1f}:d=1.5,volume=1.0[a]"
+            f"[1:a]atrim=0:{duration},afade=t=in:st=0:d=0.3,afade=t=out:st={fade_start:.1f}:d=1.5,volume=1.0[a]"
         )
         cmd = [
             "ffmpeg", "-y",
@@ -420,6 +421,7 @@ def _apply_voiceover(video_path: str, voiceover_path: str, music_path: str = "")
             "-map", "0:v", "-map", "[a]",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "128k",
+            "-t", f"{duration}",
             "-movflags", "+faststart",
             output,
         ]
@@ -565,42 +567,63 @@ def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VID
             pass
 
 
+XFADE_DURATION = 0.8  # seconds of crossfade dissolve between clips
+
+
 def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
-    """Concatenate video clips using ffmpeg with normalized encoding."""
+    """Concatenate video clips using ffmpeg xfade crossfade transitions."""
     logger.info("Preparing concat for %d clip(s) into %s", len(clip_paths), output_path)
     for clip_path in clip_paths:
         _normalize_video_for_concat(clip_path, video_format=video_format)
 
-    list_path = output_path + ".list.txt"
-    with open(list_path, "w") as f:
-        for cp in clip_paths:
-            abs_path = str(Path(cp).resolve())
-            safe_path = abs_path.replace("'", "'\\''")
-            f.write(f"file '{safe_path}'\n")
+    if len(clip_paths) == 1:
+        import shutil
+        shutil.move(clip_paths[0], output_path)
+        logger.info("Single clip moved to %s", output_path)
+        return
+
+    # Get durations for xfade offset calculation
+    durations = [_get_video_duration(cp) or CLIP_DURATION for cp in clip_paths]
+
+    # Build xfade filter chain for smooth dissolve between clips
+    filter_parts = []
+    running_offset = durations[0] - XFADE_DURATION
+
+    for i in range(1, len(clip_paths)):
+        in_a = "[0]" if i == 1 else f"[v{i - 1}]"
+        in_b = f"[{i}]"
+        out_label = "[v]" if i == len(clip_paths) - 1 else f"[v{i}]"
+        filter_parts.append(
+            f"{in_a}{in_b}xfade=transition=fade:duration={XFADE_DURATION}:offset={running_offset:.2f}{out_label}"
+        )
+        running_offset += durations[i] - XFADE_DURATION
+
+    filter_complex = ";".join(filter_parts)
+
+    inputs = []
+    for cp in clip_paths:
+        inputs.extend(["-i", cp])
 
     try:
         subprocess.run(
-            ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
-             "-i", list_path,
-             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
-             "-pix_fmt", "yuv420p",
-             "-r", "30",
-             "-movflags", "+faststart",
-             "-an",
-             output_path],
+            ["ffmpeg", "-y"] + inputs + [
+                "-filter_complex", filter_complex,
+                "-map", "[v]",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                "-pix_fmt", "yuv420p",
+                "-r", "30",
+                "-movflags", "+faststart",
+                "-an",
+                output_path,
+            ],
             check=True, capture_output=True, timeout=180,
         )
-        logger.info("Concat completed successfully into %s", output_path)
+        logger.info("Concat with xfade completed successfully into %s", output_path)
     except FileNotFoundError:
         raise RuntimeError("ffmpeg no esta instalado; no se pueden unir multiples clips")
     except subprocess.CalledProcessError as e:
-        logger.error("ffmpeg concat failed: %s", e.stderr.decode(errors="ignore") if e.stderr else e)
+        logger.error("ffmpeg xfade concat failed: %s", e.stderr.decode(errors="ignore") if e.stderr else e)
         raise RuntimeError("ffmpeg fallo al unir los clips del video")
-    finally:
-        try:
-            os.unlink(list_path)
-        except OSError:
-            pass
 
 
 # ---------------------------------------------------------------------------
