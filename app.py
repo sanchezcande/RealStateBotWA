@@ -10,7 +10,7 @@ import time
 import threading
 import requests
 from flask import Flask, request, jsonify, render_template
-from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY
+from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY, ASSET_VERSION
 import analytics
 import conversations
 import ai
@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.secret_key = DASHBOARD_SECRET_KEY
+app.jinja_env.globals["v"] = ASSET_VERSION
 analytics.init_db()
 
 # Register dashboard blueprints

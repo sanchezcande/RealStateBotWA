@@ -1,9 +1,25 @@
 import os
+import subprocess
 import sys
 from dotenv import load_dotenv
 import pytz
 
 load_dotenv()
+
+# Cache-busting version for static assets (git short hash or RAILWAY_DEPLOYMENT_ID)
+def _get_asset_version() -> str:
+    v = os.environ.get("RAILWAY_DEPLOYMENT_ID", "")
+    if v:
+        return v[:10]
+    try:
+        return subprocess.check_output(
+            ["git", "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL, text=True,
+        ).strip()
+    except Exception:
+        return "1"
+
+ASSET_VERSION = _get_asset_version()
 
 # Timezone used across the app
 AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")

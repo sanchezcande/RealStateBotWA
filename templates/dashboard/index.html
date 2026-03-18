@@ -154,7 +154,7 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/dashboard.js?v={{ v }}"></script>
 <script>
 const CONV  = {{ conv_by_day | tojson }};
 const HOURS = {{ peak_hours | tojson }};
