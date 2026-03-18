@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}PropBot — {{ "Visits" if request.args.get('lang') == 'en' else "Visitas" }}{% endblock %}
+{% block title %}PropBot — {{ "Schedule" if request.args.get('lang') == 'en' else "Agenda" }}{% endblock %}
 
 {% block content %}
 <div x-data="visitsView()" x-init="load()">
   <section class="subpage-hero">
     <div>
       <span class="section-kicker">Agenda comercial</span>
-      <h1 data-i18n="visits">Visitas</h1>
+      <h1 data-i18n="visits">Agenda</h1>
       <p>Seguimiento claro de recorridos confirmados, pendientes y cancelados para cada propiedad.</p>
     </div>
     <div class="subpage-actions">
@@ -34,7 +34,7 @@
     <div class="card panel-card">
       <div class="panel-head">
         <div>
-          <h2>Calendario de visitas</h2>
+          <h2>Calendario de citas</h2>
           <p>Visualización mensual para entender ocupación y demanda por día.</p>
         </div>
       </div>
@@ -69,8 +69,8 @@
     <div class="card panel-card">
       <div class="panel-head">
         <div>
-          <h2>Listado de visitas</h2>
-          <p x-text="listItems.length ? ('Mostrando ' + listItems.length + ' visitas en esta página') : 'No hay visitas cargadas para este filtro'"></p>
+          <h2>Listado de citas</h2>
+          <p x-text="listItems.length ? ('Mostrando ' + listItems.length + ' citas en esta página') : 'No hay citas cargadas para este filtro'"></p>
         </div>
       </div>
       <div class="table-wrap">

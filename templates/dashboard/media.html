@@ -380,6 +380,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
 <script src="/static/js/dashboard.js"></script>
 <script>
 function mediaStudio() {
@@ -445,7 +446,13 @@ function mediaStudio() {
       }).then(d => {
         if (d.error) { alert(d.error); return; }
         if (d.checkout_url) {
-          window.location.href = d.checkout_url;
+          if (this.purchaseCurrency === 'USD' && window.LemonSqueezy) {
+            window.LemonSqueezy.Url.Open(d.checkout_url);
+          } else {
+            const w = 500, h = 700;
+            const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
+            window.open(d.checkout_url, 'checkout', `width=${w},height=${h},left=${left},top=${top}`);
+          }
           return;
         }
         if (d.contact) {

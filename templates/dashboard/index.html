@@ -42,7 +42,7 @@
     <div class="kpi-topline">Conversión</div>
     <div class="num">{{ kpis.total_visits }}</div>
     <div class="pct neu">{{ kpis.conv_to_visit_pct }}% <span data-i18n="of_total">del total</span></div>
-    <div class="label" data-i18n="scheduled_visits">Visitas agendadas</div>
+    <div class="label" data-i18n="scheduled_visits">Citas agendadas</div>
   </div>
   {% if plan in ('pro', 'premium') %}
   <div class="kpi">
@@ -109,7 +109,7 @@
     <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
     {% if top_properties["items"] %}
     <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 40, 120] | max }}px"></canvas>
-    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin visitas registradas todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
   </div>
 
   {% if plan in ('pro', 'premium') %}
