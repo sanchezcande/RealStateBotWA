@@ -49,7 +49,41 @@ img{max-width:100%}
 .pb-hero-pattern{position:absolute;inset:0;opacity:.8;background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><defs><pattern id="g" width="80" height="80" patternUnits="userSpaceOnUse"><path d="M0 40 L40 0 L80 40 L40 80 Z" fill="none" stroke="rgba(217,119,6,0.06)" stroke-width="1"/><circle cx="40" cy="40" r="2" fill="rgba(37,211,102,0.08)"/></pattern></defs><rect width="80" height="80" fill="url(%23g)"/></svg>')}
 .pb-hero-orb1{position:absolute;top:10%;left:5%;width:300px;height:300px;background:radial-gradient(circle,rgba(59,130,246,.12) 0%,transparent 70%);border-radius:50%;filter:blur(40px)}
 .pb-hero-orb2{position:absolute;bottom:10%;right:5%;width:250px;height:250px;background:radial-gradient(circle,rgba(217,119,6,.18) 0%,transparent 70%);border-radius:50%;filter:blur(40px)}
-.pb-hero-inner{position:relative;z-index:2;max-width:900px;margin:0 auto}
+.pb-hero-inner{position:relative;z-index:2;max-width:1100px;margin:0 auto}
+.pb-hero-split{display:flex;align-items:center;gap:3rem}
+.pb-hero-text{flex:1;text-align:left}
+.pb-hero-text .pb-hero-pills{justify-content:flex-start}
+.pb-hero-text .pb-hero-sub{margin-left:0}
+.pb-hero-text .pb-hero-ctas{justify-content:flex-start}
+.pb-hero-text .pb-hero-metrics{justify-content:flex-start}
+.pb-hero-phone{flex:0 0 320px;animation:fadeInUp .8s .3s ease forwards;opacity:0}
+.pb-phone-frame{background:#0a0a0a;border-radius:36px;padding:12px;box-shadow:0 25px 60px rgba(0,0,0,.5),0 0 0 2px rgba(255,255,255,.1);position:relative}
+.pb-phone-notch{width:100px;height:22px;background:#0a0a0a;border-radius:0 0 16px 16px;position:absolute;top:0;left:50%;transform:translateX(-50%);z-index:3}
+.pb-phone-header{background:#075E54;padding:14px 14px 10px;border-radius:24px 24px 0 0;display:flex;align-items:center;gap:10px}
+.pb-phone-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#D97706,#F59E0B);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;color:#fff}
+.pb-phone-chat{background:#ECE5DD;padding:14px 10px 18px;border-radius:0 0 24px 24px;display:flex;flex-direction:column;gap:8px;min-height:300px}
+.pb-chat-bubble{padding:8px 12px;border-radius:10px;font-size:.78rem;line-height:1.5;max-width:85%;animation:fadeInUp .4s ease forwards;opacity:0}
+.pb-chat-bubble:nth-child(1){animation-delay:.6s}
+.pb-chat-bubble:nth-child(2){animation-delay:1.2s}
+.pb-chat-bubble:nth-child(3){animation-delay:2s}
+.pb-chat-bubble:nth-child(4){animation-delay:2.6s}
+.pb-chat-bubble:nth-child(5){animation-delay:3.4s}
+.pb-chat-user{background:#DCF8C6;align-self:flex-end;border-bottom-right-radius:3px;color:#1a1a1a}
+.pb-chat-bot{background:#fff;align-self:flex-start;border-bottom-left-radius:3px;color:#1a1a1a}
+.pb-chat-typing{align-self:flex-start;background:#fff;border-radius:10px;padding:10px 14px;display:flex;gap:4px;animation:fadeInUp .4s 3.8s ease forwards;opacity:0}
+.pb-chat-typing span{width:7px;height:7px;background:#999;border-radius:50%;animation:typingDot 1.4s infinite}
+.pb-chat-typing span:nth-child(2){animation-delay:.2s}
+.pb-chat-typing span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
+@media(max-width:768px){
+  .pb-hero-split{flex-direction:column;text-align:center}
+  .pb-hero-text{text-align:center}
+  .pb-hero-text .pb-hero-pills{justify-content:center}
+  .pb-hero-text .pb-hero-sub{margin:0 auto 2rem}
+  .pb-hero-text .pb-hero-ctas{justify-content:center}
+  .pb-hero-text .pb-hero-metrics{justify-content:center}
+  .pb-hero-phone{flex:0 0 auto;width:280px}
+}
 .pb-hero-pills{display:flex;justify-content:center;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap}
 .pb-hero-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);border-radius:999px;padding:6px 14px;font-size:.85rem;cursor:default;transition:all .3s ease}
 .pb-hero h1{font-size:clamp(2.2rem,5vw,3.5rem);font-weight:900;line-height:1.15;margin-bottom:1.2rem;animation:fadeInUp .7s ease forwards}
