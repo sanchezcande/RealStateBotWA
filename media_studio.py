@@ -307,6 +307,45 @@ def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = 
 # Final polish: text overlay + logo + music
 # ---------------------------------------------------------------------------
 
+_drawtext_available: bool | None = None
+
+
+def _has_drawtext() -> bool:
+    """Check if ffmpeg was built with the drawtext filter."""
+    global _drawtext_available
+    if _drawtext_available is not None:
+        return _drawtext_available
+    try:
+        result = subprocess.run(
+            ["ffmpeg", "-filters"],
+            capture_output=True, text=True, timeout=10,
+        )
+        _drawtext_available = "drawtext" in (result.stdout or "")
+    except Exception:
+        _drawtext_available = False
+    if not _drawtext_available:
+        logger.info("ffmpeg drawtext filter not available, text overlays disabled")
+    return _drawtext_available
+
+
+def _find_system_font() -> str:
+    """Find a usable TrueType font on the system."""
+    candidates = [
+        # macOS
+        "/System/Library/Fonts/Helvetica.ttc",
+        "/System/Library/Fonts/SFNSText.ttf",
+        "/Library/Fonts/Arial.ttf",
+        # Linux (Railway/Docker)
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            return path
+    return ""
+
+
 def _get_video_duration(input_path: str) -> float | None:
     """Return video duration in seconds using ffprobe."""
     try:
@@ -339,38 +378,33 @@ def _polish_final_video(input_path: str, video_format: str = DEFAULT_VIDEO_FORMA
     # Build filter chain
     filters = [_build_video_filter(video_format, duration=duration)]
 
-    # Text overlay (property name or custom text)
+    # Text overlay (property name or custom text) — try with drawtext, fall back without
     overlay_text = text_overlay or property_name
-    if overlay_text:
+    text_filter = ""
+    if overlay_text and _has_drawtext():
         safe_text = overlay_text.replace("'", "\\'").replace(":", "\\:")
-        filters.append(
-            f"drawtext=text='{safe_text}'"
+        font_path = _find_system_font()
+        font_clause = f":fontfile='{font_path}'" if font_path else ""
+        text_filter = (
+            f",drawtext=text='{safe_text}'"
+            f"{font_clause}"
             f":fontsize={int(w * 0.04)}"
             f":fontcolor=white"
             f":x=(w-text_w)/2:y=h-{int(h * 0.08)}"
             f":box=1:boxcolor=black@0.5:boxborderw=8"
         )
 
-    vf = ",".join(filters)
+    vf = ",".join(filters) + text_filter
 
     # Build command
-    cmd = ["ffmpeg", "-y", "-i", input_path]
-
-    # Add logo overlay if configured
-    logo = LOGO_PATH
-    if logo and os.path.isfile(logo):
-        cmd.extend(["-i", logo])
-
-    cmd.extend(["-vf", vf])
-
-    # If logo was added, use overlay filter (complex filter would be needed)
-    # For simplicity, logo is applied in a separate pass below
-    cmd.extend([
+    cmd = [
+        "ffmpeg", "-y", "-i", input_path,
+        "-vf", vf,
         "-r", str(CLIP_FPS),
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-an", "-movflags", "+faststart",
         polished,
-    ])
+    ]
 
     try:
         subprocess.run(cmd, check=True, capture_output=True, timeout=180)
@@ -383,6 +417,7 @@ def _polish_final_video(input_path: str, video_format: str = DEFAULT_VIDEO_FORMA
             pass
 
     # Logo overlay (separate pass for simplicity)
+    logo = LOGO_PATH
     if logo and os.path.isfile(logo):
         _apply_logo(input_path, logo)
 
