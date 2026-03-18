@@ -242,6 +242,62 @@ def _enhance_photo(input_path: str, output_path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Letterbox removal (Veo sometimes bakes black bars into 9:16 output)
+# ---------------------------------------------------------------------------
+
+def _remove_letterbox(input_path: str):
+    """Detect and remove black letterbox bars baked in by Veo."""
+    try:
+        import re as _re
+        # Analyze 1 second from the middle of the clip to avoid fade-from-black
+        duration = _get_video_duration(input_path) or 5
+        seek = max(duration / 2 - 0.5, 0.5)
+        result = subprocess.run(
+            ["ffmpeg", "-ss", f"{seek:.1f}", "-i", input_path, "-t", "1",
+             "-vf", "cropdetect=24:2:0", "-f", "null", "-"],
+            capture_output=True, text=True, timeout=30,
+        )
+        crops = _re.findall(r'crop=(\d+:\d+:\d+:\d+)', result.stderr)
+        if not crops:
+            return
+
+        crop_val = crops[-1]
+        cw, ch, cx, cy = [int(v) for v in crop_val.split(':')]
+
+        # Get original dimensions
+        probe = subprocess.run(
+            ["ffprobe", "-v", "error", "-select_streams", "v:0",
+             "-show_entries", "stream=width,height",
+             "-of", "csv=p=0", input_path],
+            capture_output=True, text=True, timeout=10,
+        )
+        orig_w, orig_h = [int(v) for v in probe.stdout.strip().split(',')]
+
+        # Only crop if bars are significant (>3% of a dimension)
+        if cw >= orig_w * 0.97 and ch >= orig_h * 0.97:
+            return
+
+        output = input_path + ".debarred.mp4"
+        subprocess.run(
+            ["ffmpeg", "-y", "-i", input_path,
+             "-vf", f"crop={crop_val}",
+             "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+             "-an", "-movflags", "+faststart",
+             output],
+            check=True, capture_output=True, timeout=60,
+        )
+        os.replace(output, input_path)
+        logger.info("Removed letterbox from %s: crop=%s (was %dx%d)", input_path, crop_val, orig_w, orig_h)
+
+    except Exception as e:
+        logger.warning("Letterbox removal failed for %s: %s", input_path, e)
+        try:
+            os.unlink(input_path + ".debarred.mp4")
+        except OSError:
+            pass
+
+
+# ---------------------------------------------------------------------------
 # FFmpeg helpers (video duration, trimming)
 # ---------------------------------------------------------------------------
 
@@ -616,6 +672,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                 video = operation.response.generated_videos[0]
                 out_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
                 _save_video(video, out_path)
+                _remove_letterbox(out_path)
                 clips.append(out_path)
                 logger.info("Video job %s saved single clip to %s", job_id, out_path)
             else:
@@ -667,6 +724,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                         video = operation.response.generated_videos[0]
                         clip_path = str(UPLOAD_DIR / "videos" / f"{job_id}_clip{i}.mp4")
                         _save_video(video, clip_path)
+                        _remove_letterbox(clip_path)
                         _trim_video(clip_path, CLIP_DURATION)
                         clips.append(clip_path)
                         logger.info("Video job %s clip %d/%d generated OK at %s", job_id, clip_num, len(selected_paths), clip_path)
