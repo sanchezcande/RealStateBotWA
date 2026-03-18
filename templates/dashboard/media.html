@@ -199,10 +199,10 @@
             <template x-if="selectedIds.length === 1">
               <span x-text="t('single_photo_desc')"></span>
             </template>
-            <template x-if="selectedIds.length > 1 && selectedIds.length <= 5">
+            <template x-if="selectedIds.length > 1 && selectedIds.length <= 10">
               <span x-text="t('multi_photo_desc', {count: selectedIds.length, secs: selectedIds.length * 5})"></span>
             </template>
-            <template x-if="selectedIds.length > 5">
+            <template x-if="selectedIds.length > 10">
               <span x-text="t('multi_photo_capped', {count: selectedIds.length})"></span>
             </template>
           </p>
