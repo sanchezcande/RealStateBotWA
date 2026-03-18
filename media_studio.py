@@ -69,8 +69,8 @@ _jobs_lock = threading.Lock()
 KENBURNS_EFFECTS = ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]
 
 # Minimum image size for Ken Burns (both dims must be >= this * output)
-KB_SCALE = 2
-KB_MAX_DIM = 2880  # cap to avoid OOM on constrained servers
+KB_SCALE = 3
+KB_MAX_DIM = 3840  # cap per axis — safe with JPEG + fast preset
 
 
 def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> tuple[str, int, int]:
@@ -347,9 +347,8 @@ def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VID
 
 
 def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
-    """Concatenate video clips using ffmpeg concat demuxer with stream copy.
-    All clips already share the same codec/resolution/fps from _generate_clip,
-    so no re-encoding is needed — saves massive amounts of RAM."""
+    """Concatenate video clips using ffmpeg concat demuxer.
+    Uses ultrafast re-encode to fix timestamp issues while using minimal RAM."""
     logger.info("Preparing concat for %d clip(s) into %s", len(clip_paths), output_path)
 
     list_path = output_path + ".list.txt"
@@ -363,10 +362,13 @@ def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = 
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
              "-i", list_path,
-             "-c", "copy",
+             "-c:v", "libx264", "-preset", "ultrafast", "-crf", "18",
+             "-pix_fmt", "yuv420p",
+             "-r", str(CLIP_FPS),
              "-movflags", "+faststart",
+             "-an",
              output_path],
-            check=True, capture_output=True, timeout=120,
+            check=True, capture_output=True, timeout=180,
         )
         logger.info("Concat completed successfully into %s", output_path)
     except FileNotFoundError:

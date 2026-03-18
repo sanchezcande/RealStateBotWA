@@ -63,8 +63,10 @@ def test_concat_videos_uses_stream_copy(mock_run, mock_unlink, tmp_path):
     list_contents = (tmp_path / "out.mp4.list.txt").read_text()
 
     assert mock_unlink.called
-    assert "-c" in cmd
-    assert "copy" in cmd
+    assert "-c:v" in cmd
+    assert "libx264" in cmd
+    assert "-preset" in cmd
+    assert "ultrafast" in cmd
     assert list_path in cmd
     assert str(clip_a.resolve()) in list_contents
     assert str(clip_b.resolve()) in list_contents
