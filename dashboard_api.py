@@ -237,14 +237,19 @@ def api_media_usage():
 @api.route("/media/purchase", methods=["POST"])
 @_require_auth
 def api_media_purchase():
-    """Create MercadoPago checkout for video purchase."""
-    import payments
-
+    """Create payment checkout for video purchase."""
     data = request.get_json(silent=True) or {}
     count = data.get("count", 1)
+    currency = data.get("currency", "ARS")
     if not isinstance(count, int) or count < 1:
         return jsonify({"error": "Cantidad invalida"}), 400
 
+    if currency == "USD":
+        return jsonify({
+            "contact": "Para pagar en USD escribinos a info@realstatebot.com",
+        })
+
+    import payments
     try:
         result = payments.create_video_checkout(count)
         return jsonify(result)
@@ -266,7 +271,7 @@ def api_media_generate_video():
     usage = analytics.get_media_usage()
     if usage["remaining"] <= 0:
         return jsonify({
-            "error": f"Llegaste al limite de {usage['total_allowed']} videos este mes. Compra videos adicionales a USD {usage['extra_video_price_usd']} cada uno.",
+            "error": f"Llegaste al limite de {usage['total_allowed']} videos este mes. Compra videos adicionales a ${usage['extra_video_price_ars']:,} ARS cada uno.",
             "limit_reached": True,
             "usage": usage,
         }), 429

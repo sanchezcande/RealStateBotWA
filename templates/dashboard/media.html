@@ -120,24 +120,55 @@
   <template x-if="showPurchase">
     <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1);border:1px solid #e5e7eb">
       <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px" x-text="t('buy_additional')"></h3>
-      <p style="font-size:.82rem;color:#666;margin-bottom:12px">
-        <span x-text="t('each_video_costs')"></span> <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
-        <span x-text="t('added_to_limit')"></span>
-      </p>
-      <div style="display:flex;gap:10px;align-items:center">
-        <label style="font-size:.82rem" x-text="t('quantity')"></label>
-        <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
-          <option value="1" x-text="'1 ' + t('video_word') + ' — USD ' + usage.extra_video_price_usd"></option>
-          <option value="2" x-text="'2 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 2)"></option>
-          <option value="5" x-text="'5 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 5)"></option>
-          <option value="10" x-text="'10 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 10)"></option>
-        </select>
-        <span style="font-size:.9rem;font-weight:700;color:#D97706" x-text="t('total') + ' USD ' + (purchaseCount * usage.extra_video_price_usd)"></span>
-      </div>
-      <div style="margin-top:12px;display:flex;gap:10px">
-        <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
-        <button class="btn btn-outline" @click="showPurchase = false" x-text="t('cancel')"></button>
-      </div>
+
+      <!-- ARS (MercadoPago) -->
+      <template x-if="purchaseCurrency === 'ARS'">
+        <div>
+          <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+            <span x-text="t('each_video_costs')"></span> <strong>$<span x-text="(usage.extra_video_price_ars || 0).toLocaleString('es-AR')"></span> ARS</strong>.
+            <span x-text="t('added_to_limit')"></span>
+          </p>
+          <div style="display:flex;gap:10px;align-items:center">
+            <label style="font-size:.82rem" x-text="t('quantity')"></label>
+            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+              <option value="1" x-text="'1 ' + t('video_word') + ' — $' + (usage.extra_video_price_ars || 0).toLocaleString('es-AR')"></option>
+              <option value="2" x-text="'2 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 2).toLocaleString('es-AR')"></option>
+              <option value="5" x-text="'5 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 5).toLocaleString('es-AR')"></option>
+              <option value="10" x-text="'10 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 10).toLocaleString('es-AR')"></option>
+            </select>
+            <span style="font-size:.9rem;font-weight:700;color:#D97706" x-text="'Total $' + (purchaseCount * (usage.extra_video_price_ars || 0)).toLocaleString('es-AR') + ' ARS'"></span>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:10px">
+            <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
+            <button class="btn btn-outline" @click="showPurchase = false" x-text="t('cancel')"></button>
+          </div>
+        </div>
+      </template>
+
+      <!-- USD option -->
+      <template x-if="purchaseCurrency === 'USD'">
+        <div>
+          <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+            <span x-text="t('each_video_costs')"></span> <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
+            <span x-text="t('added_to_limit')"></span>
+          </p>
+          <div style="display:flex;gap:10px;align-items:center">
+            <label style="font-size:.82rem" x-text="t('quantity')"></label>
+            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+              <option value="1" x-text="'1 ' + t('video_word') + ' — USD ' + usage.extra_video_price_usd"></option>
+              <option value="2" x-text="'2 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 2)"></option>
+              <option value="5" x-text="'5 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 5)"></option>
+              <option value="10" x-text="'10 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 10)"></option>
+            </select>
+            <span style="font-size:.9rem;font-weight:700;color:#D97706" x-text="'Total USD ' + (purchaseCount * usage.extra_video_price_usd)"></span>
+          </div>
+          <div style="margin-top:12px;display:flex;gap:10px">
+            <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
+            <button class="btn btn-outline" @click="showPurchase = false" x-text="t('cancel')"></button>
+          </div>
+        </div>
+      </template>
+
       <template x-if="purchaseMsg">
         <p style="font-size:.82rem;color:#10b981;margin-top:8px" x-text="purchaseMsg"></p>
       </template>
@@ -381,6 +412,7 @@ function mediaStudio() {
     usage: null,
     showPurchase: false,
     purchaseCount: 1,
+    purchaseCurrency: (Intl.DateTimeFormat().resolvedOptions().timeZone || "").includes("Argentina") ? "ARS" : "USD",
     purchaseMsg: "",
 
     get availableVoices() {
@@ -409,9 +441,17 @@ function mediaStudio() {
       dashFetch("/api/dashboard/media/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ count: this.purchaseCount }),
+        body: JSON.stringify({ count: this.purchaseCount, currency: this.purchaseCurrency }),
       }).then(d => {
         if (d.error) { alert(d.error); return; }
+        if (d.checkout_url) {
+          window.location.href = d.checkout_url;
+          return;
+        }
+        if (d.contact) {
+          this.purchaseMsg = d.contact;
+          return;
+        }
         this.usage = d;
         this.purchaseMsg = t("videos_added", { count: this.purchaseCount, remaining: d.remaining });
         this.purchaseCount = 1;

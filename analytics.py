@@ -1050,6 +1050,7 @@ def get_visits_calendar(month: str) -> dict:
 
 FREE_VIDEOS_PER_MONTH = int(os.environ.get("FREE_VIDEOS_PER_MONTH", "4"))
 EXTRA_VIDEO_PRICE_USD = 25
+EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "35385"))
 
 
 def get_media_usage(month: str = "") -> dict:
@@ -1074,6 +1075,7 @@ def get_media_usage(month: str = "") -> dict:
             "total_allowed": total_allowed,
             "remaining": max(total_allowed - used, 0),
             "extra_video_price_usd": EXTRA_VIDEO_PRICE_USD,
+            "extra_video_price_ars": EXTRA_VIDEO_PRICE_ARS,
         }
     except Exception as e:
         logger.error("analytics.get_media_usage error: %s", e)
@@ -1081,6 +1083,7 @@ def get_media_usage(month: str = "") -> dict:
             "month": month, "videos_used": 0, "videos_purchased": 0,
             "free_limit": FREE_VIDEOS_PER_MONTH, "total_allowed": FREE_VIDEOS_PER_MONTH,
             "remaining": FREE_VIDEOS_PER_MONTH, "extra_video_price_usd": EXTRA_VIDEO_PRICE_USD,
+            "extra_video_price_ars": EXTRA_VIDEO_PRICE_ARS,
         }
 
 

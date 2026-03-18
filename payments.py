@@ -17,15 +17,11 @@ logger = logging.getLogger(__name__)
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/api/payments")
 
-MP_ACCESS_TOKEN = os.environ.get("MP_ACCESS_TOKEN", "")
-EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
-BASE_URL = os.environ.get("BASE_URL", "")
-
-
 def _get_sdk() -> mercadopago.SDK:
-    if not MP_ACCESS_TOKEN:
+    token = os.environ.get("MP_ACCESS_TOKEN", "")
+    if not token:
         raise ValueError("MP_ACCESS_TOKEN no configurado")
-    return mercadopago.SDK(MP_ACCESS_TOKEN)
+    return mercadopago.SDK(token)
 
 
 # ---------------------------------------------------------------------------
@@ -35,24 +31,26 @@ def _get_sdk() -> mercadopago.SDK:
 def create_video_checkout(count: int) -> dict:
     """Create a MercadoPago checkout preference for video purchases."""
     sdk = _get_sdk()
-    total = EXTRA_VIDEO_PRICE_ARS * count
+    price_ars = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "35385"))
+    base_url = os.environ.get("BASE_URL", "")
+    total = price_ars * count
 
-    notification_url = f"{BASE_URL}/api/payments/mercadopago/webhook" if BASE_URL else ""
+    notification_url = f"{base_url}/api/payments/mercadopago/webhook" if base_url else ""
 
     preference_data: dict = {
         "items": [
             {
                 "title": f"Videos extra x{count} — RealStateBot",
                 "quantity": count,
-                "unit_price": EXTRA_VIDEO_PRICE_ARS,
+                "unit_price": price_ars,
                 "currency_id": "ARS",
             }
         ],
         "external_reference": json.dumps({"type": "video_purchase", "count": count}),
         "back_urls": {
-            "success": f"{BASE_URL}/dashboard/media?payment=success",
-            "failure": f"{BASE_URL}/dashboard/media?payment=failure",
-            "pending": f"{BASE_URL}/dashboard/media?payment=pending",
+            "success": f"{base_url}/dashboard/media?payment=success",
+            "failure": f"{base_url}/dashboard/media?payment=failure",
+            "pending": f"{base_url}/dashboard/media?payment=pending",
         },
         "auto_return": "approved",
     }
