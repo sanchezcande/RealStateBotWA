@@ -250,6 +250,9 @@ def api_media_purchase():
 def api_media_generate_video():
     import media_studio
 
+    if not _get_google_ai_key():
+        return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Configura la API key de Google AI en Railway."}), 400
+
     # Check usage limit first
     usage = analytics.get_media_usage()
     if usage["remaining"] <= 0:

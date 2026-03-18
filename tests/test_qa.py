@@ -4,6 +4,7 @@ Covers all core logic, edge cases, and integration points.
 Run: pytest tests/ -v
 """
 import json
+import os
 import time
 from unittest.mock import patch, MagicMock
 
@@ -970,14 +971,15 @@ class TestMediaUsage:
         # Use all 4 free
         for _ in range(4):
             analytics.increment_video_usage()
-        # Try to generate via API
+        # Try to generate via API — need GOOGLE_AI_API_KEY set for Gemini backend
         from flask import session
         with flask_client.session_transaction() as sess:
             sess["dashboard_auth"] = True
-        resp = flask_client.post(
-            "/api/dashboard/media/generate/video",
-            json={"photo_ids": ["test123"], "prompt": "test"},
-        )
+        with patch.dict(os.environ, {"GOOGLE_AI_API_KEY": "test-key"}):
+            resp = flask_client.post(
+                "/api/dashboard/media/generate/video",
+                json={"photo_ids": ["test123"], "prompt": "test"},
+            )
         assert resp.status_code == 429
         data = resp.get_json()
         assert data["limit_reached"] is True

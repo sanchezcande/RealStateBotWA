@@ -9,7 +9,6 @@ For the original Gemini-only version, see media_studio_gemini.py
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import math
 import os
@@ -221,6 +220,26 @@ def delete_photo(photo_id: str) -> bool:
             f.unlink()
             return True
     return False
+
+
+# ---------------------------------------------------------------------------
+# Photo enhancement (Pillow — improves quality before sending to Gemini)
+# ---------------------------------------------------------------------------
+
+def _enhance_photo(input_path: str, output_path: str) -> str:
+    """Enhance photo quality with Pillow. Returns output path on success, input on failure."""
+    try:
+        from PIL import Image, ImageEnhance
+        img = Image.open(input_path)
+        img = ImageEnhance.Sharpness(img).enhance(1.3)
+        img = ImageEnhance.Contrast(img).enhance(1.1)
+        img = ImageEnhance.Color(img).enhance(1.05)
+        img.save(output_path, quality=95)
+        logger.info("Enhanced photo %s -> %s", input_path, output_path)
+        return output_path
+    except Exception as e:
+        logger.warning("Photo enhancement failed for %s: %s", input_path, e)
+        return input_path
 
 
 # ---------------------------------------------------------------------------
@@ -547,6 +566,19 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         )
         _update_job(job_id, status="processing", progress=_video_progress_message("connecting"))
 
+        # Enhance photos if requested (Pillow sharpness/contrast/color boost)
+        temp_enhanced = []
+        if enhance:
+            enhanced_paths = []
+            for i, photo_path in enumerate(photo_paths):
+                ext = os.path.splitext(photo_path)[1] or ".jpg"
+                enhanced_path = str(UPLOAD_DIR / "videos" / f"{job_id}_enhanced_{i}{ext}")
+                result = _enhance_photo(photo_path, enhanced_path)
+                enhanced_paths.append(result)
+                if result == enhanced_path:
+                    temp_enhanced.append(enhanced_path)
+            photo_paths = enhanced_paths
+
         client = _get_client()
         from google.genai import types
 
@@ -692,7 +724,12 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         # Final polish (framing, logo, voiceover, music)
         _polish_final_video(final_path, video_format=video_format, voiceover_path=voiceover_path)
 
-        # Clean up voiceover temp
+        # Clean up temp files
+        for tf in temp_enhanced:
+            try:
+                os.unlink(tf)
+            except OSError:
+                pass
         if voiceover_path:
             try:
                 os.unlink(voiceover_path)
