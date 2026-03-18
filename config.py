@@ -29,8 +29,11 @@ GOOGLE_CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
 
 SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "60"))  # seconds
 
+# Persistent data directory (Railway volume at /data, local fallback to cwd)
+_DATA_DIR = "/data" if os.path.isdir("/data") else "."
+
 # Analytics dashboard
-ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
+ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", os.path.join(_DATA_DIR, "analytics.db"))
 DASHBOARD_TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
 DASHBOARD_PLAN = os.environ.get("DASHBOARD_PLAN", "starter")  # starter | pro | premium
 BRANCH_NAME = os.environ.get("BRANCH_NAME", "")
@@ -45,7 +48,7 @@ MEDIA_MUSIC_PATH = os.environ.get("MEDIA_MUSIC_PATH", "")     # background music
 MEDIA_LOGO_PATH = os.environ.get("MEDIA_LOGO_PATH", "")       # logo overlay image
 REALESRGAN_PATH = os.environ.get("REALESRGAN_PATH", "")       # path to realesrgan-ncnn-vulkan
 MEDIA_VOICEOVER_VOICE = os.environ.get("MEDIA_VOICEOVER_VOICE", "es-AR-TomasNeural")  # edge-tts voice
-MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", "uploads")
+MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", os.path.join(_DATA_DIR, "uploads"))
 
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.

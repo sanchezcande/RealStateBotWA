@@ -12,10 +12,10 @@ import threading
 from datetime import datetime, timedelta
 from typing import Optional
 
-from config import AR_TZ
+from config import AR_TZ, ANALYTICS_DB_PATH
 
 logger = logging.getLogger(__name__)
-_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", "analytics.db")
+_DB_PATH = ANALYTICS_DB_PATH
 _conn: Optional[sqlite3.Connection] = None
 _db_lock = threading.Lock()
 
@@ -134,14 +134,13 @@ def init_db():
                 UNIQUE(month)
             );
         """)
-        # Seed mock data so the dashboard has something to show.
-        # Runs if DB is empty OR if SEED_DEMO_DATA=true (force reseed).
+        # Seed mock data ONLY when explicitly requested via SEED_DEMO_DATA=true.
         # Skipped for in-memory DBs (tests).
         if _DB_PATH != ":memory:":
             force_seed = os.environ.get("SEED_DEMO_DATA", "").lower() in ("true", "1", "yes")
-            count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-            if count == 0 or force_seed:
-                if force_seed and count > 0:
+            if force_seed:
+                count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
+                if count > 0:
                     for tbl in ("events", "conversations", "chat_messages", "leads", "visits"):
                         conn.execute(f"DELETE FROM {tbl}")
                     logger.info("Cleared existing data for demo reseed")
