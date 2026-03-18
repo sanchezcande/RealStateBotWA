@@ -70,13 +70,13 @@ KENBURNS_EFFECTS = ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt
 
 # Minimum image size for Ken Burns (both dims must be >= this * output)
 KB_SCALE = 3
-KB_MAX_DIM = 3840  # cap per axis — safe with JPEG + fast preset
+KB_MAX_PIXELS = 16_000_000  # soft cap on total pixels to avoid OOM
 
 
 def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> tuple[str, int, int]:
     """Scale image up with Pillow so it's large enough for Ken Burns.
     Returns (path, actual_width, actual_height).
-    Enforces KB_MAX_DIM cap and saves as JPEG to reduce memory."""
+    Caps total pixels (not per-axis) and saves as JPEG."""
     try:
         from PIL import Image
         img = Image.open(input_path).convert("RGB")
@@ -88,21 +88,21 @@ def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> 
         new_w = max(int(img.width * scale), min_w)
         new_h = max(int(img.height * scale), min_h)
 
-        # Cap dimensions to avoid OOM on constrained servers (Railway etc.)
-        if new_w > KB_MAX_DIM or new_h > KB_MAX_DIM:
-            cap_scale = min(KB_MAX_DIM / new_w, KB_MAX_DIM / new_h)
-            new_w = int(new_w * cap_scale)
-            new_h = int(new_h * cap_scale)
+        # Soft cap on total pixels to avoid OOM (not per-axis — that kills
+        # landscape-to-vertical Ken Burns by shrinking height too much)
+        total = new_w * new_h
+        if total > KB_MAX_PIXELS:
+            pixel_scale = math.sqrt(KB_MAX_PIXELS / total)
+            new_w = int(new_w * pixel_scale)
+            new_h = int(new_h * pixel_scale)
 
         # x264 needs even dimensions
         new_w += new_w % 2
         new_h += new_h % 2
 
         img = img.resize((new_w, new_h), Image.LANCZOS)
-        # Save as JPEG (much smaller than PNG, avoids huge memory spikes in ffmpeg)
-        jpeg_output = output_path.replace(".png", ".jpg") if output_path.endswith(".png") else output_path
-        img.save(jpeg_output, "JPEG", quality=95)
-        return jpeg_output, new_w, new_h
+        img.save(output_path, "JPEG", quality=95)
+        return output_path, new_w, new_h
     except Exception as e:
         logger.warning("_prepare_for_kenburns failed: %s", e)
         return input_path, 0, 0
@@ -112,8 +112,8 @@ def _kenburns_filter(effect: str, w: int, h: int, in_w: int, in_h: int) -> str:
     """Build a crop+scale filter for Ken Burns. No distortion.
 
     Uses animated crop expressions over a pre-scaled image, then scales
-    the crop to the exact output size. The crop always has the correct
-    w:h aspect ratio, so no stretching ever happens.
+    the crop to the exact output size. All crop values use min/max guards
+    so ffmpeg never gets invalid sizes.
     """
     d = CLIP_DURATION * CLIP_FPS  # total frames
 
@@ -121,50 +121,51 @@ def _kenburns_filter(effect: str, w: int, h: int, in_w: int, in_h: int) -> str:
     max_zoom = min(in_w / w, in_h / h, 2.5)
     max_zoom = max(max_zoom, 1.05)  # at least a tiny zoom
 
+    # All crop dimensions clamped with min(val,iw)/min(val,ih) and max(pos,0)
     if effect == "zoom_in":
-        # Crop shrinks from max_zoom to 1.0x output, centered → zoom in
-        sw, ew = w * max_zoom, w * 1.0
-        sh, eh = h * max_zoom, h * 1.0
+        sw, ew = int(w * max_zoom), w
+        sh, eh = int(h * max_zoom), h
+        dw, dh = sw - ew, sh - eh
         crop = (
             f"crop="
-            f"'{sw}-{sw - ew}*n/{d}'"
-            f":'{sh}-{sh - eh}*n/{d}'"
-            f":'(iw-ow)/2':'(ih-oh)/2'"
+            f"'min({sw}-{dw}*n/{d},iw)'"
+            f":'min({sh}-{dh}*n/{d},ih)'"
+            f":'max((iw-ow)/2,0)':'max((ih-oh)/2,0)'"
         )
     elif effect == "zoom_out":
-        # Crop grows from 1.0x to max_zoom output, centered → zoom out
-        sw, ew = w * 1.0, w * max_zoom
-        sh, eh = h * 1.0, h * max_zoom
+        sw, ew = w, int(w * max_zoom)
+        sh, eh = h, int(h * max_zoom)
+        dw, dh = ew - sw, eh - sh
         crop = (
             f"crop="
-            f"'{sw}+{ew - sw}*n/{d}'"
-            f":'{sh}+{eh - sh}*n/{d}'"
-            f":'(iw-ow)/2':'(ih-oh)/2'"
+            f"'min({sw}+{dw}*n/{d},iw)'"
+            f":'min({sh}+{dh}*n/{d},ih)'"
+            f":'max((iw-ow)/2,0)':'max((ih-oh)/2,0)'"
         )
     elif effect == "pan_lr":
         cw = int(min(w * 1.5, in_w))
         ch = int(min(h * 1.5, in_h))
         max_x = max(in_w - cw, 1)
         cy = max((in_h - ch) // 2, 0)
-        crop = f"crop={cw}:{ch}:'{max_x}*n/{d}':{cy}"
+        crop = f"crop={cw}:{ch}:'min({max_x}*n/{d},{max_x})':{cy}"
     elif effect == "pan_rl":
         cw = int(min(w * 1.5, in_w))
         ch = int(min(h * 1.5, in_h))
         max_x = max(in_w - cw, 1)
         cy = max((in_h - ch) // 2, 0)
-        crop = f"crop={cw}:{ch}:'{max_x}-{max_x}*n/{d}':{cy}"
+        crop = f"crop={cw}:{ch}:'max({max_x}-{max_x}*n/{d},0)':{cy}"
     elif effect == "pan_tb":
         cw = int(min(w * 1.5, in_w))
         ch = int(min(h * 1.5, in_h))
         cx = max((in_w - cw) // 2, 0)
         max_y = max(in_h - ch, 1)
-        crop = f"crop={cw}:{ch}:{cx}:'{max_y}*n/{d}'"
+        crop = f"crop={cw}:{ch}:{cx}:'min({max_y}*n/{d},{max_y})'"
     elif effect == "pan_bt":
         cw = int(min(w * 1.5, in_w))
         ch = int(min(h * 1.5, in_h))
         cx = max((in_w - cw) // 2, 0)
         max_y = max(in_h - ch, 1)
-        crop = f"crop={cw}:{ch}:{cx}:'{max_y}-{max_y}*n/{d}'"
+        crop = f"crop={cw}:{ch}:{cx}:'max({max_y}-{max_y}*n/{d},0)'"
     else:
         return _kenburns_filter("zoom_in", w, h, in_w, in_h)
 
