@@ -172,6 +172,17 @@
       <template x-if="purchaseMsg">
         <p style="font-size:.82rem;color:#10b981;margin-top:8px" x-text="purchaseMsg"></p>
       </template>
+
+      <!-- Embedded checkout iframe -->
+      <template x-if="checkoutUrl">
+        <div style="margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb">
+            <span style="font-size:.82rem;font-weight:600;color:#333">Completar pago</span>
+            <button @click="checkoutUrl = ''" style="font-size:.78rem;color:#666;cursor:pointer;border:none;background:none">Cerrar</button>
+          </div>
+          <iframe :src="checkoutUrl" style="width:100%;height:600px;border:none"></iframe>
+        </div>
+      </template>
     </div>
   </template>
 
@@ -381,7 +392,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://assets.lemonsqueezy.com/lemon.js" defer></script>
 <script src="/static/js/dashboard.js"></script>
 <script>
 function mediaStudio() {
@@ -416,6 +426,7 @@ function mediaStudio() {
     purchaseCount: 1,
     purchaseCurrency: (Intl.DateTimeFormat().resolvedOptions().timeZone || "").includes("Argentina") ? "ARS" : "USD",
     purchaseMsg: "",
+    checkoutUrl: "",
 
     get availableVoices() {
       return this.detectedLang === "en" ? this._enVoices : this._esVoices;
@@ -447,13 +458,7 @@ function mediaStudio() {
       }).then(d => {
         if (d.error) { alert(d.error); return; }
         if (d.checkout_url) {
-          if (this.purchaseCurrency === 'USD' && window.LemonSqueezy) {
-            window.LemonSqueezy.Url.Open(d.checkout_url);
-          } else {
-            const w = 500, h = 700;
-            const left = (screen.width - w) / 2, top = (screen.height - h) / 2;
-            window.open(d.checkout_url, 'checkout', `width=${w},height=${h},left=${left},top=${top}`);
-          }
+          this.checkoutUrl = d.checkout_url;
           return;
         }
         if (d.contact) {
