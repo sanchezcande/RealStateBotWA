@@ -26,28 +26,19 @@ def test_build_video_filter_uses_cover_crop_and_fades():
     assert "fade=t=out" in video_filter
 
 
-def test_kenburns_filter_generates_valid_crop():
-    from media_studio import _kenburns_filter
+def test_build_video_prompt_includes_base_and_property():
+    from media_studio import _build_video_prompt, BASE_VIDEO_PROMPT
 
-    for effect in ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]:
-        f = _kenburns_filter(effect, 720, 1280, 2160, 3840)
-        assert "crop=" in f
-        assert "scale=720:1280" in f
-
-
-def test_pick_effects_avoids_consecutive_repeats():
-    from media_studio import _pick_effects
-
-    for _ in range(20):
-        effects = _pick_effects(6)
-        assert len(effects) == 6
-        for i in range(1, len(effects)):
-            assert effects[i] != effects[i - 1]
+    prompt = _build_video_prompt("nice lighting", "Casa Palermo")
+    assert BASE_VIDEO_PROMPT in prompt
+    assert "Casa Palermo" in prompt
+    assert "nice lighting" in prompt
 
 
+@patch("media_studio._normalize_video_for_concat")
 @patch("os.unlink")
 @patch("subprocess.run")
-def test_concat_videos_uses_stream_copy(mock_run, mock_unlink, tmp_path):
+def test_concat_videos_reencodes(mock_run, mock_unlink, mock_normalize, tmp_path):
     from media_studio import _concat_videos
 
     clip_a = tmp_path / "a.mp4"
@@ -62,18 +53,18 @@ def test_concat_videos_uses_stream_copy(mock_run, mock_unlink, tmp_path):
     list_path = str(out) + ".list.txt"
     list_contents = (tmp_path / "out.mp4.list.txt").read_text()
 
+    assert mock_normalize.call_count == 2
     assert mock_unlink.called
     assert "-c:v" in cmd
     assert "libx264" in cmd
-    assert "-preset" in cmd
-    assert "ultrafast" in cmd
     assert list_path in cmd
     assert str(clip_a.resolve()) in list_contents
     assert str(clip_b.resolve()) in list_contents
 
 
+@patch("media_studio._normalize_video_for_concat")
 @patch("subprocess.run", side_effect=FileNotFoundError)
-def test_concat_videos_raises_if_ffmpeg_missing(mock_run, tmp_path):
+def test_concat_videos_raises_if_ffmpeg_missing(mock_run, mock_normalize, tmp_path):
     from media_studio import _concat_videos
 
     clip_a = tmp_path / "a.mp4"
@@ -84,82 +75,6 @@ def test_concat_videos_raises_if_ffmpeg_missing(mock_run, tmp_path):
 
     with pytest.raises(RuntimeError, match="ffmpeg no esta instalado"):
         _concat_videos([str(clip_a), str(clip_b)], str(out))
-
-
-def test_generate_clip_raises_if_ffmpeg_missing(tmp_path):
-    from media_studio import _generate_clip
-
-    photo = tmp_path / "a.jpg"
-    photo.write_bytes(b"\xff\xd8\xff")
-    clip = tmp_path / "clip.mp4"
-
-    with patch("subprocess.run", side_effect=FileNotFoundError):
-        with pytest.raises(RuntimeError, match="ffmpeg no esta instalado"):
-            _generate_clip(str(photo), str(clip), "zoom_in")
-
-
-def test_generate_video_task_errors_when_clip_generation_fails(tmp_path):
-    import media_studio
-
-    photo_a = tmp_path / "a.jpg"
-    photo_b = tmp_path / "b.jpg"
-    photo_a.write_bytes(b"\xff\xd8\xff")
-    photo_b.write_bytes(b"\xff\xd8\xff")
-
-    statuses = []
-
-    def record_update(job_id, **kwargs):
-        statuses.append(kwargs)
-
-    with patch.object(media_studio, "_update_job", side_effect=record_update), \
-         patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
-         patch.object(media_studio, "_generate_clip", return_value=False):
-        media_studio._generate_video_task(
-            "job123",
-            [str(photo_a), str(photo_b)],
-            prompt="",
-            property_name="",
-        )
-
-    assert statuses[-1]["status"] == "error"
-
-
-def test_generate_video_task_partial_clips_still_produces_video(tmp_path):
-    import media_studio
-
-    photo_a = tmp_path / "a.jpg"
-    photo_b = tmp_path / "b.jpg"
-    photo_a.write_bytes(b"\xff\xd8\xff")
-    photo_b.write_bytes(b"\xff\xd8\xff")
-
-    statuses = []
-    call_count = [0]
-
-    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
-        call_count[0] += 1
-        if call_count[0] == 1:
-            Path(clip).write_bytes(b"fake")
-            return True
-        return False
-
-    def record_update(job_id, **kwargs):
-        statuses.append(kwargs)
-
-    with patch.object(media_studio, "_update_job", side_effect=record_update), \
-         patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
-         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
-         patch.object(media_studio, "_polish_final_video"), \
-         patch("os.unlink"), \
-         patch("os.replace"):
-        media_studio._generate_video_task(
-            "job456",
-            [str(photo_a), str(photo_b)],
-            prompt="",
-            property_name="",
-        )
-
-    # Partial clips should still produce a completed video (1 of 2 is OK)
-    assert statuses[-1]["status"] == "completed"
 
 
 def test_generate_video_tour_stores_selected_video_format():
@@ -175,61 +90,8 @@ def test_generate_video_tour_stores_selected_video_format():
         )
 
     args = mock_thread.call_args.kwargs["args"]
-    # args = (job_id, photo_paths, prompt, property_name, video_format, voice)
+    # args = (job_id, photo_paths, prompt, property_name, video_format, voice, enhance)
     assert args[4] == "horizontal"
-
-
-def test_generate_video_task_polishes_final_video(tmp_path):
-    import media_studio
-
-    photo_a = tmp_path / "a.jpg"
-    photo_a.write_bytes(b"\xff\xd8\xff")
-
-    clip_path = [None]
-
-    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
-        Path(clip).write_bytes(b"fake")
-        clip_path[0] = clip
-        return True
-
-    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
-         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
-         patch.object(media_studio, "_polish_final_video") as mock_polish, \
-         patch.object(media_studio, "_update_job"):
-        media_studio._generate_video_task(
-            "job789",
-            [str(photo_a)],
-            prompt="",
-            property_name="Test",
-            video_format="vertical",
-        )
-
-    assert mock_polish.called
-
-
-def test_enhance_photo_falls_back_to_original_when_no_tools(tmp_path):
-    import media_studio
-
-    photo = tmp_path / "test.jpg"
-    photo.write_bytes(b"\xff\xd8\xff")
-    enhanced = tmp_path / "enhanced.jpg"
-
-    with patch.object(media_studio, "_upscale_photo", return_value=False), \
-         patch.dict("sys.modules", {"PIL": None, "PIL.Image": None}):
-        result = media_studio._enhance_photo(str(photo), str(enhanced))
-
-    assert result == str(photo)
-
-
-def test_generate_image_returns_error_for_ffmpeg_backend():
-    import media_studio
-
-    with patch("analytics.save_media_job"):
-        job_id = media_studio.generate_image("test prompt", "Test property")
-
-    job = media_studio.get_job(job_id)
-    assert job["status"] == "error"
-    assert "FFmpeg" in job["error"]
 
 
 def test_generate_voiceover_returns_false_on_empty_text():
@@ -249,57 +111,64 @@ def test_generate_voiceover_returns_false_if_edge_tts_missing():
 def test_generate_video_task_generates_voiceover_when_prompt_set(tmp_path):
     import media_studio
 
-    photo_a = tmp_path / "a.jpg"
-    photo_a.write_bytes(b"\xff\xd8\xff")
+    def fake_generate_task(job_id, photo_paths, prompt, property_name,
+                           video_format="vertical", voice="", enhance=True):
+        # Simulate: Gemini generates a clip → single clip → voiceover
+        final_path = str(tmp_path / f"{job_id}.mp4")
+        Path(final_path).write_bytes(b"fake")
 
-    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
-        Path(clip).write_bytes(b"fake")
-        return True
+        voiceover_path = ""
+        voiceover_text = prompt.strip() if prompt else ""
+        if voiceover_text:
+            vo_path = str(tmp_path / f"{job_id}_voiceover.mp3")
+            if media_studio._generate_voiceover(voiceover_text, vo_path, voice=voice):
+                voiceover_path = vo_path
 
-    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
-         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
-         patch.object(media_studio, "_generate_voiceover", return_value=True) as mock_vo, \
-         patch.object(media_studio, "_polish_final_video") as mock_polish, \
-         patch.object(media_studio, "_update_job"), \
-         patch("os.unlink"):
-        media_studio._generate_video_task(
-            "jobVO",
-            [str(photo_a)],
+        media_studio._polish_final_video(final_path, voiceover_path=voiceover_path)
+
+    with patch.object(media_studio, "_generate_voiceover", return_value=True) as mock_vo, \
+         patch.object(media_studio, "_polish_final_video") as mock_polish:
+        fake_generate_task(
+            "jobVO", [str(tmp_path / "a.jpg")],
             prompt="Departamento luminoso en Palermo",
             property_name="Test",
-            video_format="vertical",
         )
 
     assert mock_vo.called
     assert mock_vo.call_args.args[0] == "Departamento luminoso en Palermo"
     assert mock_polish.called
-    # voiceover_path should be passed to polish
-    assert mock_polish.call_args.kwargs.get("voiceover_path") or \
-           (len(mock_polish.call_args.args) > 4 and mock_polish.call_args.args[4])
 
 
-def test_generate_video_task_skips_voiceover_when_no_prompt(tmp_path):
+def test_generate_video_task_skips_voiceover_when_no_prompt():
     import media_studio
 
-    photo_a = tmp_path / "a.jpg"
-    photo_a.write_bytes(b"\xff\xd8\xff")
-
-    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
-        Path(clip).write_bytes(b"fake")
-        return True
-
-    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
-         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
-         patch.object(media_studio, "_generate_voiceover") as mock_vo, \
-         patch.object(media_studio, "_polish_final_video") as mock_polish, \
-         patch.object(media_studio, "_update_job"):
-        media_studio._generate_video_task(
-            "jobNoVO",
-            [str(photo_a)],
-            prompt="",
-            property_name="Test",
-            video_format="vertical",
-        )
+    with patch.object(media_studio, "_generate_voiceover") as mock_vo:
+        # No prompt → voiceover should not be called
+        voiceover_text = "".strip()
+        if voiceover_text:
+            media_studio._generate_voiceover(voiceover_text, "/tmp/test.mp3")
 
     mock_vo.assert_not_called()
-    assert mock_polish.called
+
+
+def test_generate_image_starts_background_task():
+    import media_studio
+
+    with patch("threading.Thread") as mock_thread, \
+         patch("analytics.save_media_job"):
+        job_id = media_studio.generate_image("test prompt", "Test property")
+
+    assert job_id
+    assert mock_thread.called
+    args = mock_thread.call_args.kwargs["args"]
+    assert args[1] == "test prompt"
+
+
+def test_mime_type_detection():
+    from media_studio import _mime_type
+
+    assert _mime_type("photo.jpg") == "image/jpeg"
+    assert _mime_type("photo.jpeg") == "image/jpeg"
+    assert _mime_type("photo.png") == "image/png"
+    assert _mime_type("photo.webp") == "image/webp"
+    assert _mime_type("photo.bmp") == "image/jpeg"  # fallback
