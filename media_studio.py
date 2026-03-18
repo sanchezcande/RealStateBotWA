@@ -555,7 +555,8 @@ def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = 
 # ---------------------------------------------------------------------------
 
 def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
-                         property_name: str, video_format: str = DEFAULT_VIDEO_FORMAT,
+                         voiceover_text: str, property_name: str,
+                         video_format: str = DEFAULT_VIDEO_FORMAT,
                          voice: str = "", enhance: bool = True):
     """Background task that generates a video tour from photos using Veo."""
     try:

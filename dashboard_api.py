@@ -265,6 +265,7 @@ def api_media_generate_video():
     data = request.get_json(silent=True) or {}
     photo_ids = data.get("photo_ids", [])
     prompt = data.get("prompt", "")
+    voiceover_text = data.get("voiceover_text", "")
     property_name = data.get("property", "")
     video_format = data.get("video_format", "vertical")
     voice = data.get("voice", "")
@@ -292,6 +293,7 @@ def api_media_generate_video():
     job_id = media_studio.generate_video_tour(
         paths,
         prompt=prompt,
+        voiceover_text=voiceover_text,
         property_name=property_name,
         video_format=video_format,
         voice=voice,

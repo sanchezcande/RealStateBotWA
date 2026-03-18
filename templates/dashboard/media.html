@@ -213,6 +213,14 @@
             <div style="font-size:.78rem;color:#999;margin-top:2px">Aparece como texto en el video</div>
           </div>
 
+          <!-- Video prompt (instructions for Gemini AI) -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:4px">Instrucciones para el video (prompt IA)</div>
+            <textarea placeholder="Ej: Movimiento de camara lento, mostrar la luz natural, enfocarse en los detalles del living..."
+                      x-model="videoPrompt" style="min-height:50px"></textarea>
+            <div style="font-size:.78rem;color:#999;margin-top:2px">Opcional. Le dice a la IA como generar el video. Si lo dejas vacio, usa un prompt profesional por defecto.</div>
+          </div>
+
           <!-- Video format -->
           <div style="margin-bottom:14px">
             <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px" x-text="t('video_format')"></div>
@@ -349,7 +357,7 @@ function mediaStudio() {
     photos: [],
     selectedIds: [],
     // Video gen
-    voiceoverText: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
+    voiceoverText: "", videoPrompt: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
     enhancePhotos: true,
     detectedLang: "es",
     _esVoices: [
@@ -473,7 +481,8 @@ function mediaStudio() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           photo_ids: this.selectedIds,
-          prompt: this.voiceoverText.trim(),
+          prompt: this.videoPrompt.trim(),
+          voiceover_text: this.voiceoverText.trim(),
           property: this.videoProperty,
           video_format: this.videoFormat,
           voice: this.voiceoverText.trim() ? this.voice : "",
