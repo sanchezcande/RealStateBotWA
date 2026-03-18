@@ -26,13 +26,13 @@ def test_build_video_filter_uses_cover_crop_and_fades():
     assert "fade=t=out" in video_filter
 
 
-def test_kenburns_filter_generates_valid_zoompan():
+def test_kenburns_filter_generates_valid_crop():
     from media_studio import _kenburns_filter
 
     for effect in ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]:
-        f = _kenburns_filter(effect, 720, 1280)
-        assert "zoompan=" in f
-        assert "720x1280" in f
+        f = _kenburns_filter(effect, 720, 1280, 2160, 3840)
+        assert "crop=" in f
+        assert "scale=720:1280" in f
 
 
 def test_pick_effects_avoids_consecutive_repeats():

@@ -63,52 +63,97 @@ _jobs: dict[str, dict] = {}
 _jobs_lock = threading.Lock()
 
 # ---------------------------------------------------------------------------
-# Ken Burns effects
+# Ken Burns effects (crop-based — no distortion)
 # ---------------------------------------------------------------------------
 
 KENBURNS_EFFECTS = ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]
 
+# Minimum image size for Ken Burns (both dims must be >= this * output)
+KB_SCALE = 3
 
-def _kenburns_filter(effect: str, w: int, h: int) -> str:
-    """Build a zoompan filter string for a specific Ken Burns effect."""
+
+def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> tuple[str, int, int]:
+    """Scale image up with Pillow so it's large enough for Ken Burns.
+    Returns (path, actual_width, actual_height)."""
+    try:
+        from PIL import Image
+        img = Image.open(input_path).convert("RGB")
+
+        min_w = w * KB_SCALE
+        min_h = h * KB_SCALE
+        scale = max(min_w / img.width, min_h / img.height, 1.0)
+
+        new_w = max(int(img.width * scale), min_w)
+        new_h = max(int(img.height * scale), min_h)
+        # x264 needs even dimensions
+        new_w += new_w % 2
+        new_h += new_h % 2
+
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+        img.save(output_path, quality=98)
+        return output_path, new_w, new_h
+    except Exception as e:
+        logger.warning("_prepare_for_kenburns failed: %s", e)
+        return input_path, 0, 0
+
+
+def _kenburns_filter(effect: str, w: int, h: int, in_w: int, in_h: int) -> str:
+    """Build a crop+scale filter for Ken Burns. No distortion.
+
+    Uses animated crop expressions over a pre-scaled image, then scales
+    the crop to the exact output size. The crop always has the correct
+    w:h aspect ratio, so no stretching ever happens.
+    """
     d = CLIP_DURATION * CLIP_FPS  # total frames
-    effects = {
-        "zoom_in": (
-            f"zoompan=z='min(zoom+0.0015,1.3)'"
-            f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-        "zoom_out": (
-            f"zoompan=z='if(eq(on,0),1.3,max(zoom-0.0015,1.0))'"
-            f":x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-        "pan_lr": (
-            f"zoompan=z='1.15'"
-            f":x='if(eq(on,0),0,min(x+(iw-iw/zoom)/{d},iw-iw/zoom))'"
-            f":y='ih/2-(ih/zoom/2)'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-        "pan_rl": (
-            f"zoompan=z='1.15'"
-            f":x='if(eq(on,0),iw-iw/zoom,max(x-(iw-iw/zoom)/{d},0))'"
-            f":y='ih/2-(ih/zoom/2)'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-        "pan_tb": (
-            f"zoompan=z='1.15'"
-            f":x='iw/2-(iw/zoom/2)'"
-            f":y='if(eq(on,0),0,min(y+(ih-ih/zoom)/{d},ih-ih/zoom))'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-        "pan_bt": (
-            f"zoompan=z='1.15'"
-            f":x='iw/2-(iw/zoom/2)'"
-            f":y='if(eq(on,0),ih-ih/zoom,max(y-(ih-ih/zoom)/{d},0))'"
-            f":d={d}:s={w}x{h}:fps={CLIP_FPS}"
-        ),
-    }
-    return effects.get(effect, effects["zoom_in"])
+
+    if effect == "zoom_in":
+        # Crop shrinks from 2.5x to 1.0x output, centered → zoom in
+        sw, ew = w * 2.5, w * 1.0
+        sh, eh = h * 2.5, h * 1.0
+        crop = (
+            f"crop="
+            f"'{sw}-{sw - ew}*n/{d}'"
+            f":'{sh}-{sh - eh}*n/{d}'"
+            f":'(iw-ow)/2':'(ih-oh)/2'"
+        )
+    elif effect == "zoom_out":
+        # Crop grows from 1.0x to 2.5x output, centered → zoom out
+        sw, ew = w * 1.0, w * 2.5
+        sh, eh = h * 1.0, h * 2.5
+        crop = (
+            f"crop="
+            f"'{sw}+{ew - sw}*n/{d}'"
+            f":'{sh}+{eh - sh}*n/{d}'"
+            f":'(iw-ow)/2':'(ih-oh)/2'"
+        )
+    elif effect == "pan_lr":
+        cw = int(min(w * 1.5, in_w))
+        ch = int(min(h * 1.5, in_h))
+        max_x = max(in_w - cw, 1)
+        cy = max((in_h - ch) // 2, 0)
+        crop = f"crop={cw}:{ch}:'{max_x}*n/{d}':{cy}"
+    elif effect == "pan_rl":
+        cw = int(min(w * 1.5, in_w))
+        ch = int(min(h * 1.5, in_h))
+        max_x = max(in_w - cw, 1)
+        cy = max((in_h - ch) // 2, 0)
+        crop = f"crop={cw}:{ch}:'{max_x}-{max_x}*n/{d}':{cy}"
+    elif effect == "pan_tb":
+        cw = int(min(w * 1.5, in_w))
+        ch = int(min(h * 1.5, in_h))
+        cx = max((in_w - cw) // 2, 0)
+        max_y = max(in_h - ch, 1)
+        crop = f"crop={cw}:{ch}:{cx}:'{max_y}*n/{d}'"
+    elif effect == "pan_bt":
+        cw = int(min(w * 1.5, in_w))
+        ch = int(min(h * 1.5, in_h))
+        cx = max((in_w - cw) // 2, 0)
+        max_y = max(in_h - ch, 1)
+        crop = f"crop={cw}:{ch}:{cx}:'{max_y}-{max_y}*n/{d}'"
+    else:
+        return _kenburns_filter("zoom_in", w, h, in_w, in_h)
+
+    return f"{crop},scale={w}:{h}:flags=lanczos"
 
 
 def _pick_effects(n: int) -> list[str]:
@@ -198,14 +243,28 @@ def _enhance_photo(input_path: str, output_path: str) -> str:
 
 def _generate_clip(photo_path: str, clip_path: str, effect: str,
                    video_format: str = DEFAULT_VIDEO_FORMAT) -> bool:
-    """Generate a single Ken Burns clip from a photo using FFmpeg."""
+    """Generate a single Ken Burns clip from a photo using FFmpeg.
+
+    1. Pre-scales the image with Pillow (LANCZOS, high-res)
+    2. Uses animated crop (correct aspect ratio, zero distortion)
+    3. Scales crop to output size
+    """
     cfg = _get_video_format_config(video_format)
     w, h = cfg["width"], cfg["height"]
 
-    zoompan = _kenburns_filter(effect, w, h)
+    # Prepare image: scale up for Ken Burns room
+    prepared_path = clip_path + ".prepared.png"
+    src, in_w, in_h = _prepare_for_kenburns(photo_path, prepared_path, w, h)
+    if not in_w:
+        # Pillow failed; use raw image with fallback dimensions
+        src = photo_path
+        in_w, in_h = w * KB_SCALE, h * KB_SCALE
+
+    kb_filter = _kenburns_filter(effect, w, h, in_w, in_h)
     fade_out_start = max(CLIP_DURATION - FADE_DURATION, FADE_DURATION)
     vf = (
-        f"{zoompan},"
+        f"{kb_filter},"
+        f"format=yuv420p,"
         f"fade=t=in:st=0:d={FADE_DURATION:.2f},"
         f"fade=t=out:st={fade_out_start:.2f}:d={FADE_DURATION:.2f}"
     )
@@ -214,16 +273,16 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
         subprocess.run(
             [
                 "ffmpeg", "-y",
-                "-loop", "1", "-i", photo_path,
+                "-loop", "1", "-i", src,
                 "-vf", vf,
                 "-t", str(CLIP_DURATION),
-                "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                "-c:v", "libx264", "-preset", "slow", "-crf", "15",
                 "-pix_fmt", "yuv420p",
                 "-movflags", "+faststart",
                 "-an",
                 clip_path,
             ],
-            check=True, capture_output=True, timeout=120,
+            check=True, capture_output=True, timeout=180,
         )
         return True
     except FileNotFoundError:
@@ -232,6 +291,12 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
         stderr = e.stderr.decode(errors="ignore") if e.stderr else ""
         logger.error("FFmpeg clip generation failed: %s %s", e, stderr)
         return False
+    finally:
+        # Clean up prepared image
+        try:
+            os.unlink(prepared_path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +313,7 @@ def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VID
              "-r", str(CLIP_FPS),
              "-c:v", "libx264",
              "-preset", "medium",
-             "-crf", "18",
+             "-crf", "15",
              "-an",
              "-movflags", "+faststart",
              normalized],
@@ -282,7 +347,7 @@ def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = 
              "-i", list_path,
              "-c:v", "libx264",
              "-preset", "medium",
-             "-crf", "18",
+             "-crf", "15",
              "-pix_fmt", "yuv420p",
              "-r", str(CLIP_FPS),
              "-movflags", "+faststart",
@@ -401,7 +466,7 @@ def _polish_final_video(input_path: str, video_format: str = DEFAULT_VIDEO_FORMA
         "ffmpeg", "-y", "-i", input_path,
         "-vf", vf,
         "-r", str(CLIP_FPS),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-c:v", "libx264", "-preset", "medium", "-crf", "15",
         "-an", "-movflags", "+faststart",
         polished,
     ]
@@ -442,7 +507,7 @@ def _apply_logo(video_path: str, logo_path: str):
                 "-i", video_path, "-i", logo_path,
                 "-filter_complex",
                 "[1:v]scale=iw*0.15:-1[logo];[0:v][logo]overlay=W-w-20:20",
-                "-c:v", "libx264", "-preset", "fast", "-crf", "18",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "15",
                 "-an", "-movflags", "+faststart",
                 output,
             ],
@@ -652,7 +717,7 @@ def delete_photo(photo_id: str) -> bool:
 
 def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
                          property_name: str, video_format: str = DEFAULT_VIDEO_FORMAT,
-                         voice: str = ""):
+                         voice: str = "", enhance: bool = True):
     """Background task: Ken Burns slideshow from photos using FFmpeg."""
     try:
         cfg = _get_video_format_config(video_format)
@@ -663,17 +728,20 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
         # Step 1: Enhance photos (optional Real-ESRGAN / Pillow)
         _update_job(job_id, status="processing",
-                    progress=_video_progress_message("enhancing", 0, len(photo_paths)))
+                    progress=_video_progress_message("enhancing" if enhance else "generating", 0, len(photo_paths)))
 
         enhanced_paths = []
         temp_enhanced = []
-        for i, photo_path in enumerate(photo_paths):
-            _update_job(job_id, progress=_video_progress_message("enhancing", i + 1, len(photo_paths)))
-            enhanced_path = str(UPLOAD_DIR / "videos" / f"{job_id}_enhanced_{i}.png")
-            result = _enhance_photo(photo_path, enhanced_path)
-            enhanced_paths.append(result)
-            if result == enhanced_path:
-                temp_enhanced.append(enhanced_path)
+        if enhance:
+            for i, photo_path in enumerate(photo_paths):
+                _update_job(job_id, progress=_video_progress_message("enhancing", i + 1, len(photo_paths)))
+                enhanced_path = str(UPLOAD_DIR / "videos" / f"{job_id}_enhanced_{i}.png")
+                result = _enhance_photo(photo_path, enhanced_path)
+                enhanced_paths.append(result)
+                if result == enhanced_path:
+                    temp_enhanced.append(enhanced_path)
+        else:
+            enhanced_paths = list(photo_paths)
 
         # Step 2: Generate Ken Burns clips
         effects = _pick_effects(len(enhanced_paths))
@@ -765,7 +833,7 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
 def generate_video_tour(photo_paths: list[str], prompt: str = "",
                         property_name: str = "", video_format: str = DEFAULT_VIDEO_FORMAT,
-                        voice: str = "") -> str:
+                        voice: str = "", enhance: bool = True) -> str:
     """Start async video generation. Returns job_id."""
     job_id = uuid.uuid4().hex[:12]
     normalized_format = (video_format or DEFAULT_VIDEO_FORMAT).lower()
@@ -790,7 +858,7 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
 
     thread = threading.Thread(
         target=_generate_video_task,
-        args=(job_id, photo_paths, prompt, property_name, normalized_format, voice),
+        args=(job_id, photo_paths, prompt, property_name, normalized_format, voice, enhance),
         daemon=True,
     )
     thread.start()

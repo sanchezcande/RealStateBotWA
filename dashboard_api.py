@@ -265,6 +265,7 @@ def api_media_generate_video():
     property_name = data.get("property", "")
     video_format = data.get("video_format", "vertical")
     voice = data.get("voice", "")
+    enhance = data.get("enhance", True)
 
     if not photo_ids:
         return jsonify({"error": "Selecciona al menos una foto"}), 400
@@ -291,6 +292,7 @@ def api_media_generate_video():
         property_name=property_name,
         video_format=video_format,
         voice=voice,
+        enhance=enhance,
     )
     return jsonify({"job_id": job_id, "status": "queued", "usage": analytics.get_media_usage()})
 

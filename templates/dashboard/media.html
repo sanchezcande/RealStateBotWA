@@ -206,9 +206,15 @@
               <span x-text="t('multi_photo_capped', {count: selectedIds.length})"></span>
             </template>
           </p>
-          <input type="text" :placeholder="t('property_name_opt')"
-                 x-model="videoProperty">
-          <div>
+          <!-- Property name (appears as text overlay on video) -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:4px">Nombre de la propiedad</div>
+            <input type="text" placeholder="Ej: Depto 2 amb - Palermo" x-model="videoProperty">
+            <div style="font-size:.78rem;color:#999;margin-top:2px">Aparece como texto en el video</div>
+          </div>
+
+          <!-- Video format -->
+          <div style="margin-bottom:14px">
             <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px" x-text="t('video_format')"></div>
             <div class="format-toggle">
               <button type="button"
@@ -222,20 +228,40 @@
             </div>
             <div style="font-size:.78rem;color:#666;margin-top:6px" x-text="t('video_format_help')"></div>
           </div>
-          <textarea :placeholder="t('custom_prompt_opt')"
-                    x-model="videoPrompt"></textarea>
-          <!-- Voice selector (voiceover only when prompt is set) -->
-          <template x-if="videoPrompt.trim().length > 0">
-            <div style="margin-top:12px">
-              <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Voz en off</div>
-              <div class="format-toggle">
-                <template x-for="v in availableVoices" :key="v.id">
-                  <button type="button" :class="{ active: voice === v.id }" @click="voice = v.id" x-text="v.label"></button>
+
+          <!-- Voiceover section -->
+          <div style="margin-bottom:14px;padding:16px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <div style="font-size:.88rem;font-weight:700;color:#333">Voz en off</div>
+              <span style="font-size:.7rem;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;font-weight:600">GRATIS</span>
+            </div>
+            <textarea placeholder="Escribi el texto que queres que se escuche. Ej: Hermoso departamento de 2 ambientes, luminoso, con balcon..."
+                      x-model="voiceoverText" style="min-height:70px"></textarea>
+            <div style="font-size:.78rem;color:#999;margin-top:4px">Si lo dejas vacio, el video no tiene voz. Cuanto mas texto, mas largo el audio.</div>
+
+            <template x-if="voiceoverText.trim().length > 0">
+              <div style="margin-top:10px">
+                <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Elegir voz</div>
+                <div class="format-toggle">
+                  <template x-for="v in availableVoices" :key="v.id">
+                    <button type="button" :class="{ active: voice === v.id }" @click="voice = v.id" x-text="v.label"></button>
+                  </template>
+                </div>
+                <template x-if="detectedLang === 'en'">
+                  <div style="font-size:.78rem;color:#2563eb;margin-top:6px">English detected — showing English voices</div>
                 </template>
               </div>
-              <div style="font-size:.78rem;color:#666;margin-top:6px" x-text="detectedLang === 'en' ? 'English detected — showing English voices. El texto del prompt se convierte en voz en off.' : 'El texto del prompt se convierte en voz en off. Sin prompt = sin voz.'"></div>
+            </template>
+          </div>
+
+          <!-- Image quality -->
+          <div style="margin-bottom:14px;padding:12px 16px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+            <div style="display:flex;align-items:center;gap:8px">
+              <input type="checkbox" id="enhancePhotos" x-model="enhancePhotos" style="width:16px;height:16px;accent-color:#D97706">
+              <label for="enhancePhotos" style="font-size:.85rem;font-weight:600;color:#333;cursor:pointer">Mejorar calidad de fotos</label>
             </div>
-          </template>
+            <div style="font-size:.78rem;color:#999;margin-top:4px;margin-left:24px">Mejora nitidez y contraste automaticamente antes de generar el video</div>
+          </div>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-primary" @click="generateVideo()" :disabled="generating || (usage && usage.remaining <= 0)">
               <span x-show="!generating" x-text="t('generate_video')"></span>
@@ -323,7 +349,8 @@ function mediaStudio() {
     photos: [],
     selectedIds: [],
     // Video gen
-    videoPrompt: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
+    voiceoverText: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
+    enhancePhotos: true,
     detectedLang: "es",
     _esVoices: [
       { id: "es-AR-TomasNeural", label: "Tomas (AR masc.)" },
@@ -353,7 +380,7 @@ function mediaStudio() {
     },
     init() {
       this.loadPhotos(); this.loadUsage();
-      this.$watch("videoPrompt", (val) => {
+      this.$watch("voiceoverText", (val) => {
         const text = (val || "").trim().toLowerCase();
         const enWords = ["the", "apartment", "bedroom", "property", "located", "spacious", "beautiful", "with", "this", "features"];
         const enCount = enWords.filter(w => text.includes(w)).length;
@@ -446,10 +473,11 @@ function mediaStudio() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           photo_ids: this.selectedIds,
-          prompt: this.videoPrompt,
+          prompt: this.voiceoverText.trim(),
           property: this.videoProperty,
           video_format: this.videoFormat,
-          voice: this.videoPrompt.trim() ? this.voice : "",
+          voice: this.voiceoverText.trim() ? this.voice : "",
+          enhance: this.enhancePhotos,
         }),
       }).then(d => {
         if (d.usage) this.usage = d.usage;
