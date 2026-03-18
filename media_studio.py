@@ -752,7 +752,8 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
 
 
 def generate_video_tour(photo_paths: list[str], prompt: str = "",
-                        property_name: str = "", video_format: str = DEFAULT_VIDEO_FORMAT,
+                        voiceover_text: str = "", property_name: str = "",
+                        video_format: str = DEFAULT_VIDEO_FORMAT,
                         voice: str = "", enhance: bool = True) -> str:
     """Start async video generation. Returns job_id."""
     job_id = uuid.uuid4().hex[:12]
@@ -778,7 +779,7 @@ def generate_video_tour(photo_paths: list[str], prompt: str = "",
 
     thread = threading.Thread(
         target=_generate_video_task,
-        args=(job_id, photo_paths, prompt, property_name, normalized_format, voice, enhance),
+        args=(job_id, photo_paths, prompt, voiceover_text, property_name, normalized_format, voice, enhance),
         daemon=True,
     )
     thread.start()
