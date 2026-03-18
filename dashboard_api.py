@@ -259,14 +259,12 @@ def api_media_generate_video():
             "usage": usage,
         }), 429
 
-    if not _get_google_ai_key():
-        return jsonify({"error": "GOOGLE_AI_API_KEY no configurada. Necesitas una API key de Google AI Studio."}), 400
-
     data = request.get_json(silent=True) or {}
     photo_ids = data.get("photo_ids", [])
     prompt = data.get("prompt", "")
     property_name = data.get("property", "")
     video_format = data.get("video_format", "vertical")
+    voice = data.get("voice", "")
 
     if not photo_ids:
         return jsonify({"error": "Selecciona al menos una foto"}), 400
@@ -292,6 +290,7 @@ def api_media_generate_video():
         prompt=prompt,
         property_name=property_name,
         video_format=video_format,
+        voice=voice,
     )
     return jsonify({"job_id": job_id, "status": "queued", "usage": analytics.get_media_usage()})
 

@@ -224,6 +224,18 @@
           </div>
           <textarea :placeholder="t('custom_prompt_opt')"
                     x-model="videoPrompt"></textarea>
+          <!-- Voice selector (voiceover only when prompt is set) -->
+          <template x-if="videoPrompt.trim().length > 0">
+            <div style="margin-top:12px">
+              <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Voz en off</div>
+              <div class="format-toggle">
+                <template x-for="v in availableVoices" :key="v.id">
+                  <button type="button" :class="{ active: voice === v.id }" @click="voice = v.id" x-text="v.label"></button>
+                </template>
+              </div>
+              <div style="font-size:.78rem;color:#666;margin-top:6px" x-text="detectedLang === 'en' ? 'English detected — showing English voices. El texto del prompt se convierte en voz en off.' : 'El texto del prompt se convierte en voz en off. Sin prompt = sin voz.'"></div>
+            </div>
+          </template>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-primary" @click="generateVideo()" :disabled="generating || (usage && usage.remaining <= 0)">
               <span x-show="!generating" x-text="t('generate_video')"></span>
@@ -311,7 +323,21 @@ function mediaStudio() {
     photos: [],
     selectedIds: [],
     // Video gen
-    videoPrompt: "", videoProperty: "", videoFormat: "vertical",
+    videoPrompt: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
+    detectedLang: "es",
+    _esVoices: [
+      { id: "es-AR-TomasNeural", label: "Tomas (AR masc.)" },
+      { id: "es-AR-ElenaNeural", label: "Elena (AR fem.)" },
+      { id: "es-MX-DaliaNeural", label: "Dalia (MX fem.)" },
+      { id: "es-ES-ElviraNeural", label: "Elvira (ES fem.)" },
+      { id: "es-ES-AlvaroNeural", label: "Alvaro (ES masc.)" },
+    ],
+    _enVoices: [
+      { id: "en-US-GuyNeural", label: "Guy (US masc.)" },
+      { id: "en-US-JennyNeural", label: "Jenny (US fem.)" },
+      { id: "en-GB-RyanNeural", label: "Ryan (UK masc.)" },
+      { id: "en-GB-SoniaNeural", label: "Sonia (UK fem.)" },
+    ],
     generating: false, genProgress: "", genError: "", genResult: "",
     // Jobs
     jobs: [],
@@ -322,7 +348,22 @@ function mediaStudio() {
     purchaseCount: 1,
     purchaseMsg: "",
 
-    init() { this.loadPhotos(); this.loadUsage(); },
+    get availableVoices() {
+      return this.detectedLang === "en" ? this._enVoices : this._esVoices;
+    },
+    init() {
+      this.loadPhotos(); this.loadUsage();
+      this.$watch("videoPrompt", (val) => {
+        const text = (val || "").trim().toLowerCase();
+        const enWords = ["the", "apartment", "bedroom", "property", "located", "spacious", "beautiful", "with", "this", "features"];
+        const enCount = enWords.filter(w => text.includes(w)).length;
+        const newLang = enCount >= 2 ? "en" : "es";
+        if (newLang !== this.detectedLang) {
+          this.detectedLang = newLang;
+          this.voice = newLang === "en" ? "en-US-GuyNeural" : "es-AR-TomasNeural";
+        }
+      });
+    },
 
     loadUsage() {
       dashFetch("/api/dashboard/media/usage").then(d => { this.usage = d; });
@@ -408,6 +449,7 @@ function mediaStudio() {
           prompt: this.videoPrompt,
           property: this.videoProperty,
           video_format: this.videoFormat,
+          voice: this.videoPrompt.trim() ? this.voice : "",
         }),
       }).then(d => {
         if (d.usage) this.usage = d.usage;

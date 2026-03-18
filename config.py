@@ -37,8 +37,14 @@ BRANCH_NAME = os.environ.get("BRANCH_NAME", "")
 DASHBOARD_SECRET_KEY = os.environ.get("DASHBOARD_SECRET_KEY", "change-me-in-production")
 DASHBOARD_ADMIN_PASSWORD = os.environ.get("DASHBOARD_ADMIN_PASSWORD", "")
 
-# Google Gemini AI (for video/image generation)
+# Google Gemini AI (for video/image generation — see media_studio_gemini.py)
 GOOGLE_AI_API_KEY = os.environ.get("GOOGLE_AI_API_KEY", "")
+
+# Media Studio — FFmpeg + Ken Burns (free, no API costs)
+MEDIA_MUSIC_PATH = os.environ.get("MEDIA_MUSIC_PATH", "")     # background music mp3
+MEDIA_LOGO_PATH = os.environ.get("MEDIA_LOGO_PATH", "")       # logo overlay image
+REALESRGAN_PATH = os.environ.get("REALESRGAN_PATH", "")       # path to realesrgan-ncnn-vulkan
+MEDIA_VOICEOVER_VOICE = os.environ.get("MEDIA_VOICEOVER_VOICE", "es-AR-TomasNeural")  # edge-tts voice
 MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", "uploads")
 
 # Facebook / Instagram Messenger

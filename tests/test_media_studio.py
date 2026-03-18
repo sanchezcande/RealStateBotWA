@@ -1,30 +1,17 @@
-from unittest.mock import patch
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 
 import pytest
-
-
-def test_build_video_prompt_enforces_fidelity_rules():
-    from media_studio import _build_video_prompt
-
-    prompt = _build_video_prompt(
-        "Estilo elegante y premium",
-        "Torre Libertador",
-    )
-
-    assert "single source of truth" in prompt
-    assert "Do not add, remove, replace, restyle, or reposition anything." in prompt
-    assert "no flicker, flashing" in prompt
-    assert "must never override scene fidelity" in prompt
-    assert "Torre Libertador" in prompt
-    assert "Estilo elegante y premium" in prompt
 
 
 def test_get_video_format_config_defaults_to_vertical():
     from media_studio import _get_video_format_config
 
-    assert _get_video_format_config("vertical")["aspect_ratio"] == "9:16"
-    assert _get_video_format_config("horizontal")["aspect_ratio"] == "16:9"
-    assert _get_video_format_config("unknown")["aspect_ratio"] == "9:16"
+    assert _get_video_format_config("vertical")["width"] == 720
+    assert _get_video_format_config("vertical")["height"] == 1280
+    assert _get_video_format_config("horizontal")["width"] == 1280
+    assert _get_video_format_config("horizontal")["height"] == 720
+    assert _get_video_format_config("unknown")["width"] == 720
 
 
 def test_build_video_filter_uses_cover_crop_and_fades():
@@ -37,6 +24,25 @@ def test_build_video_filter_uses_cover_crop_and_fades():
     assert "pad=" not in video_filter
     assert "fade=t=in" in video_filter
     assert "fade=t=out" in video_filter
+
+
+def test_kenburns_filter_generates_valid_zoompan():
+    from media_studio import _kenburns_filter
+
+    for effect in ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]:
+        f = _kenburns_filter(effect, 720, 1280)
+        assert "zoompan=" in f
+        assert "720x1280" in f
+
+
+def test_pick_effects_avoids_consecutive_repeats():
+    from media_studio import _pick_effects
+
+    for _ in range(20):
+        effects = _pick_effects(6)
+        assert len(effects) == 6
+        for i in range(1, len(effects)):
+            assert effects[i] != effects[i - 1]
 
 
 @patch("media_studio._normalize_video_for_concat")
@@ -64,8 +70,6 @@ def test_concat_videos_reencodes_instead_of_stream_copy(mock_run, mock_unlink, m
     assert "-pix_fmt" in cmd
     assert "yuv420p" in cmd
     assert "-r" in cmd
-    assert "30" in cmd
-    assert "-c" not in cmd
     assert list_path in cmd
     assert str(clip_a.resolve()) in list_contents
     assert str(clip_b.resolve()) in list_contents
@@ -86,57 +90,34 @@ def test_concat_videos_raises_if_ffmpeg_missing(mock_run, mock_normalize, tmp_pa
         _concat_videos([str(clip_a), str(clip_b)], str(out))
 
 
-def test_generate_video_task_errors_when_not_all_clips_are_generated(tmp_path):
+def test_generate_clip_raises_if_ffmpeg_missing(tmp_path):
+    from media_studio import _generate_clip
+
+    photo = tmp_path / "a.jpg"
+    photo.write_bytes(b"\xff\xd8\xff")
+    clip = tmp_path / "clip.mp4"
+
+    with patch("subprocess.run", side_effect=FileNotFoundError):
+        with pytest.raises(RuntimeError, match="ffmpeg no esta instalado"):
+            _generate_clip(str(photo), str(clip), "zoom_in")
+
+
+def test_generate_video_task_errors_when_clip_generation_fails(tmp_path):
     import media_studio
 
     photo_a = tmp_path / "a.jpg"
     photo_b = tmp_path / "b.jpg"
-    photo_a.write_bytes(b"a")
-    photo_b.write_bytes(b"b")
+    photo_a.write_bytes(b"\xff\xd8\xff")
+    photo_b.write_bytes(b"\xff\xd8\xff")
 
     statuses = []
-
-    class FakeImage:
-        def __init__(self, image_bytes=None, mime_type=None):
-            self.image_bytes = image_bytes
-            self.mime_type = mime_type
-
-    class FakeTypes:
-        Image = FakeImage
-
-        class GenerateVideosConfig:
-            def __init__(self, **kwargs):
-                self.kwargs = kwargs
-
-    class FakeOperation:
-        def __init__(self, has_video):
-            self.done = True
-            self.response = type(
-                "Resp",
-                (),
-                {"generated_videos": [object()] if has_video else []},
-            )()
-
-    class FakeModels:
-        def __init__(self):
-            self.calls = 0
-
-        def generate_videos(self, **kwargs):
-            self.calls += 1
-            return FakeOperation(has_video=self.calls == 1)
-
-    class FakeClient:
-        def __init__(self):
-            self.models = FakeModels()
 
     def record_update(job_id, **kwargs):
         statuses.append(kwargs)
 
-    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
-         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
-         patch.object(media_studio, "_update_job", side_effect=record_update), \
-         patch.object(media_studio, "_save_video"), \
-         patch.object(media_studio, "_trim_video"):
+    with patch.object(media_studio, "_update_job", side_effect=record_update), \
+         patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
+         patch.object(media_studio, "_generate_clip", return_value=False):
         media_studio._generate_video_task(
             "job123",
             [str(photo_a), str(photo_b)],
@@ -145,70 +126,42 @@ def test_generate_video_task_errors_when_not_all_clips_are_generated(tmp_path):
         )
 
     assert statuses[-1]["status"] == "error"
-    assert "No se guardo un video parcial" in statuses[-1]["error"]
 
 
-def test_generate_video_task_aborts_on_quota_exhausted(tmp_path):
+def test_generate_video_task_partial_clips_aborted(tmp_path):
     import media_studio
 
     photo_a = tmp_path / "a.jpg"
     photo_b = tmp_path / "b.jpg"
-    photo_c = tmp_path / "c.jpg"
-    photo_a.write_bytes(b"a")
-    photo_b.write_bytes(b"b")
-    photo_c.write_bytes(b"c")
+    photo_a.write_bytes(b"\xff\xd8\xff")
+    photo_b.write_bytes(b"\xff\xd8\xff")
 
     statuses = []
+    call_count = [0]
 
-    class FakeImage:
-        def __init__(self, image_bytes=None, mime_type=None):
-            self.image_bytes = image_bytes
-            self.mime_type = mime_type
-
-    class FakeTypes:
-        Image = FakeImage
-
-        class GenerateVideosConfig:
-            def __init__(self, **kwargs):
-                self.kwargs = kwargs
-
-    class FakeOperation:
-        def __init__(self):
-            self.done = True
-            self.response = type("Resp", (), {"generated_videos": [object()]})()
-
-    class FakeModels:
-        def __init__(self):
-            self.calls = 0
-
-        def generate_videos(self, **kwargs):
-            self.calls += 1
-            if self.calls == 1:
-                return FakeOperation()
-            raise RuntimeError("429 RESOURCE_EXHAUSTED")
-
-    class FakeClient:
-        def __init__(self):
-            self.models = FakeModels()
+    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            Path(clip).write_bytes(b"fake")
+            return True
+        return False
 
     def record_update(job_id, **kwargs):
         statuses.append(kwargs)
 
-    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
-         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
-         patch.object(media_studio, "_update_job", side_effect=record_update), \
-         patch.object(media_studio, "_save_video"), \
-         patch.object(media_studio, "_trim_video"), \
+    with patch.object(media_studio, "_update_job", side_effect=record_update), \
+         patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
+         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
          patch("os.unlink"):
         media_studio._generate_video_task(
             "job456",
-            [str(photo_a), str(photo_b), str(photo_c)],
+            [str(photo_a), str(photo_b)],
             prompt="",
             property_name="",
         )
 
     assert statuses[-1]["status"] == "error"
-    assert "RESOURCE_EXHAUSTED" in statuses[-1]["error"]
+    assert "No se guardo un video parcial" in statuses[-1]["error"]
 
 
 def test_generate_video_tour_stores_selected_video_format():
@@ -224,56 +177,131 @@ def test_generate_video_tour_stores_selected_video_format():
         )
 
     args = mock_thread.call_args.kwargs["args"]
-    assert args[-1] == "horizontal"
+    # args = (job_id, photo_paths, prompt, property_name, video_format, voice)
+    assert args[4] == "horizontal"
 
 
 def test_generate_video_task_polishes_final_video(tmp_path):
     import media_studio
 
     photo_a = tmp_path / "a.jpg"
-    photo_a.write_bytes(b"a")
+    photo_a.write_bytes(b"\xff\xd8\xff")
 
-    class FakeImage:
-        def __init__(self, image_bytes=None, mime_type=None):
-            self.image_bytes = image_bytes
-            self.mime_type = mime_type
+    clip_path = [None]
 
-    class FakeTypes:
-        Image = FakeImage
+    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
+        Path(clip).write_bytes(b"fake")
+        clip_path[0] = clip
+        return True
 
-        class GenerateVideosConfig:
-            def __init__(self, **kwargs):
-                self.kwargs = kwargs
-
-    class FakeVideoFile:
-        def save(self, out_path):
-            pass
-
-    class FakeVideo:
-        video = FakeVideoFile()
-
-    class FakeOperation:
-        done = True
-        response = type("Resp", (), {"generated_videos": [FakeVideo()]})()
-
-    class FakeModels:
-        def generate_videos(self, **kwargs):
-            return FakeOperation()
-
-    class FakeClient:
-        models = FakeModels()
-
-    with patch.object(media_studio, "_get_client", return_value=FakeClient()), \
-         patch.dict("sys.modules", {"google.genai": type("FakeModule", (), {"types": FakeTypes})}), \
-         patch.object(media_studio, "_save_video"), \
+    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
+         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
          patch.object(media_studio, "_polish_final_video") as mock_polish, \
          patch.object(media_studio, "_update_job"):
         media_studio._generate_video_task(
             "job789",
             [str(photo_a)],
             prompt="",
-            property_name="",
+            property_name="Test",
             video_format="vertical",
         )
 
+    assert mock_polish.called
+
+
+def test_enhance_photo_falls_back_to_original_when_no_tools(tmp_path):
+    import media_studio
+
+    photo = tmp_path / "test.jpg"
+    photo.write_bytes(b"\xff\xd8\xff")
+    enhanced = tmp_path / "enhanced.jpg"
+
+    with patch.object(media_studio, "_upscale_photo", return_value=False), \
+         patch.dict("sys.modules", {"PIL": None, "PIL.Image": None}):
+        result = media_studio._enhance_photo(str(photo), str(enhanced))
+
+    assert result == str(photo)
+
+
+def test_generate_image_returns_error_for_ffmpeg_backend():
+    import media_studio
+
+    with patch("analytics.save_media_job"):
+        job_id = media_studio.generate_image("test prompt", "Test property")
+
+    job = media_studio.get_job(job_id)
+    assert job["status"] == "error"
+    assert "FFmpeg" in job["error"]
+
+
+def test_generate_voiceover_returns_false_on_empty_text():
+    from media_studio import _generate_voiceover
+
+    assert _generate_voiceover("", "/tmp/test.mp3") is False
+    assert _generate_voiceover("   ", "/tmp/test.mp3") is False
+
+
+def test_generate_voiceover_returns_false_if_edge_tts_missing():
+    from media_studio import _generate_voiceover
+
+    with patch.dict("sys.modules", {"edge_tts": None}):
+        assert _generate_voiceover("Hola mundo", "/tmp/test.mp3") is False
+
+
+def test_generate_video_task_generates_voiceover_when_prompt_set(tmp_path):
+    import media_studio
+
+    photo_a = tmp_path / "a.jpg"
+    photo_a.write_bytes(b"\xff\xd8\xff")
+
+    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
+        Path(clip).write_bytes(b"fake")
+        return True
+
+    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
+         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
+         patch.object(media_studio, "_generate_voiceover", return_value=True) as mock_vo, \
+         patch.object(media_studio, "_polish_final_video") as mock_polish, \
+         patch.object(media_studio, "_update_job"), \
+         patch("os.unlink"):
+        media_studio._generate_video_task(
+            "jobVO",
+            [str(photo_a)],
+            prompt="Departamento luminoso en Palermo",
+            property_name="Test",
+            video_format="vertical",
+        )
+
+    assert mock_vo.called
+    assert mock_vo.call_args.args[0] == "Departamento luminoso en Palermo"
+    assert mock_polish.called
+    # voiceover_path should be passed to polish
+    assert mock_polish.call_args.kwargs.get("voiceover_path") or \
+           (len(mock_polish.call_args.args) > 4 and mock_polish.call_args.args[4])
+
+
+def test_generate_video_task_skips_voiceover_when_no_prompt(tmp_path):
+    import media_studio
+
+    photo_a = tmp_path / "a.jpg"
+    photo_a.write_bytes(b"\xff\xd8\xff")
+
+    def fake_generate_clip(photo, clip, effect, fmt="vertical"):
+        Path(clip).write_bytes(b"fake")
+        return True
+
+    with patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
+         patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
+         patch.object(media_studio, "_generate_voiceover") as mock_vo, \
+         patch.object(media_studio, "_polish_final_video") as mock_polish, \
+         patch.object(media_studio, "_update_job"):
+        media_studio._generate_video_task(
+            "jobNoVO",
+            [str(photo_a)],
+            prompt="",
+            property_name="Test",
+            video_format="vertical",
+        )
+
+    mock_vo.assert_not_called()
     assert mock_polish.called

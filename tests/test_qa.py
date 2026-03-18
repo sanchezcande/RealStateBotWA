@@ -496,7 +496,7 @@ class TestDashboard:
     def test_dashboard_valid_token(self, flask_client):
         resp = flask_client.get("/dashboard", query_string={"token": "test-dashboard-token"})
         assert resp.status_code == 200
-        assert b"Vera" in resp.data
+        assert b"PropBot" in resp.data
 
     def test_dashboard_invalid_days_defaults(self, flask_client):
         resp = flask_client.get("/dashboard", query_string={
