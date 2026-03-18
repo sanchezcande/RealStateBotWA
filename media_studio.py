@@ -231,8 +231,7 @@ def _enhance_photo(input_path: str, output_path: str) -> str:
     try:
         from PIL import Image, ImageEnhance
         img = Image.open(input_path)
-        img = ImageEnhance.Sharpness(img).enhance(1.3)
-        img = ImageEnhance.Contrast(img).enhance(1.1)
+        img = ImageEnhance.Sharpness(img).enhance(1.15)
         img = ImageEnhance.Color(img).enhance(1.05)
         img.save(output_path, quality=95)
         logger.info("Enhanced photo %s -> %s", input_path, output_path)
@@ -351,7 +350,6 @@ def _apply_voiceover(video_path: str, voiceover_path: str, music_path: str = "")
             "-map", "0:v", "-map", "[a]",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "128k",
-            "-shortest",
             "-movflags", "+faststart",
             output,
         ]
@@ -366,7 +364,6 @@ def _apply_voiceover(video_path: str, voiceover_path: str, music_path: str = "")
             "-map", "0:v", "-map", "[a]",
             "-c:v", "copy",
             "-c:a", "aac", "-b:a", "128k",
-            "-shortest",
             "-movflags", "+faststart",
             output,
         ]
@@ -713,10 +710,9 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
         else:
             final_path = clips[0]
 
-        # Generate voiceover if prompt text provided
+        # Generate voiceover if explicit voiceover text provided
         voiceover_path = ""
-        voiceover_text = prompt.strip() if prompt else ""
-        if voiceover_text:
+        if voiceover_text and voiceover_text.strip():
             _update_job(job_id, progress=_video_progress_message("voiceover"))
             vo_path = str(UPLOAD_DIR / "videos" / f"{job_id}_voiceover.mp3")
             if _generate_voiceover(voiceover_text, vo_path, voice=voice):
