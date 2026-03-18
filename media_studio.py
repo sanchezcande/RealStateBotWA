@@ -69,12 +69,14 @@ _jobs_lock = threading.Lock()
 KENBURNS_EFFECTS = ["zoom_in", "zoom_out", "pan_lr", "pan_rl", "pan_tb", "pan_bt"]
 
 # Minimum image size for Ken Burns (both dims must be >= this * output)
-KB_SCALE = 3
+KB_SCALE = 2
+KB_MAX_DIM = 2880  # cap to avoid OOM on constrained servers
 
 
 def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> tuple[str, int, int]:
     """Scale image up with Pillow so it's large enough for Ken Burns.
-    Returns (path, actual_width, actual_height)."""
+    Returns (path, actual_width, actual_height).
+    Enforces KB_MAX_DIM cap and saves as JPEG to reduce memory."""
     try:
         from PIL import Image
         img = Image.open(input_path).convert("RGB")
@@ -85,13 +87,22 @@ def _prepare_for_kenburns(input_path: str, output_path: str, w: int, h: int) -> 
 
         new_w = max(int(img.width * scale), min_w)
         new_h = max(int(img.height * scale), min_h)
+
+        # Cap dimensions to avoid OOM on constrained servers (Railway etc.)
+        if new_w > KB_MAX_DIM or new_h > KB_MAX_DIM:
+            cap_scale = min(KB_MAX_DIM / new_w, KB_MAX_DIM / new_h)
+            new_w = int(new_w * cap_scale)
+            new_h = int(new_h * cap_scale)
+
         # x264 needs even dimensions
         new_w += new_w % 2
         new_h += new_h % 2
 
         img = img.resize((new_w, new_h), Image.LANCZOS)
-        img.save(output_path, quality=98)
-        return output_path, new_w, new_h
+        # Save as JPEG (much smaller than PNG, avoids huge memory spikes in ffmpeg)
+        jpeg_output = output_path.replace(".png", ".jpg") if output_path.endswith(".png") else output_path
+        img.save(jpeg_output, "JPEG", quality=95)
+        return jpeg_output, new_w, new_h
     except Exception as e:
         logger.warning("_prepare_for_kenburns failed: %s", e)
         return input_path, 0, 0
@@ -252,8 +263,8 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
     cfg = _get_video_format_config(video_format)
     w, h = cfg["width"], cfg["height"]
 
-    # Prepare image: scale up for Ken Burns room
-    prepared_path = clip_path + ".prepared.png"
+    # Prepare image: scale up for Ken Burns room (JPEG to save memory)
+    prepared_path = clip_path + ".prepared.jpg"
     src, in_w, in_h = _prepare_for_kenburns(photo_path, prepared_path, w, h)
     if not in_w:
         # Pillow failed; use raw image with fallback dimensions
@@ -276,7 +287,7 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
                 "-loop", "1", "-i", src,
                 "-vf", vf,
                 "-t", str(CLIP_DURATION),
-                "-c:v", "libx264", "-preset", "slow", "-crf", "15",
+                "-c:v", "libx264", "-preset", "fast", "-crf", "18",
                 "-pix_fmt", "yuv420p",
                 "-movflags", "+faststart",
                 "-an",
@@ -292,11 +303,13 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
         logger.error("FFmpeg clip generation failed: %s %s", e, stderr)
         return False
     finally:
-        # Clean up prepared image
-        try:
-            os.unlink(prepared_path)
-        except OSError:
-            pass
+        # Clean up prepared image (may be .jpg or original path from _prepare_for_kenburns)
+        for p in (prepared_path, src):
+            if p != photo_path:
+                try:
+                    os.unlink(p)
+                except OSError:
+                    pass
 
 
 # ---------------------------------------------------------------------------
