@@ -237,21 +237,20 @@ def api_media_usage():
 @api.route("/media/purchase", methods=["POST"])
 @_require_auth
 def api_media_purchase():
-    """Create payment checkout for video purchase."""
+    """Create payment checkout — MercadoPago (ARS) or Lemon Squeezy (USD)."""
+    import payments
+
     data = request.get_json(silent=True) or {}
     count = data.get("count", 1)
     currency = data.get("currency", "ARS")
     if not isinstance(count, int) or count < 1:
         return jsonify({"error": "Cantidad invalida"}), 400
 
-    if currency == "USD":
-        return jsonify({
-            "contact": "Para pagar en USD escribinos a info@realstatebot.com",
-        })
-
-    import payments
     try:
-        result = payments.create_video_checkout(count)
+        if currency == "USD":
+            result = payments.create_ls_checkout(count)
+        else:
+            result = payments.create_mp_checkout(count)
         return jsonify(result)
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
