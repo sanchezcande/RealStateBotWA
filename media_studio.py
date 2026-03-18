@@ -276,6 +276,7 @@ def _generate_clip(photo_path: str, clip_path: str, effect: str,
     vf = (
         f"{kb_filter},"
         f"format=yuv420p,"
+        f"setsar=1,"
         f"fade=t=in:st=0:d={FADE_DURATION:.2f},"
         f"fade=t=out:st={fade_out_start:.2f}:d={FADE_DURATION:.2f}"
     )
@@ -342,10 +343,10 @@ def _normalize_video_for_concat(input_path: str, video_format: str = DEFAULT_VID
 
 
 def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = DEFAULT_VIDEO_FORMAT):
-    """Concatenate video clips using ffmpeg concat demuxer with re-encoding."""
+    """Concatenate video clips using ffmpeg concat demuxer with stream copy.
+    All clips already share the same codec/resolution/fps from _generate_clip,
+    so no re-encoding is needed — saves massive amounts of RAM."""
     logger.info("Preparing concat for %d clip(s) into %s", len(clip_paths), output_path)
-    for clip_path in clip_paths:
-        _normalize_video_for_concat(clip_path, video_format=video_format)
 
     list_path = output_path + ".list.txt"
     with open(list_path, "w") as f:
@@ -358,13 +359,8 @@ def _concat_videos(clip_paths: list[str], output_path: str, video_format: str = 
         subprocess.run(
             ["ffmpeg", "-y", "-f", "concat", "-safe", "0",
              "-i", list_path,
-             "-c:v", "libx264",
-             "-preset", "medium",
-             "-crf", "15",
-             "-pix_fmt", "yuv420p",
-             "-r", str(CLIP_FPS),
+             "-c", "copy",
              "-movflags", "+faststart",
-             "-an",
              output_path],
             check=True, capture_output=True, timeout=120,
         )
@@ -479,7 +475,7 @@ def _polish_final_video(input_path: str, video_format: str = DEFAULT_VIDEO_FORMA
         "ffmpeg", "-y", "-i", input_path,
         "-vf", vf,
         "-r", str(CLIP_FPS),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "15",
+        "-c:v", "libx264", "-preset", "fast", "-crf", "20",
         "-an", "-movflags", "+faststart",
         polished,
     ]
