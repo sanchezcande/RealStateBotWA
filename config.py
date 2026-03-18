@@ -50,6 +50,11 @@ REALESRGAN_PATH = os.environ.get("REALESRGAN_PATH", "")       # path to realesrg
 MEDIA_VOICEOVER_VOICE = os.environ.get("MEDIA_VOICEOVER_VOICE", "es-AR-TomasNeural")  # edge-tts voice
 MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", os.path.join(_DATA_DIR, "uploads"))
 
+# MercadoPago
+MP_ACCESS_TOKEN = os.environ.get("MP_ACCESS_TOKEN", "")
+EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
+BASE_URL = os.environ.get("BASE_URL", "")  # e.g. https://tu-app.up.railway.app
+
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
 # Also subscribe the webhook to the page in Meta App Dashboard under

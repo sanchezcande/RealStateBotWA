@@ -237,12 +237,21 @@ def api_media_usage():
 @api.route("/media/purchase", methods=["POST"])
 @_require_auth
 def api_media_purchase():
+    """Create MercadoPago checkout for video purchase."""
+    import payments
+
     data = request.get_json(silent=True) or {}
     count = data.get("count", 1)
     if not isinstance(count, int) or count < 1:
         return jsonify({"error": "Cantidad invalida"}), 400
-    result = analytics.add_purchased_videos(count)
-    return jsonify(result)
+
+    try:
+        result = payments.create_video_checkout(count)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 502
 
 
 @api.route("/media/generate/video", methods=["POST"])

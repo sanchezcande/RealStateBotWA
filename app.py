@@ -31,8 +31,10 @@ analytics.init_db()
 # Register dashboard blueprints
 from dashboard_routes import dashboard as dashboard_bp
 from dashboard_api import api as dashboard_api_bp
+from payments import payments_bp
 app.register_blueprint(dashboard_bp)
 app.register_blueprint(dashboard_api_bp)
+app.register_blueprint(payments_bp)
 
 # Landing page
 @app.route("/")

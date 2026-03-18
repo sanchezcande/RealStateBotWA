@@ -133,6 +133,21 @@ def init_db():
                 updated_at      TEXT NOT NULL,
                 UNIQUE(month)
             );
+
+            CREATE TABLE IF NOT EXISTS payments (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                payment_id      TEXT UNIQUE NOT NULL,
+                provider        TEXT NOT NULL DEFAULT 'mercadopago',
+                status          TEXT NOT NULL DEFAULT 'pending',
+                amount          REAL NOT NULL DEFAULT 0,
+                currency        TEXT NOT NULL DEFAULT 'ARS',
+                video_count     INTEGER NOT NULL DEFAULT 1,
+                payer_email     TEXT DEFAULT '',
+                external_ref    TEXT DEFAULT '',
+                created_at      TEXT NOT NULL,
+                updated_at      TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
         """)
         # Seed mock data ONLY when explicitly requested via SEED_DEMO_DATA=true.
         # Skipped for in-memory DBs (tests).
@@ -1229,3 +1244,83 @@ def cleanup_old_media_jobs(days: int = 7):
         logger.info("Cleaned up media jobs older than %d days", days)
     except Exception as e:
         logger.error("analytics.cleanup_old_media_jobs error: %s", e)
+
+
+# ---------------------------------------------------------------------------
+# Payments
+# ---------------------------------------------------------------------------
+
+def record_payment(
+    payment_id: str,
+    provider: str = "mercadopago",
+    status: str = "pending",
+    amount: float = 0,
+    currency: str = "ARS",
+    video_count: int = 1,
+    payer_email: str = "",
+    external_ref: str = "",
+):
+    """Insert or update a payment record."""
+    try:
+        now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+        with _db_lock:
+            conn = _get_conn()
+            conn.execute("""
+                INSERT INTO payments
+                    (payment_id, provider, status, amount, currency, video_count,
+                     payer_email, external_ref, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(payment_id) DO UPDATE SET
+                    status=excluded.status, amount=excluded.amount,
+                    payer_email=excluded.payer_email, updated_at=excluded.updated_at
+            """, (payment_id, provider, status, amount, currency, video_count,
+                  payer_email, external_ref, now, now))
+    except Exception as e:
+        logger.error("analytics.record_payment error: %s", e)
+
+
+def get_payment(payment_id: str) -> dict | None:
+    """Get a single payment by ID."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                """SELECT payment_id, provider, status, amount, currency,
+                          video_count, payer_email, created_at
+                   FROM payments WHERE payment_id = ?""",
+                (payment_id,),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "payment_id": row[0], "provider": row[1], "status": row[2],
+            "amount": row[3], "currency": row[4], "video_count": row[5],
+            "payer_email": row[6], "created_at": row[7],
+        }
+    except Exception as e:
+        logger.error("analytics.get_payment error: %s", e)
+        return None
+
+
+def get_payments_list(limit: int = 50) -> list[dict]:
+    """Return recent payments, newest first."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            rows = conn.execute(
+                """SELECT payment_id, provider, status, amount, currency,
+                          video_count, payer_email, created_at
+                   FROM payments ORDER BY created_at DESC LIMIT ?""",
+                (limit,),
+            ).fetchall()
+        return [
+            {
+                "payment_id": r[0], "provider": r[1], "status": r[2],
+                "amount": r[3], "currency": r[4], "video_count": r[5],
+                "payer_email": r[6], "created_at": r[7],
+            }
+            for r in rows
+        ]
+    except Exception as e:
+        logger.error("analytics.get_payments_list error: %s", e)
+        return []

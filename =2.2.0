@@ -1,0 +1,11 @@
+Collecting mercadopago
+  Downloading mercadopago-2.3.0-py3-none-any.whl (35 kB)
+Requirement already satisfied: requests in ./.venv/lib/python3.9/site-packages (from mercadopago) (2.32.5)
+Requirement already satisfied: urllib3<3,>=1.21.1 in ./.venv/lib/python3.9/site-packages (from requests->mercadopago) (2.6.3)
+Requirement already satisfied: idna<4,>=2.5 in ./.venv/lib/python3.9/site-packages (from requests->mercadopago) (3.11)
+Requirement already satisfied: charset_normalizer<4,>=2 in ./.venv/lib/python3.9/site-packages (from requests->mercadopago) (3.4.5)
+Requirement already satisfied: certifi>=2017.4.17 in ./.venv/lib/python3.9/site-packages (from requests->mercadopago) (2026.2.25)
+Installing collected packages: mercadopago
+Successfully installed mercadopago-2.3.0
+WARNING: You are using pip version 21.2.4; however, version 26.0.1 is available.
+You should consider upgrading via the '/Users/msg1234/Desktop/RealStateBotWA/.venv/bin/python3 -m pip install --upgrade pip' command.
