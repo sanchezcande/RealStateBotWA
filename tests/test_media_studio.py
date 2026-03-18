@@ -122,7 +122,7 @@ def test_generate_video_task_errors_when_clip_generation_fails(tmp_path):
     assert statuses[-1]["status"] == "error"
 
 
-def test_generate_video_task_partial_clips_aborted(tmp_path):
+def test_generate_video_task_partial_clips_still_produces_video(tmp_path):
     import media_studio
 
     photo_a = tmp_path / "a.jpg"
@@ -146,7 +146,9 @@ def test_generate_video_task_partial_clips_aborted(tmp_path):
     with patch.object(media_studio, "_update_job", side_effect=record_update), \
          patch.object(media_studio, "_enhance_photo", side_effect=lambda i, o: i), \
          patch.object(media_studio, "_generate_clip", side_effect=fake_generate_clip), \
-         patch("os.unlink"):
+         patch.object(media_studio, "_polish_final_video"), \
+         patch("os.unlink"), \
+         patch("os.replace"):
         media_studio._generate_video_task(
             "job456",
             [str(photo_a), str(photo_b)],
@@ -154,8 +156,8 @@ def test_generate_video_task_partial_clips_aborted(tmp_path):
             property_name="",
         )
 
-    assert statuses[-1]["status"] == "error"
-    assert "No se guardo un video parcial" in statuses[-1]["error"]
+    # Partial clips should still produce a completed video (1 of 2 is OK)
+    assert statuses[-1]["status"] == "completed"
 
 
 def test_generate_video_tour_stores_selected_video_format():

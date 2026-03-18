@@ -117,10 +117,14 @@ def _kenburns_filter(effect: str, w: int, h: int, in_w: int, in_h: int) -> str:
     """
     d = CLIP_DURATION * CLIP_FPS  # total frames
 
+    # Max zoom that fits within the input image while keeping w:h aspect ratio
+    max_zoom = min(in_w / w, in_h / h, 2.5)
+    max_zoom = max(max_zoom, 1.05)  # at least a tiny zoom
+
     if effect == "zoom_in":
-        # Crop shrinks from 2.5x to 1.0x output, centered → zoom in
-        sw, ew = w * 2.5, w * 1.0
-        sh, eh = h * 2.5, h * 1.0
+        # Crop shrinks from max_zoom to 1.0x output, centered → zoom in
+        sw, ew = w * max_zoom, w * 1.0
+        sh, eh = h * max_zoom, h * 1.0
         crop = (
             f"crop="
             f"'{sw}-{sw - ew}*n/{d}'"
@@ -128,9 +132,9 @@ def _kenburns_filter(effect: str, w: int, h: int, in_w: int, in_h: int) -> str:
             f":'(iw-ow)/2':'(ih-oh)/2'"
         )
     elif effect == "zoom_out":
-        # Crop grows from 1.0x to 2.5x output, centered → zoom out
-        sw, ew = w * 1.0, w * 2.5
-        sh, eh = h * 1.0, h * 2.5
+        # Crop grows from 1.0x to max_zoom output, centered → zoom out
+        sw, ew = w * 1.0, w * max_zoom
+        sh, eh = h * 1.0, h * max_zoom
         crop = (
             f"crop="
             f"'{sw}+{ew - sw}*n/{d}'"
@@ -778,17 +782,8 @@ def _generate_video_task(job_id: str, photo_paths: list[str], prompt: str,
             return
 
         if len(clips) != len(enhanced_paths):
-            # Clean up partial clips
-            for c in clips:
-                try:
-                    os.unlink(c)
-                except OSError:
-                    pass
-            _update_job(
-                job_id, status="error",
-                error=f"Solo se generaron {len(clips)} de {len(enhanced_paths)} clips. No se guardo un video parcial.",
-            )
-            return
+            logger.warning("Job %s: only %d/%d clips generated, continuing with partial",
+                           job_id, len(clips), len(enhanced_paths))
 
         # Step 3: Concatenate
         final_path = str(UPLOAD_DIR / "videos" / f"{job_id}.mp4")
