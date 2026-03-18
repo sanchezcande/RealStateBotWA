@@ -153,6 +153,7 @@ def init_db():
         # Skipped for in-memory DBs (tests).
         if _DB_PATH != ":memory:":
             force_seed = os.environ.get("SEED_DEMO_DATA", "").lower() in ("true", "1", "yes")
+            logger.info("SEED_DEMO_DATA=%s, force_seed=%s", os.environ.get("SEED_DEMO_DATA", ""), force_seed)
             if force_seed:
                 count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
                 if count > 0:
