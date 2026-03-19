@@ -185,7 +185,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  /* ── Smooth scroll for nav links ──────────────────────────────── */
+  /* ── Smooth scroll for nav links (offset for sticky header) ───── */
   document.querySelectorAll('.pb-header-nav a, a[href^="#"]').forEach(function (link) {
     link.addEventListener("click", function (e) {
       var href = this.getAttribute("href");
@@ -193,7 +193,10 @@ document.addEventListener("DOMContentLoaded", function () {
         var target = document.querySelector(href);
         if (target) {
           e.preventDefault();
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
+          var header = document.querySelector(".pb-header");
+          var offset = header ? header.offsetHeight + 16 : 0;
+          var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: top, behavior: "smooth" });
         }
       }
     });
