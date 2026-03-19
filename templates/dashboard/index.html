@@ -59,13 +59,6 @@
   </div>
 </section>
 
-{% if plan == 'premium' %}
-<div class="actions">
-  <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days={{ days }}" data-i18n="export_csv">Exportar CSV</a>
-  <button class="btn btn-outline" onclick="window.print()" data-i18n="print_pdf">Imprimir / PDF</button>
-</div>
-{% endif %}
-
 <!-- CHARTS -->
 <section class="section-block">
   <div class="section-heading">
@@ -73,8 +66,20 @@
       <span class="section-kicker">Rendimiento</span>
       <h2>Lectura visual del negocio</h2>
     </div>
-    <p>Gráficos simples para detectar volumen, origen de demanda y propiedades con más tracción.</p>
+    <div style="display:flex;gap:8px;align-items:center">
+      {% if plan == 'premium' %}
+      <a class="btn btn-outline btn-sm" href="/dashboard/export.csv?token={{ token }}&days={{ days }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        CSV
+      </a>
+      {% endif %}
+      <button class="btn btn-outline btn-sm" onclick="window.print()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        PDF
+      </button>
+    </div>
   </div>
+
   <div class="charts">
 
   <!-- 1. Conversaciones por dia -->
@@ -104,16 +109,8 @@
     {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 4. Propiedades mas solicitadas -->
-  <div class="card full-width">
-    <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
-    {% if top_properties["items"] %}
-    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 40, 120] | max }}px"></canvas>
-    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
-  </div>
-
   {% if plan in ('pro', 'premium') %}
-  <!-- 5. Resolucion de consultas -->
+  <!-- 4. Resolucion de consultas -->
   <div class="card">
     <h2 data-i18n="query_resolution">Resolución de consultas</h2>
     {% if escalation_split['values'] | sum > 0 %}
@@ -124,7 +121,6 @@
     {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
 
-  <!-- 6. Canales de contacto -->
   {% if channel_breakdown %}
   <div class="card">
     <h2 data-i18n="contact_channels">Canales de contacto</h2>
@@ -137,7 +133,7 @@
   {% endif %}
 
   {% if plan == 'premium' %}
-  <!-- 7. Calidad de leads -->
+  <!-- 5. Calidad de leads -->
   <div class="card">
     <h2 data-i18n="lead_quality">Calidad de leads</h2>
     {% if lead_quality_split['values'] | sum > 0 %}
@@ -148,6 +144,14 @@
     {% else %}<p class="no-data" data-i18n="no_data_yet">Sin datos todavía</p>{% endif %}
   </div>
   {% endif %}
+
+  <!-- Propiedades mas solicitadas -->
+  <div class="card full-width">
+    <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
+    {% if top_properties["items"] %}
+    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 40, 120] | max }}px"></canvas>
+    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
+  </div>
 
   </div>
 </section>

@@ -1,25 +1,9 @@
 import os
-import subprocess
 import sys
 from dotenv import load_dotenv
 import pytz
 
 load_dotenv()
-
-# Cache-busting version for static assets (git short hash or RAILWAY_DEPLOYMENT_ID)
-def _get_asset_version() -> str:
-    v = os.environ.get("RAILWAY_DEPLOYMENT_ID", "")
-    if v:
-        return v[:10]
-    try:
-        return subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            stderr=subprocess.DEVNULL, text=True,
-        ).strip()
-    except Exception:
-        return "1"
-
-ASSET_VERSION = _get_asset_version()
 
 # Timezone used across the app
 AR_TZ = pytz.timezone("America/Argentina/Buenos_Aires")
@@ -72,11 +56,12 @@ EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
 BASE_URL = os.environ.get("BASE_URL", "")  # e.g. https://tu-app.up.railway.app
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "sanchezgcandelaria@gmail.com")
 
-# Lemon Squeezy (USD — international payments)
-LEMONSQUEEZY_API_KEY = os.environ.get("LEMONSQUEEZY_API_KEY", "")
-LEMONSQUEEZY_STORE_ID = os.environ.get("LEMONSQUEEZY_STORE_ID", "")
-LEMONSQUEEZY_VARIANT_ID = os.environ.get("LEMONSQUEEZY_VARIANT_ID", "")
-LEMONSQUEEZY_WEBHOOK_SECRET = os.environ.get("LEMONSQUEEZY_WEBHOOK_SECRET", "")
+# Asset cache busting
+import subprocess as _sp
+try:
+    ASSET_VERSION = _sp.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=_sp.DEVNULL).decode().strip()
+except Exception:
+    ASSET_VERSION = "1"
 
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
