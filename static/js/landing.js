@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const p = platformColors[activeTab];
     let html = `<div class="chat-bubble-in pb-bubble ${isUser ? "user" : "bot"}" style="animation-delay:0s">`;
     if (!isUser) {
-      html += `<div class="pb-bubble-avatar" style="background:linear-gradient(135deg,${p.color},${p.dark})"><i class="fa-solid fa-robot"></i></div>`;
+      html += `<div class="pb-bubble-avatar" style="padding:0;overflow:hidden"><img src="/static/img/Avatar.png" alt="Vera" style="width:100%;height:100%;object-fit:cover;border-radius:50%"></div>`;
     }
     html += `<div class="pb-bubble-content">${msg.text.replace(/\n/g, "<br>")}<span class="pb-bubble-time">${getTimeStr()}</span></div></div>`;
     return html;
@@ -82,8 +82,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderTyping() {
     const p = platformColors[activeTab];
     return `<div class="pb-typing">
-      <div class="pb-bubble-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,${p.color},${p.dark});display:flex;align-items:center;justify-content:center;font-size:.9rem;color:#fff;flex-shrink:0">
-        <i class="fa-solid fa-robot"></i>
+      <div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0">
+        <img src="/static/img/Avatar.png" alt="Vera" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
       </div>
       <div class="pb-typing-dots">●●●</div>
     </div>`;

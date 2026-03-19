@@ -26,6 +26,13 @@
       {% if branch %}<span class="branch-badge">{{ branch }}</span>{% endif %}
       <span class="plan-badge plan-{{ plan }}">{{ plan | upper }}</span>
     </div>
+    <div style="padding:12px 22px 0;display:flex;align-items:center;gap:10px">
+      <img src="/static/img/Avatar.png" alt="Vera" width="36" height="36" style="border-radius:50%;object-fit:cover;border:2px solid rgba(217,119,6,.4)">
+      <div>
+        <div style="font-size:.78rem;font-weight:700;color:#fff">Vera</div>
+        <div style="font-size:.65rem;color:rgba(255,255,255,.45)">Asistente IA activa</div>
+      </div>
+    </div>
     <ul class="nav-links">
       <li><a href="/dashboard?token={{ token }}" class="{% if active_page == 'dashboard' %}active{% endif %}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
