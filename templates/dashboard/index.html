@@ -248,17 +248,21 @@ if (OPS.labels.length) {
 /* 4. Propiedades — horizontal bar (stacked: confirmed + cancelled) */
 if (PROPS.values.length) {
   const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
+  const BAR_COLORS = ["#D97706","#10b981","#6366f1","#ef4444","#06b6d4","#8b5cf6","#ec4899","#f97316","#14b8a6","#a855f7","#eab308","#3b82f6"];
+  const confirmedData = PROPS.confirmed || PROPS.values;
+  const confirmedColors = confirmedData.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]);
   const datasets = [{
     label: t("confirmed_visits") || "Confirmadas",
-    data: PROPS.confirmed || PROPS.values,
-    backgroundColor: "#10b981",
+    data: confirmedData,
+    backgroundColor: confirmedColors,
     borderRadius: 4, barThickness: 28
   }];
   if (PROPS.cancelled && PROPS.cancelled.some(v => v > 0)) {
+    const cancelledColors = PROPS.cancelled.map((_, i) => BAR_COLORS[i % BAR_COLORS.length] + "66");
     datasets.push({
       label: t("cancelled_visits") || "Canceladas",
       data: PROPS.cancelled,
-      backgroundColor: "#ef4444",
+      backgroundColor: cancelledColors,
       borderRadius: 4, barThickness: 28
     });
   }
