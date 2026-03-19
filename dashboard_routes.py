@@ -188,6 +188,7 @@ def media_page():
     return render_template("dashboard/media.html", **_ctx(active_page="media"))
 
 
+
 # ---------------------------------------------------------------------------
 # CSV Export
 # ---------------------------------------------------------------------------
@@ -195,8 +196,8 @@ def media_page():
 @dashboard.route("/export.csv")
 @_require_auth
 def export_csv():
-    if DASHBOARD_PLAN != "premium":
-        return "Exportacion CSV disponible solo en el plan Premium.", 403
+    if DASHBOARD_PLAN not in ("pro", "premium"):
+        return "Exportacion CSV disponible en los planes Pro y Premium.", 403
     days = request.args.get("days", 30, type=int)
     if days not in (7, 30, 90):
         days = 30

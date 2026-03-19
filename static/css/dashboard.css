@@ -419,6 +419,9 @@ tr:hover td { background: #fafafa; }
 .badge-red { background: #fee2e2; color: #991b1b; }
 .badge-gray { background: #f3f4f6; color: #374151; }
 .badge-yellow { background: #fef3c7; color: #92400e; }
+.badge-hot { background: #fef2f2; color: #dc2626; }
+.badge-warm { background: #fffbeb; color: #d97706; }
+.badge-cold { background: #f0f9ff; color: #0284c7; }
 
 /* ===== Conversation Viewer ===== */
 .conv-layout { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: calc(100vh - 100px); }
@@ -661,6 +664,25 @@ tr:hover td { background: #fafafa; }
 }
 .upgrade-box h1 { font-size: 1.3rem; margin-bottom: 8px; }
 .upgrade-box p { color: #6b7280; font-size: .9rem; line-height: 1.5; }
+
+/* ===== Conversion Funnel ===== */
+.funnel { display: flex; align-items: center; gap: 12px; padding: 20px 0; }
+.funnel-step { flex: 1; }
+.funnel-bar {
+  background: #D97706; color: #fff; padding: 16px 20px; border-radius: 8px;
+  font-weight: 700; font-size: 1.5rem; min-width: 80px; text-align: center;
+  transition: width 0.5s ease;
+}
+.funnel-bar.funnel-mid { background: #10b981; }
+.funnel-bar.funnel-end { background: #3b82f6; }
+.funnel-num { display: block; }
+.funnel-label { text-align: center; margin-top: 8px; font-size: 0.85rem; color: #6b7280; font-weight: 600; }
+.funnel-arrow { font-size: 1.5rem; color: #d1d5db; font-weight: 700; flex-shrink: 0; }
+@media (max-width: 640px) {
+  .funnel { flex-direction: column; }
+  .funnel-bar { width: 100% !important; }
+  .funnel-arrow { transform: rotate(90deg); }
+}
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {

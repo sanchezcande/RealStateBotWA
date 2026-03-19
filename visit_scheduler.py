@@ -13,6 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import analytics
 import calendar_client
 import conversations
+import crm_webhook
 import sheets
 import whatsapp
 from config import NOTIFY_NUMBER, AR_TZ
@@ -118,6 +119,26 @@ def _notify_visit(property_title: str, address: str, client_name: str, date_str:
         logger.error("Failed to notify agent of visit for %s", property_title)
 
 
+def _notify_visit_failed(property_title: str, address: str, client_name: str, date_str: str, time_str: str, phone: str = ""):
+    """Notify agent that a calendar event could not be created, so they can handle it manually."""
+    address_str = address or "Sin dirección cargada"
+    name_str = client_name or "Sin nombre"
+    msg = (
+        f"ERROR: No se pudo crear el evento en el calendario.\n"
+        f"Propiedad: {property_title}\n"
+        f"Dirección: {address_str}\n"
+        f"Cliente: {name_str}\n"
+        f"Horario solicitado: {date_str} a las {time_str}\n"
+        f"Tel: {phone}\n\n"
+        f"La visita NO quedó registrada. Por favor agendala manualmente."
+    )
+    success = whatsapp.send_message(NOTIFY_NUMBER, msg)
+    if success:
+        logger.info("Agent notified of calendar failure for: %s on %s %s", property_title, date_str, time_str)
+    else:
+        logger.error("Failed to notify agent of calendar failure for %s", property_title)
+
+
 def _schedule_reminder(property_title: str, address: str, client_name: str, date_str: str, time_str: str):
     """Schedule a WhatsApp reminder 1 hour before the visit."""
     try:
@@ -212,25 +233,32 @@ def process(phone: str, ai_text: str) -> str:
             address=address,
         )
 
-        # Always track the visit and notify agent, regardless of calendar outcome
+        if event_id is None:
+            logger.error("Failed to create calendar event for %s / %s %s %s — visit NOT tracked", phone, property_title, date_str, time_str)
+            _notify_visit_failed(property_title, address, client_name, date_str, time_str, phone=phone)
+            continue
+
         scheduled_visits.append(visit_key)
-        lead_update = dict(
+        visit_events[visit_key] = event_id
+        conversations.update_lead(
+            phone,
             visit_scheduled=True,
             scheduled_visits=scheduled_visits,
+            visit_events=visit_events,
         )
-        if event_id is not None:
-            visit_events[visit_key] = event_id
-            lead_update["visit_events"] = visit_events
-            _schedule_reminder(property_title, address, client_name, date_str, time_str)
-        else:
-            logger.warning("Could not create calendar event for %s / %s — visit tracked without event_id", phone, property_title)
-
-        conversations.update_lead(phone, **lead_update)
+        _schedule_reminder(property_title, address, client_name, date_str, time_str)
         logger.info("Visit scheduled for %s (%s): %s %s %s", phone, client_name, property_title, date_str, time_str)
         analytics.log_event("visit_scheduled", phone, property=property_title,
                              operation=lead.get("operation"))
         analytics.save_visit(phone, property_title, address, client_name,
                              date_str, time_str, event_id=event_id)
+        crm_webhook.on_visit_scheduled(
+            phone_hash=analytics._hash_phone(phone),
+            client_name=client_name,
+            property_title=property_title,
+            date=date_str,
+            time=time_str,
+        )
         _notify_visit(property_title, address, client_name, date_str, time_str, phone=phone)
 
     # Do NOT append address to user-visible text after confirming visits.

@@ -145,6 +145,61 @@ def api_takeover(phone_hash):
         return jsonify({"ok": True, "paused": True})
 
 
+@api.route("/conversations/<phone_hash>/export")
+@_require_auth
+def api_conversation_export(phone_hash):
+    """Export a conversation transcript as a printable HTML page."""
+    data = analytics.get_conversation_thread(phone_hash)
+    if not data["messages"]:
+        return "Conversación no encontrada.", 404
+
+    lead = data.get("lead") or {}
+    name = lead.get("name") or "Contacto"
+
+    # Build a minimal standalone HTML page
+    msgs_html = []
+    for m in data["messages"]:
+        role_label = "Cliente" if m["role"] == "user" else ("Agente" if m["role"] == "agent" else "Vera (Bot)")
+        role_class = m["role"]
+        time_str = m.get("time", "")
+        content = m["content"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+        msgs_html.append(f'<div class="msg {role_class}"><div class="role">{role_label} <span class="time">{time_str}</span></div><div class="text">{content}</div></div>')
+
+    lead_info = ""
+    if lead:
+        parts = []
+        if lead.get("operation"): parts.append(f"Operación: {lead['operation']}")
+        if lead.get("property_type"): parts.append(f"Tipo: {lead['property_type']}")
+        if lead.get("budget"): parts.append(f"Presupuesto: {lead['budget']}")
+        if lead.get("timeline"): parts.append(f"Timeline: {lead['timeline']}")
+        if parts:
+            lead_info = '<div class="lead-info">' + " | ".join(parts) + '</div>'
+
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Transcripción — {name}</title>
+<style>
+body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; color: #1f2937; }}
+h1 {{ font-size: 1.3rem; margin-bottom: 4px; }}
+.subtitle {{ color: #6b7280; font-size: 0.85rem; margin-bottom: 16px; }}
+.lead-info {{ background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85rem; color: #374151; }}
+.msg {{ margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; }}
+.msg.user {{ background: #dbeafe; margin-left: 40px; }}
+.msg.assistant {{ background: #f3f4f6; margin-right: 40px; }}
+.msg.agent {{ background: #fef3c7; margin-right: 40px; }}
+.role {{ font-size: 0.75rem; font-weight: 600; color: #6b7280; margin-bottom: 4px; }}
+.time {{ font-weight: 400; }}
+.text {{ font-size: 0.9rem; line-height: 1.5; }}
+@media print {{ body {{ padding: 0; }} }}
+</style></head><body>
+<h1>Transcripción — {name}</h1>
+<div class="subtitle">{len(data['messages'])} mensajes</div>
+{lead_info}
+{''.join(msgs_html)}
+<script>window.onload = function() {{ window.print(); }}</script>
+</body></html>"""
+    return html, 200, {"Content-Type": "text/html; charset=utf-8"}
+
+
 @api.route("/leads")
 @_require_auth
 def api_leads():
@@ -345,3 +400,35 @@ def api_media_job_status(job_id):
     if not job:
         return jsonify({"error": "Job no encontrado"}), 404
     return jsonify(job)
+
+
+
+@api.route("/media/share", methods=["POST"])
+@_require_auth
+def api_media_share():
+    """Share a media file to WhatsApp (sends to agent's number)."""
+    import whatsapp
+    from config import NOTIFY_NUMBER, BASE_URL
+
+    data = request.get_json(silent=True) or {}
+    media_url = data.get("url", "")
+    media_type = data.get("type", "video")  # video or image
+    caption = data.get("caption", "")
+
+    if not media_url:
+        return jsonify({"error": "URL de media requerida"}), 400
+
+    # Build full URL if relative
+    if media_url.startswith("/"):
+        base = BASE_URL.rstrip("/") if BASE_URL else request.host_url.rstrip("/")
+        full_url = base + media_url
+    else:
+        full_url = media_url
+
+    # Send to agent via WhatsApp
+    msg = f"Media Studio — {caption or 'Nuevo contenido generado'}\n{full_url}"
+    success = whatsapp.send_message(NOTIFY_NUMBER, msg)
+
+    if success:
+        return jsonify({"ok": True, "message": "Enviado a tu WhatsApp"})
+    return jsonify({"error": "Error enviando a WhatsApp"}), 502

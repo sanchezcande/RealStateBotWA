@@ -46,6 +46,24 @@
   </div>
   {% if plan in ('pro', 'premium') %}
   <div class="kpi">
+    <div class="kpi-topline">Velocidad</div>
+    <div class="num">
+      {% if kpis.avg_response_sec < 60 %}
+        {{ kpis.avg_response_sec }}s
+      {% elif kpis.avg_response_sec < 3600 %}
+        {{ (kpis.avg_response_sec / 60) | round(1) }}m
+      {% else %}
+        {{ (kpis.avg_response_sec / 3600) | round(1) }}h
+      {% endif %}
+    </div>
+    <div class="pct {{ 'up' if kpis.avg_response_sec < 120 else 'down' }}">
+      {% if kpis.avg_response_sec < 60 %}instantáneo{% elif kpis.avg_response_sec < 300 %}rápido{% else %}a mejorar{% endif %}
+    </div>
+    <div class="label">Tiempo de respuesta</div>
+  </div>
+  {% endif %}
+  {% if plan in ('pro', 'premium') %}
+  <div class="kpi">
     <div class="kpi-topline">Atención</div>
     <div class="num">{{ escalation_split["values"][1] }}</div>
     <div class="pct neu">
@@ -59,6 +77,41 @@
   </div>
 </section>
 
+<!-- CONVERSION FUNNEL -->
+{% if plan in ('pro', 'premium') %}
+<section class="section-block">
+  <div class="section-heading">
+    <div>
+      <span class="section-kicker">Embudo</span>
+      <h2>Funnel de conversión</h2>
+    </div>
+    <p>Visualización del recorrido: desde la primera consulta hasta la visita agendada.</p>
+  </div>
+  <div class="funnel">
+    <div class="funnel-step">
+      <div class="funnel-bar" style="width:100%">
+        <span class="funnel-num">{{ kpis.total_conversations }}</span>
+      </div>
+      <div class="funnel-label">Consultas</div>
+    </div>
+    <div class="funnel-arrow">→</div>
+    <div class="funnel-step">
+      <div class="funnel-bar funnel-mid" style="width:{{ (kpis.total_leads / kpis.total_conversations * 100) if kpis.total_conversations > 0 else 0 }}%">
+        <span class="funnel-num">{{ kpis.total_leads }}</span>
+      </div>
+      <div class="funnel-label">Leads ({{ kpis.conv_to_lead_pct }}%)</div>
+    </div>
+    <div class="funnel-arrow">→</div>
+    <div class="funnel-step">
+      <div class="funnel-bar funnel-end" style="width:{{ (kpis.total_visits / kpis.total_conversations * 100) if kpis.total_conversations > 0 else 0 }}%">
+        <span class="funnel-num">{{ kpis.total_visits }}</span>
+      </div>
+      <div class="funnel-label">Visitas ({{ kpis.conv_to_visit_pct }}%)</div>
+    </div>
+  </div>
+</section>
+{% endif %}
+
 <!-- CHARTS -->
 <section class="section-block">
   <div class="section-heading">
@@ -67,7 +120,7 @@
       <h2>Lectura visual del negocio</h2>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      {% if plan == 'premium' %}
+      {% if plan in ('pro', 'premium') %}
       <a class="btn btn-outline btn-sm" href="/dashboard/export.csv?token={{ token }}&days={{ days }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         CSV
@@ -192,34 +245,45 @@ if (OPS.labels.length) {
   buildLegend("opLegend", opLabels, OPS.values, opColors, total);
 }
 
-/* 4. Propiedades — horizontal bar */
+/* 4. Propiedades — horizontal bar (stacked: confirmed + cancelled) */
 if (PROPS.values.length) {
-  const barColors = PROPS.labels.map((_, i) => PAL[i % PAL.length]);
   const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
-  makeChart("propsChart", "bar", PROPS.labels,
-    [{ data: PROPS.values, backgroundColor: barColors, borderRadius: 4, barThickness: 28 }],
-    {
-      indexAxis: "y",
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            title: function(ctx) { return ctx[0].label; },
-            afterTitle: function(ctx) {
-              const addr = propAddresses[ctx[0].dataIndex];
-              return addr ? addr : "";
-            },
-            label: function(ctx) {
-              return ctx.parsed.x + " " + (ctx.parsed.x === 1 ? t("visit_singular") : t("visit_plural"));
-            }
+  const datasets = [{
+    label: t("confirmed_visits") || "Confirmadas",
+    data: PROPS.confirmed || PROPS.values,
+    backgroundColor: "#10b981",
+    borderRadius: 4, barThickness: 28
+  }];
+  if (PROPS.cancelled && PROPS.cancelled.some(v => v > 0)) {
+    datasets.push({
+      label: t("cancelled_visits") || "Canceladas",
+      data: PROPS.cancelled,
+      backgroundColor: "#ef4444",
+      borderRadius: 4, barThickness: 28
+    });
+  }
+  makeChart("propsChart", "bar", PROPS.labels, datasets, {
+    indexAxis: "y",
+    plugins: {
+      legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
+      tooltip: {
+        callbacks: {
+          title: function(ctx) { return ctx[0].label; },
+          afterTitle: function(ctx) {
+            const addr = propAddresses[ctx[0].dataIndex];
+            return addr ? addr : "";
+          },
+          label: function(ctx) {
+            return ctx.dataset.label + ": " + ctx.parsed.x;
           }
         }
-      },
-      scales: {
-        x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-        y: { ticks: { font: { size: 12, weight: 600 } }, grid: { display: false } }
       }
-    });
+    },
+    scales: {
+      x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
+      y: { stacked: true, ticks: { font: { size: 12, weight: 600 } }, grid: { display: false } }
+    }
+  });
 }
 
 /* 5. Resolucion de consultas — translate labels */

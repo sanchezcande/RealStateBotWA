@@ -170,6 +170,8 @@ def _is_quota_exhausted_error(err: Exception) -> bool:
 
 def save_photo(file_storage, property_name: str = "") -> dict:
     """Save an uploaded photo. Returns metadata dict."""
+    import json as _json
+
     filename = file_storage.filename or "photo.jpg"
     ext = os.path.splitext(filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
@@ -185,6 +187,17 @@ def save_photo(file_storage, property_name: str = "") -> dict:
         path.unlink()
         raise ValueError("Foto demasiado grande (max 10 MB)")
 
+    # Save metadata sidecar
+    meta = {
+        "id": photo_id,
+        "original_name": filename,
+        "property": property_name,
+        "uploaded_at": datetime.now(AR_TZ).isoformat(),
+    }
+    meta_path = UPLOAD_DIR / "photos" / f"{photo_id}.json"
+    with open(meta_path, "w") as mf:
+        _json.dump(meta, mf)
+
     return {
         "id": photo_id,
         "filename": safe_name,
@@ -197,17 +210,28 @@ def save_photo(file_storage, property_name: str = "") -> dict:
 
 
 def list_photos() -> list[dict]:
-    """List all uploaded photos."""
+    """List all uploaded photos with metadata."""
+    import json as _json
+
     photos = []
     photo_dir = UPLOAD_DIR / "photos"
     for f in sorted(photo_dir.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
         if f.suffix.lower() in ALLOWED_EXTENSIONS:
+            meta = {}
+            meta_path = photo_dir / f"{f.stem}.json"
+            if meta_path.exists():
+                try:
+                    with open(meta_path) as mf:
+                        meta = _json.load(mf)
+                except Exception:
+                    pass
             photos.append({
                 "id": f.stem,
                 "filename": f.name,
                 "path": str(f),
                 "size": f.stat().st_size,
                 "url": f"/uploads/photos/{f.name}",
+                "property": meta.get("property", ""),
             })
     return photos
 
@@ -215,11 +239,16 @@ def list_photos() -> list[dict]:
 def delete_photo(photo_id: str) -> bool:
     """Delete a photo by ID."""
     photo_dir = UPLOAD_DIR / "photos"
+    found = False
     for f in photo_dir.iterdir():
-        if f.stem == photo_id:
+        if f.stem == photo_id and f.suffix.lower() in ALLOWED_EXTENSIONS:
             f.unlink()
-            return True
-    return False
+            found = True
+    # Also delete JSON sidecar
+    meta_path = photo_dir / f"{photo_id}.json"
+    if meta_path.exists():
+        meta_path.unlink()
+    return found
 
 
 # ---------------------------------------------------------------------------

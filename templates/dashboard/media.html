@@ -217,16 +217,25 @@
               <span style="color:#888;font-weight:400" x-text="'(' + selectedIds.length + ' ' + t('selected') + ')'"></span>
             </h3>
             <button class="btn btn-outline" style="font-size:.78rem" @click="selectAll()">
-              <span x-text="selectedIds.length === photos.length ? t('deselect_all') : t('select_all')"></span>
+              <span x-text="selectedIds.length === filteredPhotos.length ? t('deselect_all') : t('select_all')"></span>
             </button>
           </div>
+          <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <select x-model="filterProperty" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.82rem">
+              <option value="">Todas las propiedades</option>
+              <template x-for="prop in uniqueProperties" :key="prop">
+                <option :value="prop" x-text="prop"></option>
+              </template>
+            </select>
+          </div>
           <div class="media-grid">
-            <template x-for="p in photos" :key="p.id">
+            <template x-for="p in filteredPhotos" :key="p.id">
               <div class="photo-card" :class="{ selected: selectedIds.includes(p.id) }"
                    @click="toggleSelect(p.id)">
                 <img :src="p.url" :alt="p.filename" loading="lazy">
                 <div class="check">&#10003;</div>
                 <button class="delete-btn" @click.stop="deletePhoto(p.id)" :title="t('delete')">&times;</button>
+                <div x-show="p.property" style="position:absolute;bottom:0;left:0;right:0;padding:4px 8px;background:rgba(0,0,0,.6);color:#fff;font-size:.7rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" x-text="p.property"></div>
               </div>
             </template>
           </div>
@@ -253,6 +262,19 @@
             <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:4px">Nombre de la propiedad</div>
             <input type="text" placeholder="Ej: Depto 2 amb - Palermo" x-model="videoProperty">
             <div style="font-size:.78rem;color:#999;margin-top:2px">Aparece como texto en el video</div>
+          </div>
+
+          <!-- Video template presets -->
+          <div style="margin-bottom:14px">
+            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Estilo del video</div>
+            <div class="format-toggle">
+              <button type="button" :class="{ active: videoTemplate === '' }" @click="applyTemplate('')">Personalizado</button>
+              <button type="button" :class="{ active: videoTemplate === 'luxury' }" @click="applyTemplate('luxury')">Luxury</button>
+              <button type="button" :class="{ active: videoTemplate === 'modern' }" @click="applyTemplate('modern')">Moderno</button>
+              <button type="button" :class="{ active: videoTemplate === 'family' }" @click="applyTemplate('family')">Familiar</button>
+              <button type="button" :class="{ active: videoTemplate === 'investment' }" @click="applyTemplate('investment')">Inversión</button>
+            </div>
+            <div style="font-size:.78rem;color:#999;margin-top:4px" x-show="videoTemplate">Prompt pre-configurado para este estilo. Podés editarlo abajo.</div>
           </div>
 
           <!-- Video prompt (instructions for Gemini AI) -->
@@ -331,8 +353,16 @@
             <div style="margin-top:16px">
               <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px" x-text="t('video_generated')"></p>
               <video class="result-video" :src="genResult" controls></video>
-              <div style="margin-top:8px">
+              <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
                 <a class="btn btn-outline" :href="genResult" download x-text="t('download_video')"></a>
+                <button class="btn btn-outline" @click="shareMedia(genResult, 'video', videoProperty)" style="font-size:.78rem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                  Enviar a WhatsApp
+                </button>
+                <button class="btn btn-outline" @click="copyLink(genResult)" style="font-size:.78rem">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copiar link
+                </button>
               </div>
             </div>
           </template>
@@ -372,13 +402,21 @@
               <template x-if="j.type === 'video_tour'">
                 <div>
                   <video class="result-video" :src="j.result_url" controls style="max-width:480px"></video>
-                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a></div>
+                  <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+                    <a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a>
+                    <button class="btn btn-outline" style="font-size:.78rem" @click="shareMedia(j.result_url, j.type, j.property)">Enviar a WA</button>
+                    <button class="btn btn-outline" style="font-size:.78rem" @click="copyLink(j.result_url)">Copiar link</button>
+                  </div>
                 </div>
               </template>
               <template x-if="j.type === 'image'">
                 <div>
                   <img class="result-image" :src="j.result_url" style="max-width:300px">
-                  <div style="margin-top:6px"><a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a></div>
+                  <div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap">
+                    <a class="btn btn-outline" style="font-size:.78rem" :href="j.result_url" download x-text="t('download')"></a>
+                    <button class="btn btn-outline" style="font-size:.78rem" @click="shareMedia(j.result_url, j.type, j.property)">Enviar a WA</button>
+                    <button class="btn btn-outline" style="font-size:.78rem" @click="copyLink(j.result_url)">Copiar link</button>
+                  </div>
                 </div>
               </template>
             </div>
@@ -399,8 +437,9 @@ function mediaStudio() {
     tab: "video",
     photos: [],
     selectedIds: [],
+    filterProperty: "",
     // Video gen
-    voiceoverText: "", videoPrompt: "", videoProperty: "", videoFormat: "vertical", voice: "es-AR-TomasNeural",
+    voiceoverText: "", videoPrompt: "", videoProperty: "", videoFormat: "vertical", videoTemplate: "", voice: "es-AR-TomasNeural",
     enhancePhotos: true,
     detectedLang: "es",
     _esVoices: [
@@ -430,6 +469,14 @@ function mediaStudio() {
 
     get availableVoices() {
       return this.detectedLang === "en" ? this._enVoices : this._esVoices;
+    },
+    get uniqueProperties() {
+      const props = [...new Set(this.photos.map(p => p.property).filter(Boolean))];
+      return props.sort();
+    },
+    get filteredPhotos() {
+      if (!this.filterProperty) return this.photos;
+      return this.photos.filter(p => p.property === this.filterProperty);
     },
     init() {
       this.loadPhotos(); this.loadUsage();
@@ -507,8 +554,20 @@ function mediaStudio() {
     },
 
     selectAll() {
-      if (this.selectedIds.length === this.photos.length) this.selectedIds = [];
-      else this.selectedIds = this.photos.map(p => p.id);
+      const visible = this.filteredPhotos;
+      if (this.selectedIds.length === visible.length) this.selectedIds = [];
+      else this.selectedIds = visible.map(p => p.id);
+    },
+
+    applyTemplate(template) {
+      this.videoTemplate = template;
+      const templates = {
+        luxury: "Movimiento de cámara elegante y pausado. Enfocarse en detalles premium: mármol, madera noble, iluminación cálida, vistas panorámicas. Transmitir exclusividad y sofisticación. Estilo cinematográfico de revista de arquitectura.",
+        modern: "Movimiento fluido y dinámico. Destacar líneas limpias, espacios abiertos, luz natural abundante. Estética minimalista y contemporánea. Transiciones suaves entre ambientes.",
+        family: "Recorrido cálido y acogedor. Mostrar amplitud de espacios, áreas verdes, cocina amplia, dormitorios luminosos. Transmitir sensación de hogar y comodidad. Ritmo tranquilo.",
+        investment: "Recorrido eficiente y profesional. Destacar metros cuadrados, distribución funcional, estado de conservación, potencial de renta. Enfoque informativo y directo.",
+      };
+      this.videoPrompt = templates[template] || "";
     },
 
     deletePhoto(id) {
@@ -573,6 +632,29 @@ function mediaStudio() {
     // ---- Jobs history ----
     loadJobs() {
       dashFetch("/api/dashboard/media/jobs").then(d => { this.jobs = d.jobs || []; });
+    },
+
+    // ---- Share / Copy link ----
+    shareMedia(url, type, caption) {
+      const token = new URLSearchParams(window.location.search).get("token") || "";
+      fetch(`/api/dashboard/media/share?token=${encodeURIComponent(token)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url, type, caption: caption || "" }),
+      }).then(r => r.json()).then(d => {
+        if (d.ok) alert("Enviado a tu WhatsApp!");
+        else alert(d.error || "Error al enviar");
+      }).catch(() => alert("Error de red"));
+    },
+
+    copyLink(url) {
+      const fullUrl = window.location.origin + url;
+      navigator.clipboard.writeText(fullUrl).then(() => {
+        alert("Link copiado al portapapeles!");
+      }).catch(() => {
+        // Fallback for older browsers
+        prompt("Copia este link:", fullUrl);
+      });
     },
   };
 }

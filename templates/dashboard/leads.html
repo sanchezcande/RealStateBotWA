@@ -20,7 +20,7 @@
         <option value="created_at" x-text="t('oldest')"></option>
         <option value="name" x-text="t('name')"></option>
       </select>
-      {% if plan == 'premium' %}
+      {% if plan in ('pro', 'premium') %}
       <a class="btn btn-outline" href="/dashboard/export.csv?token={{ token }}&days=90" data-i18n="export_csv">Exportar CSV</a>
       {% endif %}
     </div>
@@ -43,15 +43,17 @@
             <th data-i18n="type">Tipo</th>
             <th data-i18n="budget">Presupuesto</th>
             <th data-i18n="timeline">Timeline</th>
+            <th>Score</th>
             <th data-i18n="channel">Canal</th>
             <th data-i18n="msgs">Msgs</th>
             <th data-i18n="visits_th">Agenda</th>
+            <th data-i18n="days_since_contact">Días s/contacto</th>
             <th data-i18n="last_contact">Ultimo contacto</th>
           </tr>
         </thead>
         <tbody>
           <template x-if="items.length === 0">
-            <tr><td colspan="10" class="no-data" x-text="t('no_leads')"></td></tr>
+            <tr><td colspan="12" class="no-data" x-text="t('no_leads')"></td></tr>
           </template>
           <template x-for="l in items" :key="l.phone_hash">
             <tr class="table-row-hover">
@@ -67,9 +69,19 @@
               <td x-text="l.property_type || '—'"></td>
               <td x-text="l.budget || '—'"></td>
               <td x-text="l.timeline || '—'"></td>
+              <td>
+                <span class="badge"
+                  :class="l.score === 'hot' ? 'badge-hot' : l.score === 'warm' ? 'badge-warm' : 'badge-cold'"
+                  x-text="l.score === 'hot' ? '🔥 Caliente' : l.score === 'warm' ? '🟡 Tibio' : '❄️ Frío'"></span>
+              </td>
               <td><span class="badge badge-gray" x-text="l.channel"></span></td>
               <td><span class="table-metric" x-text="l.message_count"></span></td>
               <td><span class="table-metric" x-text="l.visit_count"></span></td>
+              <td>
+                <span class="badge"
+                  :class="l.days_since_contact <= 2 ? 'badge-green' : l.days_since_contact <= 7 ? 'badge-yellow' : 'badge-red'"
+                  x-text="l.days_since_contact + 'd'"></span>
+              </td>
               <td><span class="soft-meta" x-text="timeAgo(l.updated_at)"></span></td>
             </tr>
           </template>

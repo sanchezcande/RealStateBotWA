@@ -9,6 +9,7 @@ import logging
 from config import NOTIFY_NUMBER
 import analytics
 import conversations
+import crm_webhook
 import whatsapp
 
 logger = logging.getLogger(__name__)
@@ -73,6 +74,15 @@ def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
         conversations.update_lead(phone, notified=True)
         analytics.log_event("lead_qualified", phone, channel=channel,
                              operation=current_lead.get("operation"))
+        crm_webhook.on_lead_qualified(
+            phone_hash=analytics._hash_phone(phone),
+            name=current_lead.get("name", ""),
+            operation=current_lead.get("operation", ""),
+            property_type=current_lead.get("property_type", ""),
+            budget=current_lead.get("budget", ""),
+            timeline=current_lead.get("timeline", ""),
+            channel=channel,
+        )
 
     # Notify agent if client requested a callback
     if callback_data:

@@ -200,6 +200,7 @@ def get_listings() -> list:
     return data
 
 
+
 def _bool_field(value) -> str:
     """Normalize sheet boolean-like values to Sí/No/Consultar."""
     if value is None or value == "":

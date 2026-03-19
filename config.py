@@ -29,6 +29,14 @@ GOOGLE_CREDENTIALS_JSON = os.environ.get("GOOGLE_CREDENTIALS_JSON", "")
 
 SHEET_CACHE_TTL = int(os.environ.get("SHEET_CACHE_TTL", "60"))  # seconds
 
+# Follow-up automation for inactive leads
+FOLLOWUP_DAYS = int(os.environ.get("FOLLOWUP_DAYS", "3"))
+FOLLOWUP_ENABLED = os.environ.get("FOLLOWUP_ENABLED", "true").lower() in ("true", "1", "yes")
+
+# CRM Webhook
+CRM_WEBHOOK_URL = os.environ.get("CRM_WEBHOOK_URL", "")
+CRM_WEBHOOK_SECRET = os.environ.get("CRM_WEBHOOK_SECRET", "")
+
 # Persistent data directory (Railway volume at /data, local fallback to cwd)
 _DATA_DIR = "/data" if os.path.isdir("/data") else "."
 

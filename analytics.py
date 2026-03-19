@@ -507,13 +507,16 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "values": [hour_map.get(h, 0) for h in range(24)],
             }
 
-            # --- Top properties by requested visits (filtered) ---
+            # --- Top properties by visits (confirmed + cancelled breakdown) ---
             rows = conn.execute(
-                """SELECT property_title, COALESCE(MAX(NULLIF(address, '')), ''), COUNT(*) as cnt
+                """SELECT property_title, COALESCE(MAX(NULLIF(address, '')), ''),
+                          SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed,
+                          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+                          COUNT(*) as total
                    FROM visits
                    WHERE created_at >= ?
                    GROUP BY property_title
-                   ORDER BY cnt DESC, property_title ASC
+                   ORDER BY total DESC, property_title ASC
                    LIMIT 10""",
                 (cutoff,),
             ).fetchall()
@@ -521,13 +524,17 @@ def get_dashboard_data(days: int = 30) -> dict:
                 {
                     "title": r[0],
                     "address": r[1],
-                    "count": r[2],
+                    "confirmed": r[2],
+                    "cancelled": r[3],
+                    "count": r[4],
                 }
                 for r in rows
             ]
             top_properties = {
                 "labels": [item["title"] for item in top_property_items],
                 "values": [item["count"] for item in top_property_items],
+                "confirmed": [item["confirmed"] for item in top_property_items],
+                "cancelled": [item["cancelled"] for item in top_property_items],
                 "items": top_property_items,
             }
 
@@ -652,6 +659,33 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "prev_visits": prev_visits,
             }
 
+            # --- Average first response time (seconds) ---
+            avg_response_rows = conn.execute(
+                """SELECT
+                    cm1.phone,
+                    MIN(CASE WHEN cm1.role = 'user' THEN cm1.created_at END) as first_user,
+                    MIN(CASE WHEN cm1.role = 'assistant' THEN cm1.created_at END) as first_bot
+                   FROM chat_messages cm1
+                   INNER JOIN conversations c ON cm1.phone_hash = c.phone_hash
+                   WHERE c.last_seen_at >= ?
+                   GROUP BY cm1.phone
+                   HAVING first_user IS NOT NULL AND first_bot IS NOT NULL""",
+                (cutoff,),
+            ).fetchall()
+
+            response_times = []
+            for row in avg_response_rows:
+                try:
+                    t_user = datetime.strptime(row[1], "%Y-%m-%dT%H:%M:%S")
+                    t_bot = datetime.strptime(row[2], "%Y-%m-%dT%H:%M:%S")
+                    delta = (t_bot - t_user).total_seconds()
+                    if 0 < delta < 86400:  # Sanity: between 0 and 24h
+                        response_times.append(delta)
+                except (ValueError, TypeError):
+                    pass
+
+            avg_response_sec = round(sum(response_times) / len(response_times)) if response_times else 0
+
         return {
             "kpis": {
                 "total_conversations": total_convs,
@@ -659,6 +693,7 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "total_visits": int(total_visits),
                 "conv_to_lead_pct": conv_to_lead,
                 "conv_to_visit_pct": conv_to_visit,
+                "avg_response_sec": avg_response_sec,
             },
             "conv_by_day": conv_by_day,
             "peak_hours": peak_hours,
@@ -875,6 +910,7 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                     "visit_count": r[8],
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
                     "last_role": last_row[1] if last_row else "",
+                    "score": _lead_score(None, r[8], r[5], is_lead=bool(r[7])),
                 })
 
         return {"items": items, "total": total, "page": page, "per_page": per_page}
@@ -927,6 +963,15 @@ def resolve_phone_by_hash(phone_hash: str) -> str | None:
         return None
 
 
+def _lead_score(budget, visit_count, message_count, is_lead=True):
+    """Return 'hot', 'warm', or 'cold' based on lead engagement signals."""
+    if (budget and visit_count > 0) or message_count >= 10:
+        return "hot"
+    if is_lead or message_count >= 5:
+        return "warm"
+    return "cold"
+
+
 def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
                    sort: str = "updated_at") -> dict:
     """Return paginated leads list."""
@@ -958,13 +1003,23 @@ def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
             params.extend([per_page, (page - 1) * per_page])
             rows = conn.execute(query, params).fetchall()
 
-        items = [{
-            "phone": r[0][:4] + "****" + r[0][-4:] if len(r[0]) > 8 else r[0],
-            "phone_hash": r[1], "name": r[2] or "", "operation": r[3] or "",
-            "property_type": r[4] or "", "budget": r[5] or "", "timeline": r[6] or "",
-            "notified": bool(r[7]), "channel": r[8], "created_at": r[9],
-            "updated_at": r[10], "message_count": r[11], "visit_count": r[12],
-        } for r in rows]
+        now = datetime.now(AR_TZ)
+        items = []
+        for r in rows:
+            try:
+                updated_dt = datetime.strptime(r[10], "%Y-%m-%dT%H:%M:%S").replace(tzinfo=AR_TZ)
+                days_since = (now - updated_dt).days
+            except Exception:
+                days_since = -1
+            items.append({
+                "phone": r[0][:4] + "****" + r[0][-4:] if len(r[0]) > 8 else r[0],
+                "phone_hash": r[1], "name": r[2] or "", "operation": r[3] or "",
+                "property_type": r[4] or "", "budget": r[5] or "", "timeline": r[6] or "",
+                "notified": bool(r[7]), "channel": r[8], "created_at": r[9],
+                "updated_at": r[10], "message_count": r[11], "visit_count": r[12],
+                "days_since_contact": days_since,
+                "score": _lead_score(r[5], r[12], r[11]),
+            })
         return {"items": items, "total": count, "page": page, "per_page": per_page}
     except Exception as e:
         logger.error("analytics.get_leads_list error: %s", e)

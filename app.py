@@ -28,6 +28,8 @@ app = Flask(__name__)
 app.secret_key = DASHBOARD_SECRET_KEY
 app.jinja_env.globals["v"] = ASSET_VERSION
 analytics.init_db()
+import followup
+followup.start()
 
 # Register dashboard blueprints
 from dashboard_routes import dashboard as dashboard_bp
@@ -136,7 +138,19 @@ def _handle_message(msg: dict):
         logger.info("Button message without text from %s", phone)
         return
 
-    if msg_type in ("image", "audio", "video", "document"):
+    if msg_type == "audio":
+        media_id = (msg.get("audio") or {}).get("id")
+        if media_id:
+            threading.Thread(
+                target=_transcribe_and_enqueue,
+                args=(phone, media_id),
+                daemon=True,
+            ).start()
+        else:
+            _enqueue(phone, "[audio recibido — no se pudo procesar]")
+        return
+
+    if msg_type in ("image", "video", "document"):
         _enqueue(phone, "[archivo recibido — solo proceso texto]")
         return
 
@@ -154,6 +168,82 @@ def _extract_interactive_text(msg: dict) -> str:
         payload = interactive.get("list_reply") or {}
         return (payload.get("title") or payload.get("description") or payload.get("id") or "").strip()
     return ""
+
+
+def _download_whatsapp_media(media_id: str) -> bytes | None:
+    """Download media from WhatsApp Cloud API by media ID."""
+    token = os.environ.get("WHATSAPP_TOKEN", "")
+    if not token:
+        from config import WHATSAPP_TOKEN
+        token = WHATSAPP_TOKEN
+    headers = {"Authorization": f"Bearer {token}"}
+    try:
+        # Step 1: get the download URL
+        resp = requests.get(
+            f"https://graph.facebook.com/v19.0/{media_id}",
+            headers=headers, timeout=10,
+        )
+        resp.raise_for_status()
+        url = resp.json().get("url")
+        if not url:
+            return None
+        # Step 2: download the binary
+        media_resp = requests.get(url, headers=headers, timeout=30)
+        media_resp.raise_for_status()
+        return media_resp.content
+    except Exception as e:
+        logger.error("Failed to download WhatsApp media %s: %s", media_id, e)
+        return None
+
+
+def _transcribe_audio_gemini(audio_bytes: bytes, mime_type: str = "audio/ogg") -> str | None:
+    """Transcribe audio using Google Gemini."""
+    from config import GOOGLE_AI_API_KEY
+    key = os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
+    if not key:
+        logger.warning("GOOGLE_AI_API_KEY not set — cannot transcribe audio")
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                types.Content(parts=[
+                    types.Part.from_bytes(data=audio_bytes, mime_type=mime_type),
+                    types.Part.from_text(
+                        "Transcribi este audio de WhatsApp a texto, palabra por palabra. "
+                        "Solo devolvé la transcripcion, sin explicaciones ni comentarios."
+                    ),
+                ]),
+            ],
+        )
+        text = (response.text or "").strip()
+        return text if text else None
+    except Exception as e:
+        logger.error("Gemini audio transcription failed: %s", e)
+        return None
+
+
+def _transcribe_and_enqueue(phone: str, media_id: str):
+    """Download WhatsApp audio, transcribe with Gemini, and enqueue as text."""
+    try:
+        audio_bytes = _download_whatsapp_media(media_id)
+        if not audio_bytes:
+            _enqueue(phone, "[audio recibido — no se pudo descargar]")
+            return
+
+        text = _transcribe_audio_gemini(audio_bytes, mime_type="audio/ogg")
+        if not text:
+            _enqueue(phone, "[audio recibido — no se pudo transcribir]")
+            return
+
+        logger.info("Audio transcribed for %s: %s", phone, text[:100])
+        _enqueue(phone, text)
+    except Exception as e:
+        logger.error("Audio transcription pipeline failed for %s: %s", phone, e)
+        _enqueue(phone, "[audio recibido — error al procesar]")
 
 
 def _enqueue(phone: str, text: str):
