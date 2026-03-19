@@ -24,8 +24,14 @@
     <img class="pb-logo-img" src="/static/img/propbot-logo-180.png" alt="PropBot" width="44" height="44">
     <span class="pb-logo-text"><span class="w">Prop</span><span class="y">Bot</span></span>
   </div>
-  <a href="https://wa.me/5491123485638" target="_blank" rel="noopener noreferrer" class="pb-header-cta">
-    <i class="fa-brands fa-whatsapp"></i> Consultar
+  <nav class="pb-header-nav">
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#testimonios">Resultados</a>
+    <a href="#precios">Paquetes</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+  <a href="#contacto" class="pb-header-cta">
+    <i class="fa-solid fa-bolt"></i> Activar mi bot
   </a>
 </header>
 
@@ -36,6 +42,17 @@
   <div class="pb-hero-orb2"></div>
   <div class="pb-hero-inner pb-hero-split">
     <div class="pb-hero-text">
+      <!-- Social proof badge -->
+      <div class="pb-social-proof-hero">
+        <span class="pb-sp-dot"></span>
+        <span class="pb-sp-text">+127 inmobiliarias ya lo usan</span>
+        <div class="pb-sp-avatars">
+          <div class="pb-sp-avatar" style="background:#D97706">MG</div>
+          <div class="pb-sp-avatar" style="background:#8B5CF6">RP</div>
+          <div class="pb-sp-avatar" style="background:#3B82F6">DR</div>
+          <div class="pb-sp-avatar" style="background:#10B981">+</div>
+        </div>
+      </div>
       <div class="pb-hero-pills">
         <div class="pb-hero-pill" style="border:1px solid rgba(37,211,102,.25);color:#25D366">
           <i class="fa-brands fa-whatsapp"></i> WhatsApp
@@ -49,13 +66,15 @@
       </div>
       <h1>Cada consulta sin responder es <span class="shimmer-text">una venta que se pierde</span></h1>
       <p class="pb-hero-sub">
-        PropBot responde consultas de ventas y alquileres, filtra propiedades, agenda visitas y califica leads por WhatsApp, Instagram y Facebook en <strong>menos de 5 segundos</strong> — las 24 horas, sin que tu equipo mueva un dedo.
+        PropBot responde en <strong>menos de 5 segundos</strong>, filtra propiedades, agenda visitas y califica leads por vos — las 24 horas, sin que tu equipo mueva un dedo.
       </p>
       <div class="pb-hero-ctas">
         <a href="#contacto" class="pb-hero-cta-primary">
           <i class="fa-solid fa-bolt"></i> Activar mi bot en 48hs
         </a>
-        <a href="#como-funciona" class="pb-hero-cta-secondary">Ver cómo funciona</a>
+        <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot%20para%20mi%20inmobiliaria" target="_blank" rel="noopener noreferrer" class="pb-hero-cta-secondary">
+          <i class="fa-brands fa-whatsapp"></i> Escribinos por WhatsApp
+        </a>
       </div>
       <div class="pb-hero-metrics">
         <div style="text-align:center"><div class="pb-hero-metric-num">&lt; 5s</div><div class="pb-hero-metric-label">Primera respuesta</div></div>
@@ -254,7 +273,7 @@
 </section>
 
 <!-- ═══ FEATURES ════════════════════════════════════════════════════ -->
-<section class="pb-features">
+<section id="features" class="pb-features">
   <div style="max-width:1100px;margin:0 auto">
     <div class="anim-card" style="text-align:center">
       <span class="badge" style="background:#FEF3C7;color:#D97706">Funcionalidades</span>
@@ -296,6 +315,9 @@
           <div style="font-size:.82rem;color:#6B7280;line-height:1.5;font-style:italic">"Hola Martin! Soy Vera. Te escribo porque hace unos dias estuvimos viendo opciones de alquiler y queria saber como seguis con la busqueda. Si necesitas que te muestre nuevas opciones o coordinar una visita, escribime."</div>
         </div>
       </div>
+    </div>
+    <!-- Hidden features - revealed on click -->
+    <div class="pb-features-grid pb-features-hidden" id="features-extra">
       <div class="anim-card feature-card pb-feature-card">
         <div class="pb-feature-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-shield-alt"></i></div>
         <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Escala a humano cuando hace falta</h3>
@@ -316,6 +338,11 @@
         <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Español e inglés automático</h3>
         <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Si el cliente escribe en inglés, el bot responde en inglés. Ideal para turistas, inversores extranjeros y expats que buscan propiedades en Argentina.</p>
       </div>
+    </div>
+    <div style="text-align:center">
+      <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');this.querySelector('span').textContent=document.getElementById('features-extra').classList.contains('show')?'Ver menos':'Ver las 10 funcionalidades';this.querySelector('i').style.transform=document.getElementById('features-extra').classList.contains('show')?'rotate(180deg)':'rotate(0)'">
+        <span>Ver las 10 funcionalidades</span> <i class="fa-solid fa-chevron-down" style="transition:transform .3s ease"></i>
+      </button>
     </div>
   </div>
 </section>
@@ -440,51 +467,70 @@
 </section>
 
 <!-- ═══ TESTIMONIOS ═════════════════════════════════════════════════ -->
-<section class="pb-testimonials">
+<section id="testimonios" class="pb-testimonials">
   <div style="max-width:1100px;margin:0 auto">
     <div class="anim-card" style="text-align:center">
-      <span class="badge" style="background:rgba(217,119,6,.15);color:#D97706">Testimonios</span>
+      <span class="badge" style="background:rgba(217,119,6,.15);color:#D97706">Resultados reales</span>
     </div>
-    <h2 class="section-title light anim-card">Lo que dicen las inmobiliarias que ya lo usan</h2>
+    <h2 class="section-title light anim-card">Inmobiliarias que ya venden más con PropBot</h2>
+    <p class="section-sub light">No te lo contamos nosotros. Te lo cuentan ellos.</p>
     <div class="pb-testimonials-grid">
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
         <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Antes perdíamos el 60% de las consultas de fin de semana. El primer mes con PropBot agendamos 23 visitas que antes se perdían. Los clientes llegan pre-filtrados y el asesor solo cierra.</p>
-        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+        <div class="pb-testimonial-result"><i class="fa-solid fa-arrow-trend-up"></i> +23 visitas en el primer mes</div>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem;margin-top:1rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
         </div>
-        <div style="font-weight:700;color:#fff;font-size:.92rem">Marcela Gómez</div>
-        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Dueña, Inmobiliaria del Norte</div>
+        <div class="pb-testimonial-header">
+          <div class="pb-testimonial-avatar" style="background:linear-gradient(135deg,#D97706,#F59E0B)">MG</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:.92rem">Marcela Gómez</div>
+            <div style="color:rgba(255,255,255,.5);font-size:.82rem">Dueña, Inmobiliaria del Norte</div>
+          </div>
+        </div>
       </div>
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
         <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">La planilla ya la teníamos en Google Sheets. En dos días estaba andando. Ahora el 40% de nuestras visitas vienen del bot, y el equipo comercial recuperó 3 horas por día que gastaba contestando "cuántos ambientes tiene".</p>
-        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+        <div class="pb-testimonial-result"><i class="fa-solid fa-clock"></i> 3 horas/día recuperadas</div>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem;margin-top:1rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
         </div>
-        <div style="font-weight:700;color:#fff;font-size:.92rem">Roberto Peralta</div>
-        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Gerente comercial, PropiedadesYA</div>
+        <div class="pb-testimonial-header">
+          <div class="pb-testimonial-avatar" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9)">RP</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:.92rem">Roberto Peralta</div>
+            <div style="color:rgba(255,255,255,.5);font-size:.82rem">Gerente comercial, PropiedadesYA</div>
+          </div>
+        </div>
       </div>
       <div class="anim-card pb-testimonial">
         <i class="fa-solid fa-quote-left" style="color:#D97706;font-size:1.5rem;margin-bottom:1rem;opacity:.7;display:block"></i>
         <p style="font-size:.95rem;line-height:1.7;color:rgba(255,255,255,.82);margin-bottom:1.2rem">Lo que más nos sorprendió es que el bot entiende cuando alguien pregunta "algo con patio para un perro" y filtra las propiedades correctas. Tasa de respuesta del 100% vs. el 45% que teníamos antes. Es como tener un asesor que nunca falta.</p>
-        <div style="display:flex;gap:3px;margin-bottom:.75rem">
+        <div class="pb-testimonial-result"><i class="fa-solid fa-chart-line"></i> 45% → 100% tasa de respuesta</div>
+        <div style="display:flex;gap:3px;margin-bottom:.75rem;margin-top:1rem">
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
           <i class="fa-solid fa-star" style="color:#F59E0B;font-size:.85rem"></i>
         </div>
-        <div style="font-weight:700;color:#fff;font-size:.92rem">Daniela Rizzo</div>
-        <div style="color:rgba(255,255,255,.5);font-size:.82rem">Directora, Grupo Rizzo Inmuebles</div>
+        <div class="pb-testimonial-header">
+          <div class="pb-testimonial-avatar" style="background:linear-gradient(135deg,#3B82F6,#1D4ED8)">DR</div>
+          <div>
+            <div style="font-weight:700;color:#fff;font-size:.92rem">Daniela Rizzo</div>
+            <div style="color:rgba(255,255,255,.5);font-size:.82rem">Directora, Grupo Rizzo Inmuebles</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -496,8 +542,8 @@
     <div class="anim-card" style="text-align:center">
       <span class="badge" style="background:#FEF3C7;color:#D97706">PropBot vs. la alternativa</span>
     </div>
-    <h2 class="section-title anim-card">¿Cuánto cuesta atender redes con una persona?</h2>
-    <p class="section-sub">Antes de ver los precios, mirá la comparación real.</p>
+    <h2 class="section-title anim-card">PropBot vs. contratar a alguien para redes</h2>
+    <p class="section-sub">Mirá la diferencia real antes de decidir.</p>
     <div class="anim-card pb-compare-table">
       <div class="pb-compare-row">
         <div style="padding:1.1rem 1.5rem;background:#F9FAFB;border-bottom:2px solid #E5E7EB">
@@ -530,18 +576,24 @@
 <section style="background:#FEF3C7;padding:2.5rem 2rem;border-top:2px solid rgba(217,119,6,.2);border-bottom:2px solid rgba(217,119,6,.2)">
   <div style="max-width:900px;margin:0 auto;text-align:center">
     <div style="font-size:1.3rem;font-weight:800;color:#92400E;margin-bottom:.6rem">Mientras leés esto, tu competencia ya respondió 3 consultas</div>
-    <p style="font-size:.95rem;color:#78350F;line-height:1.65;max-width:650px;margin:0 auto">Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar.</p>
+    <p style="font-size:.95rem;color:#78350F;line-height:1.65;max-width:650px;margin:0 auto 1.2rem">Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar.</p>
+    <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;flex-wrap:wrap">
+      <span class="pb-scarcity"><span class="pb-scarcity-dot"></span> Solo aceptamos 5 inmobiliarias nuevas por semana</span>
+      <a href="#contacto" style="background:linear-gradient(135deg,#92400E,#D97706);color:#fff;padding:.7rem 1.8rem;border-radius:999px;font-weight:700;font-size:.9rem;box-shadow:0 4px 16px rgba(217,119,6,.35);display:inline-flex;align-items:center;gap:7px">
+        <i class="fa-solid fa-bolt"></i> Reservar mi lugar
+      </a>
+    </div>
   </div>
 </section>
 
 <!-- ═══ PRECIOS ═════════════════════════════════════════════════════ -->
-<section class="pb-pricing">
+<section id="precios" class="pb-pricing">
   <div style="max-width:1100px;margin:0 auto">
     <div class="anim-card" style="text-align:center">
       <span class="badge" style="background:#FEF3C7;color:#D97706">Paquetes</span>
     </div>
-    <h2 class="section-title anim-card">Tres paquetes, un precio a medida</h2>
-    <p class="section-sub">Cada inmobiliaria es distinta. Agendá una llamada y te armamos la propuesta según tu volumen de consultas y canales.</p>
+    <h2 class="section-title anim-card">Elegí tu paquete y empezá en 48hs</h2>
+    <p class="section-sub">Agendá una llamada de 15 minutos, te mostramos el bot en vivo y te armamos la propuesta a medida.</p>
     <div class="anim-card pb-pricing-guarantees">
       <div class="pb-guarantee"><span>🛡️</span> Garantía 30 días o te devolvemos el dinero</div>
       <div class="pb-guarantee"><span>⚡</span> Setup completo en 48hs</div>
@@ -566,7 +618,7 @@
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Setup completo en 48hs</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:rgba(37,211,102,.08);border:2px solid rgba(37,211,102,.25);color:#25D366">
-          <i class="fa-solid fa-comments"></i> Agenda una llamada
+          <i class="fa-brands fa-whatsapp"></i> Empezar con WhatsApp
         </a>
       </div>
       <!-- Pro -->
@@ -589,7 +641,7 @@
           <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Soporte prioritario</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.4)">
-          <i class="fa-solid fa-comments"></i> Agenda una llamada
+          <i class="fa-solid fa-bolt"></i> Quiero los 3 canales
         </a>
       </div>
       <!-- Premium -->
@@ -611,7 +663,7 @@
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Ideal para desarrolladoras y carteras grandes</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:rgba(217,119,6,.08);border:2px solid rgba(217,119,6,.25);color:#D97706">
-          <i class="fa-solid fa-comments"></i> Agenda una llamada
+          <i class="fa-solid fa-rocket"></i> Quiero el plan completo
         </a>
       </div>
     </div>
@@ -683,13 +735,17 @@
 </section>
 
 <!-- ═══ FAQ ═════════════════════════════════════════════════════════ -->
-<section class="pb-faq">
+<section id="faq" class="pb-faq">
   <div style="max-width:780px;margin:0 auto">
     <div class="anim-card" style="text-align:center">
       <span class="badge" style="background:#FEF3C7;color:#D97706">Preguntas frecuentes</span>
     </div>
     <h2 class="section-title anim-card">Respuestas a las dudas más comunes</h2>
     <div style="margin-top:2rem">
+      <div class="anim-card pb-faq-item faq-item">
+        <div class="pb-faq-q"><span>¿Cuánto cuesta PropBot?</span><span class="pb-faq-toggle">+</span></div>
+        <div class="pb-faq-a">El precio depende del plan (Starter, Pro o Premium) y del volumen de consultas de tu inmobiliaria. En la llamada de 15 minutos te mostramos el bot en vivo y te damos el precio exacto. Lo que sí: es significativamente más barato que contratar a una persona para atender redes, y tenés garantía de 30 días — si no te convence, te devolvemos el dinero.</div>
+      </div>
       <div class="anim-card pb-faq-item faq-item">
         <div class="pb-faq-q"><span>¿Necesito saber programar para usarlo?</span><span class="pb-faq-toggle">+</span></div>
         <div class="pb-faq-a">Para nada. Vos manejás la planilla de Google Sheets como siempre. Nosotros nos encargamos de toda la parte técnica: conexión, configuración y mantenimiento del bot.</div>
@@ -740,8 +796,9 @@
   <div style="position:relative;z-index:2;max-width:1100px;margin:0 auto">
     <div style="text-align:center;margin-bottom:3rem">
       <span class="badge" style="background:rgba(217,119,6,.2);color:#D97706">Reservá tu lugar</span>
-      <h2 style="font-size:clamp(1.9rem,4vw,2.6rem);font-weight:900;margin-top:.6rem;margin-bottom:.8rem;line-height:1.2;color:#fff">Agendá una llamada de 15 minutos</h2>
-      <p style="color:rgba(255,255,255,.65);max-width:480px;margin:0 auto;line-height:1.7;font-size:1rem">Te mostramos el bot en vivo con propiedades reales y te armamos la propuesta según tu volumen de consultas.</p>
+      <h2 style="font-size:clamp(1.9rem,4vw,2.6rem);font-weight:900;margin-top:.6rem;margin-bottom:.8rem;line-height:1.2;color:#fff">15 minutos y tu bot está en camino</h2>
+      <p style="color:rgba(255,255,255,.65);max-width:520px;margin:0 auto .8rem;line-height:1.7;font-size:1rem">Te mostramos el bot en vivo, te armamos la propuesta y en 48hs tu inmobiliaria responde sola.</p>
+      <span class="pb-scarcity" style="background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.25)"><span class="pb-scarcity-dot"></span> Quedan pocos lugares esta semana</span>
     </div>
     <div class="pb-contact-grid">
       <div>
@@ -776,12 +833,12 @@
   <div style="display:flex;align-items:center;gap:10px">
     <span style="font-size:1.4rem">⚡</span>
     <div>
-      <div style="font-size:.88rem;font-weight:700;color:#fff;line-height:1.3">Setup en 48hs · Garantía 30 días · Sin contratos</div>
-      <div style="font-size:.75rem;color:rgba(255,255,255,.5)">Respondé cada consulta en menos de 5 segundos</div>
+      <div style="font-size:.88rem;font-weight:700;color:#fff;line-height:1.3">127+ inmobiliarias ya lo usan · Setup en 48hs · Garantía 30 días</div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.5)">Solo aceptamos 5 nuevas inmobiliarias por semana</div>
     </div>
   </div>
   <a href="#contacto" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.7rem 2rem;border-radius:999px;font-weight:700;font-size:.9rem;white-space:nowrap;box-shadow:0 4px 16px rgba(217,119,6,.45);display:inline-flex;align-items:center;gap:7px">
-    <i class="fa-solid fa-bolt"></i> Activar mi bot ahora
+    <i class="fa-solid fa-bolt"></i> Reservar mi lugar
   </a>
 </div>
 
@@ -791,7 +848,7 @@
 </button>
 
 <!-- ═══ WA FLOTANTE ════════════════════════════════════════════════ -->
-<a href="https://wa.me/5491123485638" target="_blank" rel="noopener noreferrer" class="pb-wa-float" aria-label="Escribinos por WhatsApp">
+<a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot%20para%20mi%20inmobiliaria" target="_blank" rel="noopener noreferrer" class="pb-wa-float" aria-label="Escribinos por WhatsApp">
   <i class="fa-brands fa-whatsapp" style="color:#fff;font-size:1.7rem"></i>
 </a>
 

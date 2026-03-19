@@ -165,12 +165,37 @@ document.addEventListener("DOMContentLoaded", function () {
   // Start initial chat
   switchTab("whatsapp");
 
+  /* ── Features toggle re-observe ───────────────────────────────── */
+  var featuresExtra = document.getElementById("features-extra");
+  if (featuresExtra) {
+    var mo = new MutationObserver(function () {
+      featuresExtra.querySelectorAll(".anim-card:not(.visible)").forEach(function (el) {
+        observer.observe(el);
+      });
+    });
+    mo.observe(featuresExtra, { attributes: true, attributeFilter: ["class"] });
+  }
+
   /* ── FAQ accordion ─────────────────────────────────────────────── */
   document.querySelectorAll(".pb-faq-item").forEach((item) => {
     item.addEventListener("click", () => {
       const wasActive = item.classList.contains("active");
       document.querySelectorAll(".pb-faq-item").forEach((i) => i.classList.remove("active"));
       if (!wasActive) item.classList.add("active");
+    });
+  });
+
+  /* ── Smooth scroll for nav links ──────────────────────────────── */
+  document.querySelectorAll('.pb-header-nav a, a[href^="#"]').forEach(function (link) {
+    link.addEventListener("click", function (e) {
+      var href = this.getAttribute("href");
+      if (href && href.startsWith("#")) {
+        var target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
     });
   });
 

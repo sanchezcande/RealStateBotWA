@@ -252,6 +252,43 @@ img{max-width:100%}
 /* ── Video IA note ───────────────────────────────────────────────── */
 .pb-video-note{margin-top:2rem;background:linear-gradient(135deg,#FFF7ED,#FEF3C7);border:1px solid rgba(217,119,6,.25);border-radius:16px;padding:1.2rem 1.8rem;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 
+/* ── Header Nav ──────────────────────────────────────────────────── */
+.pb-header-nav{display:flex;align-items:center;gap:1.5rem}
+.pb-header-nav a{color:rgba(255,255,255,.65);font-size:.85rem;font-weight:500;transition:color .2s ease;white-space:nowrap}
+.pb-header-nav a:hover{color:#FCD34D}
+
+/* ── Social proof hero badge ─────────────────────────────────────── */
+.pb-social-proof-hero{display:inline-flex;align-items:center;gap:10px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.25);border-radius:999px;padding:8px 18px;margin-bottom:1.5rem;animation:fadeInUp .6s .1s ease forwards;opacity:0}
+.pb-social-proof-hero .pb-sp-dot{width:8px;height:8px;background:#25D366;border-radius:50%;animation:pulse 2s ease infinite}
+.pb-social-proof-hero .pb-sp-text{font-size:.88rem;font-weight:600;color:#25D366}
+.pb-social-proof-hero .pb-sp-avatars{display:flex;margin-left:4px}
+.pb-social-proof-hero .pb-sp-avatar{width:26px;height:26px;border-radius:50%;border:2px solid rgba(11,26,62,.9);margin-left:-8px;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;color:#fff}
+.pb-social-proof-hero .pb-sp-avatar:first-child{margin-left:0}
+
+/* ── Testimonial avatars ─────────────────────────────────────────── */
+.pb-testimonial-avatar{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0}
+.pb-testimonial-header{display:flex;align-items:center;gap:12px}
+.pb-testimonial-result{display:inline-flex;align-items:center;gap:6px;background:rgba(217,119,6,.15);border:1px solid rgba(217,119,6,.3);border-radius:8px;padding:6px 12px;font-size:.82rem;font-weight:700;color:#D97706;margin-top:1rem}
+
+/* ── Scarcity / urgency badge ────────────────────────────────────── */
+@keyframes urgencyPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.3)}50%{box-shadow:0 0 0 8px rgba(239,68,68,0)}}
+.pb-scarcity{display:inline-flex;align-items:center;gap:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:999px;padding:6px 16px;font-size:.82rem;font-weight:600;color:#EF4444;animation:urgencyPulse 2s ease infinite}
+.pb-scarcity-dot{width:7px;height:7px;background:#EF4444;border-radius:50%;animation:pulse 1.5s ease infinite}
+
+/* ── Number counter animation ────────────────────────────────────── */
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.pb-hero-metric-num{animation:countUp .6s ease forwards}
+
+/* ── Trust bar improvements ──────────────────────────────────────── */
+@keyframes trustScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.pb-trust-item{transition:opacity .3s ease}
+
+/* ── Feature show/hide ───────────────────────────────────────────── */
+.pb-features-hidden{display:none}
+.pb-features-hidden.show{display:grid}
+.pb-features-toggle{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1.5rem;padding:.75rem 2rem;border-radius:999px;border:2px solid rgba(217,119,6,.25);background:rgba(217,119,6,.04);color:#D97706;font-weight:700;font-size:.9rem;cursor:pointer;transition:all .3s ease;font-family:inherit}
+.pb-features-toggle:hover{background:rgba(217,119,6,.1);border-color:rgba(217,119,6,.4)}
+
 /* ── Responsive ──────────────────────────────────────────────────── */
 @media(max-width:760px){
   .pb-contact-grid{grid-template-columns:1fr!important}
@@ -262,4 +299,11 @@ img{max-width:100%}
   .pb-hero{padding:3rem 1.5rem 3rem}
   .pb-cost-banner{flex-direction:column;text-align:center}
   .pb-sticky{gap:1rem;padding:.7rem 1rem}
+  .pb-header-nav{display:none}
+  .pb-social-proof-hero .pb-sp-avatars{display:none}
+  .pb-testimonial-header{flex-direction:column;align-items:flex-start;gap:8px}
+}
+@media(min-width:761px) and (max-width:1024px){
+  .pb-header-nav{gap:1rem}
+  .pb-header-nav a{font-size:.8rem}
 }
