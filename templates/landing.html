@@ -312,6 +312,11 @@
     </div>
     <!-- Hidden features - revealed on click -->
     <div class="pb-features-grid pb-features-hidden" id="features-extra">
+      <div class="anim-card feature-card pb-feature-card" style="border:2px solid rgba(16,185,129,.2);background:linear-gradient(135deg,rgba(16,185,129,.03),rgba(16,185,129,.06))">
+        <div class="pb-feature-icon" style="background:rgba(16,185,129,.12);color:#10B981"><i class="fa-solid fa-building"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Integración nativa con Tokko CRM</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Los leads calificados y visitas agendadas se sincronizan automáticamente con Tokko Broker. Sin exportar, sin copiar y pegar. Tu CRM siempre actualizado.</p>
+      </div>
       <div class="anim-card feature-card pb-feature-card">
         <div class="pb-feature-icon" style="background:rgba(16,185,129,.08);color:#10B981"><i class="fa-solid fa-shield-alt"></i></div>
         <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Escala a humano cuando hace falta</h3>
@@ -332,10 +337,15 @@
         <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Español e inglés automático</h3>
         <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Si el cliente escribe en inglés, el bot responde en inglés. Ideal para turistas, inversores extranjeros y expats.</p>
       </div>
+      <div class="anim-card feature-card pb-feature-card">
+        <div class="pb-feature-icon" style="background:rgba(245,158,11,.08);color:#F59E0B"><i class="fa-solid fa-plug"></i></div>
+        <h3 style="font-weight:700;font-size:1.05rem;color:#2B2B2B;margin-bottom:.5rem">Webhook CRM universal</h3>
+        <p style="font-size:.9rem;color:#6B7280;line-height:1.65">Si no usás Tokko, conectá cualquier CRM vía webhook. Cada lead calificado y visita agendada dispara un evento a tu sistema.</p>
+      </div>
     </div>
     <div style="text-align:center">
       <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');this.querySelector('span').textContent=document.getElementById('features-extra').classList.contains('show')?'Ver menos':'Ver las 10 funcionalidades';this.querySelector('i').style.transform=document.getElementById('features-extra').classList.contains('show')?'rotate(180deg)':'rotate(0)'">
-        <span>Ver las 10 funcionalidades</span> <i class="fa-solid fa-chevron-down" style="transition:transform .3s ease"></i>
+        <span>Ver las 12 funcionalidades</span> <i class="fa-solid fa-chevron-down" style="transition:transform .3s ease"></i>
       </button>
     </div>
   </div>
@@ -451,6 +461,11 @@
         <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">Follow-up automático</div>
         <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Si un lead no responde en 3 días, el bot le escribe automáticamente con un mensaje personalizado. Recuperá leads fríos sin mover un dedo.</p>
       </div>
+      <div class="anim-card" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:16px;padding:1.5rem;backdrop-filter:blur(8px)">
+        <div style="font-size:1.8rem;margin-bottom:.6rem">🏢</div>
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:.4rem">CRM Tokko Broker integrado</div>
+        <p style="font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.6">Leads calificados y visitas agendadas se sincronizan automáticamente con Tokko. Sin cargar nada a mano. También soporta webhook para otros CRMs.</p>
+      </div>
     </div>
     <div class="anim-card" style="text-align:center;margin-top:2.5rem">
       <a href="#contacto" style="background:linear-gradient(135deg,#D97706,#F59E0B);color:#fff;padding:.85rem 2.2rem;border-radius:999px;font-weight:700;font-size:.95rem;box-shadow:0 6px 20px rgba(217,119,6,.4);display:inline-flex;align-items:center;gap:8px">
@@ -560,7 +575,9 @@
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Escala a humano</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Siempre manual</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático con contexto</div></div>
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Vacaciones / bajas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Para todo</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">No aplica</div></div>
       <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Agendado de visitas</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Manual, ida y vuelta</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático + Calendar + recordatorio</div></div>
-      <div class="pb-compare-row" style="border-bottom:none"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Leads calificados</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Depende de quién atienda</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático + alerta WhatsApp al asesor</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Leads calificados</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Depende de quién atienda</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático + alerta WhatsApp al asesor</div></div>
+      <div class="pb-compare-row"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">Follow-up a leads fríos</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Nadie se acuerda</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Automático a los 3 días, personalizado</div></div>
+      <div class="pb-compare-row" style="border-bottom:none"><div style="padding:.9rem 1.5rem;font-size:.88rem;font-weight:600;color:#374151">CRM actualizado</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#DC2626;text-align:center;background:rgba(254,242,242,.4)">Si alguien lo carga</div><div style="padding:.9rem 1.5rem;font-size:.85rem;color:#065F46;font-weight:600;text-align:center;background:rgba(236,253,245,.4)">Sync automático con Tokko Broker</div></div>
     </div>
     <p style="text-align:center;margin-top:1.2rem;font-size:.82rem;color:#9CA3AF">* PropBot no tiene sueldo, aportes, vacaciones ni días libres.</p>
   </div>
@@ -586,86 +603,108 @@
     <div class="anim-card" style="text-align:center">
       <span class="badge" style="background:#FEF3C7;color:#D97706">Paquetes</span>
     </div>
-    <h2 class="section-title anim-card">Elegí tu paquete y empezá en 48hs</h2>
-    <p class="section-sub">Agendá una llamada de 15 minutos, te mostramos el bot en vivo y te armamos la propuesta a medida.</p>
+    <h2 class="section-title anim-card">Elegí tu plan y empezá en 48hs</h2>
+    <p class="section-sub">Precios transparentes. Sin setup fee. Sin contratos. Cancelás cuando querés.</p>
     <div class="anim-card pb-pricing-guarantees">
       <div class="pb-guarantee"><span>🛡️</span> Garantía 30 días o te devolvemos el dinero</div>
       <div class="pb-guarantee"><span>⚡</span> Setup completo en 48hs</div>
       <div class="pb-guarantee"><span>🔓</span> Sin contratos, cancelás cuando querés</div>
     </div>
     <div class="pb-plans">
-      <!-- Starter -->
+      <!-- Growth -->
       <div class="anim-card price-card pb-plan" style="background:#fff;border:2px solid rgba(0,0,0,.07);box-shadow:0 4px 20px rgba(0,0,0,.07)">
         <div style="margin-bottom:1.2rem">
-          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.5rem">Starter</h3>
+          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.3rem">Growth</h3>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:.6rem">
+            <span style="font-size:2.4rem;font-weight:900;color:#2B2B2B">$199</span>
+            <span style="font-size:.95rem;color:#6B7280;font-weight:500">/mes USD</span>
+          </div>
           <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(37,211,102,.09);border:1px solid rgba(37,211,102,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#25D366">
-            <i class="fa-brands fa-whatsapp"></i> WhatsApp
+            <i class="fa-brands fa-whatsapp"></i><i class="fa-brands fa-instagram"></i> WhatsApp + Instagram
           </div>
         </div>
-        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">El bot, punto. Para inmobiliarias que quieren automatizar consultas sin complicarse.</p>
+        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">Hasta 100 propiedades. Bot + calificación de leads + follow-up automático.</p>
         <div style="margin-bottom:1.8rem;flex-grow:1">
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Bot 24/7 por WhatsApp Business</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Bot 24/7 por WhatsApp + Instagram</div>
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Responde consultas y filtra propiedades</div>
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Agenda visitas automáticamente</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Calificación automática de leads</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Follow-up automático a leads fríos</div>
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Escala a humano con contexto completo</div>
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Plantilla de Google Sheets incluida</div>
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#25D366;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Setup completo en 48hs</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:rgba(37,211,102,.08);border:2px solid rgba(37,211,102,.25);color:#25D366">
-          <i class="fa-brands fa-whatsapp"></i> Empezar con WhatsApp
+          <i class="fa-brands fa-whatsapp"></i> Empezar con Growth
         </a>
       </div>
-      <!-- Pro -->
+      <!-- Scale -->
       <div class="anim-card price-card pb-plan" style="background:linear-gradient(155deg,#1a2a1a 0%,#0d1f0d 100%);border:2px solid #8B5CF6;box-shadow:0 12px 40px rgba(139,92,246,.2)">
         <div class="pb-plan-badge" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);box-shadow:0 4px 15px rgba(139,92,246,.4)">⭐ Más elegido</div>
         <div style="margin-bottom:1.2rem">
-          <h3 style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:.5rem">Pro</h3>
+          <h3 style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:.3rem">Scale</h3>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:.6rem">
+            <span style="font-size:2.4rem;font-weight:900;color:#fff">$399</span>
+            <span style="font-size:.95rem;color:rgba(255,255,255,.6);font-weight:500">/mes USD</span>
+          </div>
           <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(139,92,246,.09);border:1px solid rgba(139,92,246,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#8B5CF6">
-            <i class="fa-brands fa-whatsapp"></i><i class="fa-brands fa-instagram"></i><i class="fa-brands fa-facebook-messenger"></i> WhatsApp + Instagram + Facebook
+            <i class="fa-brands fa-whatsapp"></i><i class="fa-brands fa-instagram"></i><i class="fa-brands fa-facebook-messenger"></i> Multi-canal + CRM + Calendar
           </div>
         </div>
-        <p style="font-size:.88rem;color:rgba(255,255,255,.65);margin-bottom:1.5rem;line-height:1.6">Los tres canales activos más el dashboard para entender qué está pasando con tus leads.</p>
+        <p style="font-size:.88rem;color:rgba(255,255,255,.65);margin-bottom:1.5rem;line-height:1.6">Hasta 500 propiedades. Todo Growth + visitas con Calendar, CRM Tokko, analytics y dashboard.</p>
         <div style="margin-bottom:1.8rem;flex-grow:1">
-          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Starter</div>
-          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Instagram Direct integrado</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Growth</div>
           <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Facebook Messenger integrado</div>
-          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Dashboard: consultas, propiedades más buscadas y horarios pico</div>
-          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Tasa de conversión consulta → visita</div>
-          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Múltiples sucursales / planillas</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Agendado de visitas + Google Calendar + recordatorios</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Integración nativa con Tokko Broker CRM</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Dashboard: consultas, leads, conversiones, horarios pico</div>
+          <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Webhook CRM universal</div>
           <div class="pb-plan-feature" style="color:rgba(255,255,255,.82)"><i class="fa-solid fa-circle-check" style="color:#8B5CF6;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Soporte prioritario</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:linear-gradient(135deg,#8B5CF6,#6D28D9);color:#fff;box-shadow:0 6px 20px rgba(139,92,246,.4)">
-          <i class="fa-solid fa-bolt"></i> Quiero los 3 canales
+          <i class="fa-solid fa-bolt"></i> Quiero Scale
         </a>
       </div>
-      <!-- Premium -->
+      <!-- Enterprise -->
       <div class="anim-card price-card pb-plan" style="background:#fff;border:2px solid rgba(0,0,0,.07);box-shadow:0 4px 20px rgba(0,0,0,.07)">
         <div class="pb-plan-badge" style="background:linear-gradient(135deg,#D97706,#F59E0B);box-shadow:0 4px 15px rgba(217,119,6,.4)">✨ Completo</div>
         <div style="margin-bottom:1.2rem">
-          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.5rem">Premium</h3>
+          <h3 style="font-size:1.4rem;font-weight:800;color:#2B2B2B;margin-bottom:.3rem">Enterprise</h3>
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:.6rem">
+            <span style="font-size:2.4rem;font-weight:900;color:#2B2B2B">$799</span>
+            <span style="font-size:.95rem;color:#6B7280;font-weight:500">/mes USD</span>
+          </div>
           <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(217,119,6,.09);border:1px solid rgba(217,119,6,.25);border-radius:999px;padding:4px 12px;font-size:.82rem;font-weight:600;color:#D97706">
-            🎬 Pro + Analytics + Video IA
+            🏢 Multi-sucursal + API + Video IA
           </div>
         </div>
-        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">Para inmobiliarias que quieren tomar decisiones con datos y contenido generado automáticamente.</p>
+        <p style="font-size:.88rem;color:#6B7280;margin-bottom:1.5rem;line-height:1.6">Propiedades ilimitadas. Para desarrolladoras y redes de sucursales que quieren todo automatizado.</p>
         <div style="margin-bottom:1.8rem;flex-grow:1">
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Pro</div>
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Analytics avanzadas: leads calificados, tiempo hasta cierre, comparativa por período</div>
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Exportación de reportes PDF / CSV</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Todo lo del plan Scale</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Propiedades ilimitadas</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Múltiples sucursales / planillas</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Analytics avanzadas + exportación PDF / CSV</div>
           <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> 4 videos de propiedades/mes generados con IA</div>
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Fotos + música + texto automáticos listos para publicar</div>
-          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Ideal para desarrolladoras y carteras grandes</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> API de integración personalizada</div>
+          <div class="pb-plan-feature" style="color:#4B5563"><i class="fa-solid fa-circle-check" style="color:#D97706;flex-shrink:0;font-size:.85rem;margin-top:2px"></i> Account manager dedicado</div>
         </div>
         <a href="#contacto" class="pb-plan-cta" style="background:rgba(217,119,6,.08);border:2px solid rgba(217,119,6,.25);color:#D97706">
-          <i class="fa-solid fa-rocket"></i> Quiero el plan completo
+          <i class="fa-solid fa-rocket"></i> Quiero Enterprise
         </a>
+      </div>
+    </div>
+    <!-- ROI argument -->
+    <div class="anim-card" style="margin-top:2rem;background:linear-gradient(135deg,rgba(16,185,129,.06),rgba(16,185,129,.12));border:2px solid rgba(16,185,129,.2);border-radius:16px;padding:2rem 2.2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+      <div style="font-size:2.5rem;flex-shrink:0">💰</div>
+      <div style="flex:1;min-width:260px">
+        <div style="font-weight:800;color:#065F46;font-size:1.15rem;margin-bottom:.4rem">1 operación extra al mes paga PropBot por 10 meses</div>
+        <div style="font-size:.92rem;color:#4B5563;line-height:1.65">La comisión promedio de una venta o alquiler es de $3.000 a $8.000 USD. Si PropBot te genera una sola operación más al mes — y lo hace respondiendo al instante las consultas que hoy se pierden — el retorno es de <strong>7 a 20 veces</strong> lo que pagás. No es un gasto. Es la mejor inversión de tu inmobiliaria.</div>
       </div>
     </div>
     <!-- Video IA note -->
     <div class="anim-card pb-video-note">
       <span style="font-size:1.8rem">🎬</span>
       <div>
-        <div style="font-weight:700;color:#2B2B2B;font-size:.95rem;margin-bottom:2px">Premium incluye 4 videos de propiedades por mes generados con IA</div>
+        <div style="font-weight:700;color:#2B2B2B;font-size:.95rem;margin-bottom:2px">Enterprise incluye 4 videos de propiedades por mes generados con IA</div>
         <div style="font-size:.85rem;color:#6B7280">Fotos de la planilla + música + texto → video listo para Instagram y Facebook. Videos adicionales disponibles por unidad.</div>
       </div>
     </div>
@@ -738,7 +777,7 @@
     <div style="margin-top:2rem">
       <div class="anim-card pb-faq-item faq-item">
         <div class="pb-faq-q"><span>¿Cuánto cuesta PropBot?</span><span class="pb-faq-toggle">+</span></div>
-        <div class="pb-faq-a">El precio depende del plan (Starter, Pro o Premium) y del volumen de consultas de tu inmobiliaria. En la llamada de 15 minutos te mostramos el bot en vivo y te damos el precio exacto. Lo que sí: es significativamente más barato que contratar a una persona para atender redes, y tenés garantía de 30 días — si no te convence, te devolvemos el dinero.</div>
+        <div class="pb-faq-a">Tenemos 3 planes: <strong>Growth a $199/mes</strong> (WhatsApp + Instagram, hasta 100 propiedades, lead qualification, follow-up), <strong>Scale a $399/mes</strong> (multi-canal, visitas con Calendar, CRM Tokko, dashboard, hasta 500 propiedades) y <strong>Enterprise a $799/mes</strong> (ilimitado, multi-sucursal, API, videos con IA). Una sola operación extra al mes = $3.000-8.000 USD de comisión, o sea que PropBot se paga solo con creces. Garantía 30 días — si no te convence, te devolvemos el dinero.</div>
       </div>
       <div class="anim-card pb-faq-item faq-item">
         <div class="pb-faq-q"><span>¿Necesito saber programar para usarlo?</span><span class="pb-faq-toggle">+</span></div>
@@ -758,7 +797,7 @@
       </div>
       <div class="anim-card pb-faq-item faq-item">
         <div class="pb-faq-q"><span>¿Puedo tener varias sucursales con sus propias planillas?</span><span class="pb-faq-toggle">+</span></div>
-        <div class="pb-faq-a">Sí, el plan Pro y Enterprise soportan múltiples planillas. El bot puede segmentar las propiedades por sucursal y responder según la fuente de la consulta.</div>
+        <div class="pb-faq-a">Sí, el plan Enterprise soporta múltiples planillas y sucursales. El bot puede segmentar las propiedades por sucursal y responder según la fuente de la consulta.</div>
       </div>
       <div class="anim-card pb-faq-item faq-item">
         <div class="pb-faq-q"><span>¿Qué pasa si agrego o saco propiedades de la planilla?</span><span class="pb-faq-toggle">+</span></div>
