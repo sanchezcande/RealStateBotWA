@@ -9,6 +9,7 @@ from config import PHONE_NUMBER_ID
 logger = logging.getLogger(__name__)
 
 API_URL = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/messages"
+MEDIA_URL = f"https://graph.facebook.com/v19.0/{PHONE_NUMBER_ID}/media"
 
 
 def _get_token() -> str:
@@ -69,4 +70,57 @@ def send_message(to: str, text: str) -> bool:
         return False
     except Exception as e:
         logger.error("Unexpected error sending to %s: %s", to, e)
+        return False
+
+
+def send_image(to: str, image_data: bytes, mime_type: str = "image/jpeg", caption: str = None) -> bool:
+    """Upload an image to Meta and send it as a WhatsApp image message."""
+    to = _normalize_ar_number(to)
+    token = _get_token()
+    if not token:
+        logger.error("WHATSAPP_TOKEN is empty — cannot send image to %s", to)
+        return False
+
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Step 1 — upload media
+    ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
+    files = {"file": (f"photo.{ext}", image_data, mime_type)}
+    data = {"messaging_product": "whatsapp"}
+
+    try:
+        resp = requests.post(MEDIA_URL, headers=headers, files=files, data=data, timeout=30)
+        resp.raise_for_status()
+        media_id = resp.json().get("id")
+        if not media_id:
+            logger.error("No media_id in upload response for %s: %s", to, resp.text)
+            return False
+    except Exception as e:
+        logger.error("Failed to upload image for %s: %s", to, e)
+        return False
+
+    # Step 2 — send image message
+    image_obj: dict = {"id": media_id}
+    if caption:
+        image_obj["caption"] = caption
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "image",
+        "image": image_obj,
+    }
+    try:
+        resp = requests.post(
+            API_URL,
+            headers={**headers, "Content-Type": "application/json"},
+            json=payload,
+            timeout=10,
+        )
+        resp.raise_for_status()
+        logger.info("Image sent to %s (media_id: %s)", to, media_id)
+        return True
+    except Exception as e:
+        logger.error("Failed to send image to %s: %s", to, e)
         return False

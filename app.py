@@ -17,6 +17,7 @@ import ai
 import lead_qualifier
 import visit_scheduler
 import whatsapp
+import drive_photos
 
 logging.basicConfig(
     level=logging.INFO,
@@ -326,7 +327,8 @@ def _extract_name(text: str):
     return None
 
 
-def _process_reply(identifier: str, user_text: str, channel: str, send_fn):
+def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
+                    send_image_fn=None):
     """Shared AI pipeline for all channels (WhatsApp, Facebook, Instagram)."""
     # Check if human agent has taken over this conversation
     if conversations.is_agent_takeover(identifier):
@@ -382,12 +384,30 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn):
             clean_response,
         ).strip()
 
+    # Detect Drive URLs — download photos and send as images
+    drive_urls = drive_photos.extract_drive_urls(clean_response)
+    photos: list[tuple] = []
+    if drive_urls and send_image_fn:
+        photos = drive_photos.download_photos(drive_urls)
+        if photos:
+            clean_response = drive_photos.strip_drive_urls(clean_response)
+
     conversations.add_message(identifier, "assistant", clean_response, channel=channel)
-    send_fn(identifier, clean_response)
+    if clean_response:
+        send_fn(identifier, clean_response)
+
+    # Send downloaded photos as actual images
+    for _name, img_data, mime in photos:
+        try:
+            send_image_fn(identifier, img_data, mime)
+            time.sleep(0.5)  # small delay between images
+        except Exception as e:
+            logger.error("Failed sending photo to %s: %s", identifier, e)
 
 
 def _reply(phone: str, user_text: str):
-    _process_reply(phone, user_text, "whatsapp", whatsapp.send_message)
+    _process_reply(phone, user_text, "whatsapp", whatsapp.send_message,
+                   send_image_fn=whatsapp.send_image)
 
 
 # ---------------------------------------------------------------------------
@@ -414,12 +434,38 @@ def _send_meta_message(recipient_id: str, text: str):
         logger.error("Failed to send Meta message: %s", e)
 
 
+def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "image/jpeg"):
+    """Send an image via Meta Graph API (Facebook Messenger / Instagram Direct)."""
+    if not PAGE_ACCESS_TOKEN:
+        logger.warning("PAGE_ACCESS_TOKEN not set — cannot send Meta image.")
+        return
+    try:
+        ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
+        resp = requests.post(
+            "https://graph.facebook.com/v19.0/me/messages",
+            params={"access_token": PAGE_ACCESS_TOKEN},
+            data={
+                "recipient": json.dumps({"id": recipient_id}),
+                "message": json.dumps({
+                    "attachment": {"type": "image", "payload": {}}
+                }),
+            },
+            files={"filedata": (f"photo.{ext}", image_data, mime_type)},
+            timeout=30,
+        )
+        if not resp.ok:
+            logger.error("Meta image API error %s: %s", resp.status_code, resp.text)
+    except Exception as e:
+        logger.error("Failed to send Meta image: %s", e)
+
+
 def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
-    _process_reply(sender_id, user_text, channel, _send_meta_message)
+    _process_reply(sender_id, user_text, channel, _send_meta_message,
+                   send_image_fn=_send_meta_image)
 
 
 @app.get("/webhook/meta")
