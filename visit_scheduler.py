@@ -15,6 +15,7 @@ import calendar_client
 import conversations
 import crm_webhook
 import sheets
+import tokko_integration
 import whatsapp
 from config import NOTIFY_NUMBER, AR_TZ
 
@@ -260,6 +261,13 @@ def process(phone: str, ai_text: str) -> str:
             time=time_str,
         )
         _notify_visit(property_title, address, client_name, date_str, time_str, phone=phone)
+        tokko_integration.push_visit(
+            name=client_name,
+            phone=phone,
+            property_title=property_title,
+            date=date_str,
+            time=time_str,
+        )
 
     # Do NOT append address to user-visible text after confirming visits.
     # The prompt explicitly forbids sharing the exact address at confirmation time.

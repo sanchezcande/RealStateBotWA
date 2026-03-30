@@ -71,6 +71,10 @@ try:
 except Exception:
     ASSET_VERSION = "1"
 
+# Tokko Broker CRM integration
+TOKKO_API_KEY = os.environ.get("TOKKO_API_KEY", "")
+TOKKO_ENABLED = os.environ.get("TOKKO_ENABLED", "false").lower() in ("true", "1", "yes")
+
 # Facebook / Instagram Messenger
 # Set PAGE_ACCESS_TOKEN in Railway env vars.
 # Also subscribe the webhook to the page in Meta App Dashboard under

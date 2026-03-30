@@ -10,6 +10,7 @@ from config import NOTIFY_NUMBER
 import analytics
 import conversations
 import crm_webhook
+import tokko_integration
 import whatsapp
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,14 @@ def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
             budget=current_lead.get("budget", ""),
             timeline=current_lead.get("timeline", ""),
             channel=channel,
+        )
+        tokko_integration.push_lead(
+            name=current_lead.get("name", ""),
+            phone=phone,
+            operation=current_lead.get("operation", ""),
+            property_type=current_lead.get("property_type", ""),
+            budget=current_lead.get("budget", ""),
+            timeline=current_lead.get("timeline", ""),
         )
 
     # Notify agent if client requested a callback
