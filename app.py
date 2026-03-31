@@ -45,6 +45,10 @@ app.register_blueprint(payments_bp)
 def landing():
     return render_template("landing.html")
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
 # Serve uploaded media files
 from config import MEDIA_UPLOAD_DIR
 @app.route("/uploads/<path:filename>")
