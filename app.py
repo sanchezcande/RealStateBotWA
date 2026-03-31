@@ -396,12 +396,28 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         if photos:
             clean_response = drive_photos.strip_drive_urls(clean_response)
 
+    # Detect external image URLs (e.g. esquelprop.com) and download them
+    ext_photos: list[tuple] = []
+    if send_image_fn and not photos:
+        _IMG_URL_RE = re.compile(r'(https?://[^\s)>\]]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s)>\]]*)?)', re.IGNORECASE)
+        img_urls = _IMG_URL_RE.findall(clean_response)
+        for img_url in img_urls[:5]:
+            try:
+                r = requests.get(img_url, timeout=15)
+                if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/"):
+                    mime = r.headers.get("content-type", "image/jpeg").split(";")[0]
+                    ext_photos.append((img_url.split("/")[-1], r.content, mime))
+                    clean_response = clean_response.replace(img_url, "").strip()
+            except Exception as e:
+                logger.warning("Failed to download external image %s: %s", img_url, e)
+        clean_response = re.sub(r'\n\s*\n\s*\n', '\n\n', clean_response).strip()
+
     conversations.add_message(identifier, "assistant", clean_response, channel=channel)
     if clean_response:
         send_fn(identifier, clean_response)
 
     # Send downloaded photos as actual images
-    for _name, img_data, mime in photos:
+    for _name, img_data, mime in (photos or ext_photos):
         try:
             send_image_fn(identifier, img_data, mime)
             time.sleep(0.5)  # small delay between images
