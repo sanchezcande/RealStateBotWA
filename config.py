@@ -80,3 +80,8 @@ TOKKO_ENABLED = os.environ.get("TOKKO_ENABLED", "false").lower() in ("true", "1"
 # Also subscribe the webhook to the page in Meta App Dashboard under
 # Messenger and Instagram settings (subscribed_fields: messages, messaging_postbacks).
 PAGE_ACCESS_TOKEN = os.environ.get("PAGE_ACCESS_TOKEN", "")
+
+# Visit scheduling mode:
+#   "notify" = Vera tells the client the agent will contact them, notifies NOTIFY_NUMBER with summary
+#   "self"   = Vera schedules directly via calendar (original behavior)
+VISIT_MODE = os.environ.get("VISIT_MODE", "notify")

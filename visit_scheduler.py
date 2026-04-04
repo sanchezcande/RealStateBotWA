@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 VISIT_TAG_RE = re.compile(r"<!--visit:(.*?)-->", re.DOTALL)
 CANCEL_TAG_RE = re.compile(r"<!--cancel_visit:(.*?)-->", re.DOTALL)
+NOTIFY_VISIT_TAG_RE = re.compile(r"<!--notify_visit:(.*?)-->", re.DOTALL)
 
 _scheduler = BackgroundScheduler(
     timezone=AR_TZ,
@@ -55,9 +56,10 @@ def extract_cancel_data(ai_text: str):
 
 
 def clean_response(ai_text: str) -> str:
-    """Remove all hidden visit/cancel tags from the text before sending to user."""
+    """Remove all hidden visit/cancel/notify tags from the text before sending to user."""
     text = VISIT_TAG_RE.sub("", ai_text)
     text = CANCEL_TAG_RE.sub("", text)
+    text = NOTIFY_VISIT_TAG_RE.sub("", text)
     return text.strip()
 
 
@@ -161,15 +163,54 @@ def _schedule_reminder(property_title: str, address: str, client_name: str, date
         logger.error("Failed to schedule reminder: %s", e)
 
 
+def _extract_notify_visit_data(ai_text: str) -> list:
+    """Extract <!--notify_visit:{...}--> tags (notify mode)."""
+    results = []
+    for match in NOTIFY_VISIT_TAG_RE.finditer(ai_text):
+        try:
+            results.append(json.loads(match.group(1)))
+        except json.JSONDecodeError:
+            logger.warning("Could not parse notify_visit JSON: %s", match.group(1))
+    return results
+
+
+def _notify_visit_request(property_title: str, client_name: str, phone: str):
+    """Notify agent that a client wants to visit a property (notify mode)."""
+    name_str = client_name or "Sin nombre"
+    summary = conversations.get_conversation_summary(phone) if phone else "(sin mensajes)"
+    msg = (
+        f"Solicitud de visita!\n"
+        f"Propiedad: {property_title}\n"
+        f"Cliente: {name_str}\n"
+        f"Tel: {phone}\n\n"
+        f"Resumen de la charla:\n{summary}"
+    )
+    success = whatsapp.send_message(NOTIFY_NUMBER, msg)
+    if success:
+        logger.info("Agent notified of visit request: %s for %s", property_title, name_str)
+    else:
+        logger.error("Failed to notify agent of visit request for %s", property_title)
+
+
 def process(phone: str, ai_text: str) -> str:
     """
-    Check AI response for visit/cancel tags. Handles multiple visits in a single message.
+    Check AI response for visit/cancel/notify tags. Handles multiple visits in a single message.
     Creates/deletes calendar events, notifies agent, schedules reminders.
     Returns cleaned text (tags removed).
     """
     all_visit_data = extract_all_visit_data(ai_text)
     cancel_data = extract_cancel_data(ai_text)
+    notify_data = _extract_notify_visit_data(ai_text)
     clean_text = clean_response(ai_text)
+
+    # Handle notify mode visit requests
+    if notify_data:
+        lead = conversations.get_lead(phone)
+        client_name = lead.get("name", "") or ""
+        for nd in notify_data:
+            property_title = nd.get("property", "Propiedad")
+            _notify_visit_request(property_title, client_name, phone)
+            analytics.log_event("visit_request_notified", phone, property=property_title)
 
     if not all_visit_data and not cancel_data:
         return clean_text

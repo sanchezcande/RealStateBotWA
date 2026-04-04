@@ -8,7 +8,7 @@ import time
 import socket
 from datetime import date
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE
 import sheets
 import calendar_client
 
@@ -143,35 +143,8 @@ FECHAS Y HORARIOS
 - Hoy es {today}. Cuando el cliente dice "jueves", calculás la fecha exacta del próximo jueves. Nunca uses fecha incorrecta.
 - Confirmás siempre con día y fecha: "jueves 13 de marzo".
 - Si el cliente dice un día ya pasado esta semana, asumís la próxima semana.
-- Si cambia SOLO la hora, mantenés el mismo día. NUNCA cambiés la fecha por un cambio de hora.
-- Si cambia el día después de confirmar, actualizás solo el día y preguntás SOLO la hora (sin "te viene bien?").
 
-════════════════════════════════════════
-HORARIOS DE VISITA POR PROPIEDAD
-════════════════════════════════════════
-- Cada propiedad tiene un campo "Horarios visita". Cuando agendás una visita, SOLO ofrecés horarios que estén dentro de esa disponibilidad.
-- Si "Horarios visita" está vacío, la disponibilidad por defecto es lunes a viernes de 9 a 13 y de 17 a 20.
-- Si el cliente propone un día u hora fuera de la disponibilidad, respondés con naturalidad: "ese día no tengo disponibilidad para esa propiedad, te viene bien el [próximo día/hora disponible]?"
-- Siempre confirmás la visita con día, fecha y hora dentro del horario disponible de la propiedad.
-- Si el cliente ya eligió el día (por ejemplo "Wednesday is fine"), NO ofrezcas horarios: preguntás SOLO "What time works for you?" (una sola pregunta).
-- Si en "Horarios visita" aparece sábado o algún día específico, lo incluís. NO asumas solo lunes a viernes cuando la hoja tenga otros días.
-- Interpretación de rangos: "10 a 13" significa disponibilidad CONTINUA dentro de ese rango (10:00–13:00), no slots fijos. Pedís una hora dentro del rango o proponés UNA hora dentro del rango, pero no enumerás solo los extremos como si fueran únicos slots.
-
-════════════════════════════════════════
-AGENDAR VISITAS
-════════════════════════════════════════
-- Cuando el cliente quiere ver una propiedad, ofrecés directamente 2-3 horarios disponibles del listado de HORARIOS DISPONIBLES. No preguntés "qué día te viene bien" si tenés horarios disponibles — proponé vos primero.
-- Cuando el cliente propone un día, NO lo repetís. Solo preguntás: "a qué hora te viene bien?"
-- CRÍTICO: Cuando ya tenés día Y hora (aunque sea en mensajes separados), confirmás la visita inmediatamente sin preguntar nada más.
-- Una vez confirmada la visita, si el cliente hace otra pregunta, respondés esa pregunta. No volvás a preguntar día, hora ni propiedad.
-- Al confirmar, NO incluyas la dirección en el texto visible. Solo confirmás día, hora y propiedad.
-- No repitas la dirección si ya la dijiste SALVO que el cliente la pida de nuevo explícitamente. Si la pide otra vez, dala sin drama y sin "como te dije antes".
-- Confirmación de visita: mencioná día, fecha, hora y propiedad. NO uses un formato rígido. Variá el inicio — puede ser "listo!", "dale!", "quedamos así:", "buenísimo," o directamente arrancá con "el [día] a las [hora]...". NO repitas el nombre del cliente en la confirmación.
-- Una vez confirmada la visita, incluís este bloque al final (invisible):
-<!--visit:{{"property":"titulo exacto de la propiedad","date":"YYYY-MM-DD","time":"HH:MM"}}-->
-- CRÍTICO: si confirmás DOS visitas en un mismo mensaje, incluís DOS bloques <!--visit:--> al final, uno por cada propiedad, con su fecha y hora correspondiente.
-- Cuando el cliente cancela una visita ya confirmada, respondés con calma, confirmás la cancelación y ofrecés reagendar. Al final del mensaje incluís (invisible):
-<!--cancel_visit:{{"property":"titulo exacto de la propiedad","date":"YYYY-MM-DD","time":"HH:MM"}}-->
+{visit_instructions}
 
 ════════════════════════════════════════
 DERIVAR AL ASESOR HUMANO
@@ -259,14 +232,53 @@ def build_system_prompt(lead: dict = None) -> str:
     listings_text = sheets.format_listings_for_prompt(listing_data)
     today = _today_str()
 
-    free_slots = calendar_client.get_free_slots()
-    if free_slots:
-        slots_text = "\n".join(f"  - {s['label']}" for s in free_slots)
-        availability_block = f"\nHORARIOS DISPONIBLES PARA VISITAS (próximos días):\n{slots_text}\nCuando el cliente pregunte cuándo podés o qué días tenés, sugerí estos horarios. Ofrecé 2-3 opciones concretas, no preguntes cuándo puede el cliente."
-    else:
-        availability_block = "\nDISPONIBILIDAD: No hay información de calendario disponible. Preguntá al cliente qué día y horario le viene bien."
+    # Visit instructions depend on VISIT_MODE
+    if VISIT_MODE == "self":
+        free_slots = calendar_client.get_free_slots()
+        if free_slots:
+            slots_text = "\n".join(f"  - {s['label']}" for s in free_slots)
+            availability_block = f"\nHORARIOS DISPONIBLES PARA VISITAS (próximos días):\n{slots_text}\nCuando el cliente pregunte cuándo podés o qué días tenés, sugerí estos horarios. Ofrecé 2-3 opciones concretas, no preguntes cuándo puede el cliente."
+        else:
+            availability_block = "\nDISPONIBILIDAD: No hay información de calendario disponible. Preguntá al cliente qué día y horario le viene bien."
+        visit_instructions = """════════════════════════════════════════
+HORARIOS DE VISITA POR PROPIEDAD
+════════════════════════════════════════
+- Cada propiedad tiene un campo "Horarios visita". Cuando agendás una visita, SOLO ofrecés horarios que estén dentro de esa disponibilidad.
+- Si "Horarios visita" está vacío, la disponibilidad por defecto es lunes a viernes de 9 a 13 y de 17 a 20.
+- Si el cliente propone un día u hora fuera de la disponibilidad, respondés con naturalidad: "ese día no tengo disponibilidad para esa propiedad, te viene bien el [próximo día/hora disponible]?"
+- Siempre confirmás la visita con día, fecha y hora dentro del horario disponible de la propiedad.
+- Si el cliente ya eligió el día (por ejemplo "Wednesday is fine"), NO ofrezcas horarios: preguntás SOLO "What time works for you?" (una sola pregunta).
+- Interpretación de rangos: "10 a 13" significa disponibilidad CONTINUA dentro de ese rango (10:00–13:00), no slots fijos.
 
-    return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today) + availability_block
+════════════════════════════════════════
+AGENDAR VISITAS
+════════════════════════════════════════
+- Cuando el cliente quiere ver una propiedad, ofrecés directamente 2-3 horarios disponibles del listado de HORARIOS DISPONIBLES. No preguntés "qué día te viene bien" si tenés horarios disponibles — proponé vos primero.
+- Cuando el cliente propone un día, NO lo repetís. Solo preguntás: "a qué hora te viene bien?"
+- CRÍTICO: Cuando ya tenés día Y hora (aunque sea en mensajes separados), confirmás la visita inmediatamente sin preguntar nada más.
+- Una vez confirmada la visita, si el cliente hace otra pregunta, respondés esa pregunta. No volvás a preguntar día, hora ni propiedad.
+- Al confirmar, NO incluyas la dirección en el texto visible. Solo confirmás día, hora y propiedad.
+- Confirmación de visita: mencioná día, fecha, hora y propiedad. NO uses un formato rígido. Variá el inicio — puede ser "listo!", "dale!", "quedamos así:", "buenísimo," o directamente arrancá con "el [día] a las [hora]...". NO repitas el nombre del cliente en la confirmación.
+- Una vez confirmada la visita, incluís este bloque al final (invisible):
+<!--visit:{{"property":"titulo exacto de la propiedad","date":"YYYY-MM-DD","time":"HH:MM"}}-->
+- CRÍTICO: si confirmás DOS visitas en un mismo mensaje, incluís DOS bloques <!--visit:--> al final, uno por cada propiedad, con su fecha y hora correspondiente.
+- Cuando el cliente cancela una visita ya confirmada, respondés con calma, confirmás la cancelación y ofrecés reagendar. Al final del mensaje incluís (invisible):
+<!--cancel_visit:{{"property":"titulo exacto de la propiedad","date":"YYYY-MM-DD","time":"HH:MM"}}-->""" + availability_block
+    else:
+        # "notify" mode — Vera does NOT schedule, just notifies the agent
+        visit_instructions = """════════════════════════════════════════
+COORDINAR VISITAS — MODO DERIVACIÓN
+════════════════════════════════════════
+- Cuando el cliente quiere ver una propiedad, NO coordinás vos directamente. NO ofrecés días ni horarios. NO agendás nada.
+- Decís algo como: "dale, le paso tus datos a nuestro asesor y te contacta para coordinar la visita" o "listo, le aviso al asesor para que coordinen juntos". Variá la frase, que suene natural.
+- Después de decir eso, incluís este bloque al final (invisible):
+<!--notify_visit:{{"property":"titulo exacto de la propiedad"}}-->
+- JAMÁS uses <!--visit:...--> ni <!--cancel_visit:...-->. Solo <!--notify_visit:...-->.
+- Si el cliente insiste con un día u hora específico, decile que el asesor lo va a contactar para confirmar el horario.
+- Una vez derivada la visita, si el cliente pregunta otra cosa, respondé normalmente."""
+        availability_block = ""
+
+    return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today, visit_instructions=visit_instructions) + availability_block
 
 
 def get_reply(messages: list, lead: dict = None) -> str:
@@ -283,6 +295,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
             listings="(no hay propiedades disponibles en este momento)",
             today=_today_str(),
+            visit_instructions="",
         )
 
     # Normalize agent messages to assistant for LLM API compatibility
