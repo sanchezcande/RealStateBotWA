@@ -243,8 +243,19 @@ CAPTURA DE LEAD — incluís este bloque cuando tengas algún dato nuevo:
 """
 
 
-def build_system_prompt() -> str:
+def build_system_prompt(lead: dict = None) -> str:
     listing_data = sheets.get_listings()
+
+    # Pre-filter listings by operation when already known — don't rely on the LLM
+    if lead and lead.get("operation"):
+        op = lead["operation"].lower()
+        op_map = {"comprar": "venta", "alquilar": "alquiler"}
+        target = op_map.get(op, op)
+        filtered = [p for p in listing_data
+                    if p.get("tipo_operacion", "").lower() == target]
+        if filtered:
+            listing_data = filtered
+
     listings_text = sheets.format_listings_for_prompt(listing_data)
     today = _today_str()
 
@@ -266,7 +277,7 @@ def get_reply(messages: list, lead: dict = None) -> str:
     """
     try:
         _ensure_dns_check()
-        system_prompt = build_system_prompt()
+        system_prompt = build_system_prompt(lead=lead)
     except Exception as e:
         logger.error("Error building system prompt: %s", e)
         system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
