@@ -282,6 +282,9 @@ def get_reply(messages: list, lead: dict = None) -> str:
     has_prior_exchange = any(m["role"] == "assistant" for m in messages)
     if has_prior_exchange:
         system_prompt += "\n\nRECORDATORIO: conversación en curso. JAMÁS digas 'Hola! Soy Vera, con quién hablo?' ni ninguna variante. JAMÁS te presentes de nuevo. Respondé directamente al último mensaje del cliente."
+    elif lead and lead.get("name"):
+        # Name already known (e.g. from FB/IG profile) — skip asking for it
+        system_prompt += f"\n\nIMPORTANTE: Ya sabés que el cliente se llama {lead['name']} (lo obtuviste de su perfil). NO le preguntes el nombre. Saludá directamente: 'Hola {lead['name']}! Soy Vera, en qué te puedo ayudar?' y respondé a lo que haya preguntado."
 
     # Build a hard reminder injected as a separate system message just before the last user message.
     # This is much harder for the model to ignore than appending to the main system prompt.

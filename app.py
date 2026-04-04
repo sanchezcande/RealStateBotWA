@@ -479,11 +479,37 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
         logger.error("Failed to send Meta image: %s", e)
 
 
+def _get_meta_profile_name(sender_id: str) -> str | None:
+    """Fetch the user's first name from Meta Graph API (works for FB & IG)."""
+    if not PAGE_ACCESS_TOKEN:
+        return None
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/v19.0/{sender_id}",
+            params={"fields": "first_name", "access_token": PAGE_ACCESS_TOKEN},
+            timeout=5,
+        )
+        if resp.ok:
+            return resp.json().get("first_name")
+    except Exception as e:
+        logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
+    return None
+
+
 def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
+
+    # Pre-load profile name from FB/IG so Vera doesn't need to ask
+    current = conversations.get_lead(sender_id)
+    if not current.get("name"):
+        profile_name = _get_meta_profile_name(sender_id)
+        if profile_name:
+            conversations.update_lead(sender_id, name=profile_name)
+            logger.info("Profile name pre-loaded for %s: %s", sender_id, profile_name)
+
     _process_reply(sender_id, user_text, channel, _send_meta_message,
                    send_image_fn=_send_meta_image)
 
