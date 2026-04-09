@@ -12,6 +12,29 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   document.querySelectorAll(".anim-card").forEach((el) => observer.observe(el));
 
+  /* ── Header: light/dark toggle based on underlying section ───── */
+  (function () {
+    var header = document.querySelector(".pb-header");
+    if (!header) return;
+    var darkSels = ".pb-bigstats, .pb-spread, .pb-sheet, .pb-dashboard, .pb-outro .pb-scarcity-bar, .pb-outro .pb-video, .pb-outro .pb-contact";
+    var darkSections = document.querySelectorAll(darkSels);
+    if (!darkSections.length) return;
+
+    function check() {
+      var hRect = header.getBoundingClientRect();
+      var probe = hRect.top + hRect.height / 2;
+      var isDark = false;
+      darkSections.forEach(function (sec) {
+        var r = sec.getBoundingClientRect();
+        if (r.top <= probe && r.bottom >= probe) isDark = true;
+      });
+      header.classList.toggle("is-dark", isDark);
+    }
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check, { passive: true });
+    check();
+  })();
+
   /* ── Chat demo ─────────────────────────────────────────────────── */
   const conversations = {
     whatsapp: [
@@ -62,7 +85,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <div class="pb-prop-title">${msg.titulo}</div>
         <div class="pb-prop-price">${msg.precio}</div>
         <div class="pb-prop-tags">${msg.tags.map(t => `<span class="pb-prop-tag">${t}</span>`).join("")}</div>
-        <div class="pb-prop-loc"><i class="fa-solid fa-map-marker-alt" style="color:#D97706"></i> ${msg.direccion}</div>
+        <div class="pb-prop-loc"><i class="fa-solid fa-map-marker-alt"></i> ${msg.direccion}</div>
       </div>
     </div>`;
   }
@@ -122,29 +145,12 @@ document.addEventListener("DOMContentLoaded", function () {
     chatStep = 0;
     clearTimeout(chatTimer);
 
-    // Update tab styles
+    // Update tab active class (editorial style lives in CSS)
     document.querySelectorAll(".pb-tab").forEach((btn) => {
-      const t = btn.dataset.tab;
-      const p = platformColors[t];
-      if (t === tab) {
-        btn.classList.add("active");
-        btn.style.borderColor = p.color;
-        btn.style.background = p.color;
-        btn.style.color = "#fff";
-        btn.style.boxShadow = `0 6px 20px ${p.color}40`;
-      } else {
-        btn.classList.remove("active");
-        btn.style.borderColor = "#E5E7EB";
-        btn.style.background = "#fff";
-        btn.style.color = "#6B7280";
-        btn.style.boxShadow = "none";
-      }
+      btn.classList.toggle("active", btn.dataset.tab === tab);
     });
 
-    // Update chat header
-    const p = platformColors[tab];
-    const header = document.getElementById("chat-header");
-    if (header) header.style.background = `linear-gradient(135deg,${p.dark},${p.color})`;
+    // Chat header stays editorial dark; only small platform icon changes
 
     // Update platform icon in header
     const iconMap = { whatsapp: "fa-whatsapp", messenger: "fa-facebook-messenger", instagram: "fa-instagram" };
@@ -265,23 +271,23 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!phoneEl) return;
     phoneEl.innerHTML = `
       <div class="pb-video-notch"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:8px">
-        <div style="font-size:2.5rem">✅</div>
-        <div style="color:#fff;font-weight:700;font-size:.95rem">Video listo!</div>
-        <div style="color:rgba(255,255,255,.65);font-size:.78rem">Listo para publicar</div>
-        <button onclick="resetVideo()" style="margin-top:8px;background:#D97706;color:#fff;border:none;border-radius:999px;padding:6px 18px;font-size:.8rem;font-weight:700;cursor:pointer">Ver de nuevo</button>
+      <div style="position:absolute;inset:0;background:rgba(24,21,18,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:10px;font-family:'Inter',sans-serif">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:2.2rem;color:#9A6B2F;font-weight:300">✓</div>
+        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1rem">Video listo</div>
+        <div style="color:rgba(247,243,236,.55);font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">Listo para publicar</div>
+        <button onclick="resetVideo()" style="margin-top:10px;background:transparent;color:#F7F3EC;border:1px solid #9A6B2F;padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;cursor:pointer">Ver de nuevo</button>
       </div>`;
   }
 
   function renderVideoIdle() {
     if (!phoneEl) return;
-    let thumbs = SLIDES.map((s) => `<div style="width:28px;height:28px;border-radius:6px;background-image:url(${s.photo});background-size:cover;background-position:center;border:1px solid rgba(255,255,255,.15)"></div>`).join("");
+    let thumbs = SLIDES.map((s) => `<div style="width:28px;height:28px;background-image:url(${s.photo});background-size:cover;background-position:center;border:1px solid rgba(247,243,236,.2)"></div>`).join("");
     phoneEl.innerHTML = `
       <div class="pb-video-notch"></div>
-      <div style="position:absolute;inset:0;background:linear-gradient(155deg,#1a2a1a 0%,#0d1f0d 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
-        <div style="font-size:3.5rem">🏠</div>
-        <div style="color:#fff;font-weight:700;font-size:1rem;text-align:center;padding:0 1rem">Casa con pileta y quincho</div>
-        <div style="color:rgba(255,255,255,.55);font-size:.8rem">5 fotos · generando video...</div>
+      <div style="position:absolute;inset:0;background:#181512;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:'Inter',sans-serif;padding:2rem 1rem">
+        <div style="font-family:'Fraunces',serif;font-style:italic;font-size:2.8rem;color:#9A6B2F;font-weight:300">iv</div>
+        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1.05rem;text-align:center;line-height:1.3">Casa con pileta<br>y quincho</div>
+        <div style="color:rgba(247,243,236,.45);font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">5 fotos · Generando...</div>
         <div style="display:flex;gap:4px;margin-top:4px">${thumbs}</div>
       </div>`;
   }
