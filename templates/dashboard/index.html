@@ -248,7 +248,7 @@ if (OPS.labels.length) {
 /* 4. Propiedades — horizontal bar (stacked: confirmed + cancelled) */
 if (PROPS.values.length) {
   const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
-  const BAR_COLORS = ["#D97706","#10b981","#6366f1","#ef4444","#06b6d4","#8b5cf6","#ec4899","#f97316","#14b8a6","#a855f7","#eab308","#3b82f6"];
+  const BAR_COLORS = ["#9A6B2F","#2D6A4F","#6B5B95","#8B3A1F","#2A6B6B","#5B8C2A","#B85C5C","#D4A957","#3A6B4F","#7B5B3A","#4A6B8B","#6B3A5B"];
   const confirmedData = PROPS.confirmed || PROPS.values;
   const confirmedColors = confirmedData.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]);
   const datasets = [{
@@ -293,7 +293,7 @@ if (PROPS.values.length) {
 /* 5. Resolucion de consultas — translate labels */
 if (document.getElementById("escalChart") && ESCAL.values.reduce((a,b)=>a+b,0) > 0) {
   const escalLabels = ESCAL.labels.map(l => tData(l));
-  const escalColors = ["#10b981", "#ef4444"];
+  const escalColors = ["#2D6A4F", "#8B3A1F"];
   makeChart("escalChart", "doughnut", escalLabels,
     [{ data: ESCAL.values, backgroundColor: escalColors, borderWidth: 0 }],
     DONUT_OPTS);
@@ -314,7 +314,7 @@ if (document.getElementById("channelChart") && CHANNELS.values.length) {
 /* 7. Calidad de leads — translate labels */
 if (document.getElementById("leadQChart") && LEADQ.values.reduce((a,b)=>a+b,0) > 0) {
   const lqLabels = LEADQ.labels.map(l => tData(l));
-  const lqColors = ["#10b981", "#f59e0b", "#e5e7eb"];
+  const lqColors = ["#2D6A4F", "#D4A957", "#D9CFBF"];
   makeChart("leadQChart", "doughnut", lqLabels,
     [{ data: LEADQ.values, backgroundColor: lqColors, borderWidth: 0 }],
     DONUT_OPTS);

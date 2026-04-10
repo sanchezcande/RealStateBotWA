@@ -5,86 +5,92 @@
 <style>
   .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
   .photo-card {
-    position: relative; border-radius: 10px; overflow: hidden;
-    background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    position: relative; overflow: hidden;
+    background: var(--white); border: 1px solid var(--line-light);
     aspect-ratio: 4/3; cursor: pointer;
+    transition: border-color .2s;
   }
   .photo-card img { width: 100%; height: 100%; object-fit: cover; }
-  .photo-card.selected { outline: 3px solid #D97706; outline-offset: -3px; }
+  .photo-card.selected { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold); }
   .photo-card .check {
     position: absolute; top: 8px; right: 8px; width: 24px; height: 24px;
-    background: #D97706; border-radius: 50%; display: none;
-    align-items: center; justify-content: center; color: #fff; font-size: 14px;
+    background: var(--gold); display: none;
+    align-items: center; justify-content: center; color: var(--cream); font-size: 14px;
   }
   .photo-card.selected .check { display: flex; }
   .photo-card .delete-btn {
     position: absolute; top: 8px; left: 8px; width: 24px; height: 24px;
-    background: rgba(0,0,0,.5); border-radius: 50%; border: none;
-    color: #fff; font-size: 14px; cursor: pointer; display: none;
+    background: rgba(24,21,18,.6); border: none;
+    color: var(--cream); font-size: 14px; cursor: pointer; display: none;
     align-items: center; justify-content: center;
   }
   .photo-card:hover .delete-btn { display: flex; }
 
   .upload-zone {
-    border: 2px dashed #d1d5db; border-radius: 12px; padding: 40px 20px;
-    text-align: center; color: #888; cursor: pointer; transition: all .2s;
-    background: #fafafa;
+    border: 2px dashed var(--line); padding: 40px 20px;
+    text-align: center; color: var(--ink-3); cursor: pointer; transition: all .2s;
+    background: var(--cream-2);
   }
-  .upload-zone:hover, .upload-zone.dragover { border-color: #D97706; background: #fff7ed; color: #D97706; }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--gold); background: var(--gold-light); color: var(--gold); }
   .upload-zone input { display: none; }
 
   .gen-panel {
-    background: #fff; border-radius: 12px; padding: 24px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-top: 20px;
+    background: var(--white); padding: 24px;
+    border: 1px solid var(--line-light); margin-top: 20px;
   }
-  .gen-panel h3 { font-size: .95rem; font-weight: 700; margin-bottom: 12px; }
+  .gen-panel h3 { font-family: var(--serif); font-size: 1rem; font-weight: 500; margin-bottom: 12px; }
   .gen-panel textarea {
-    width: 100%; padding: 10px 14px; border: 1px solid #d1d5db;
-    border-radius: 8px; font-size: .85rem; resize: vertical; min-height: 60px;
+    width: 100%; padding: 10px 14px; border: 1px solid var(--line);
+    font-size: .84rem; resize: vertical; min-height: 60px;
+    font-family: var(--sans);
   }
-  .gen-panel textarea:focus { border-color: #D97706; outline: none; }
+  .gen-panel textarea:focus { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(154,107,47,.1); }
   .gen-panel input[type="text"] {
-    width: 100%; padding: 8px 14px; border: 1px solid #d1d5db;
-    border-radius: 8px; font-size: .85rem; margin-bottom: 12px;
+    width: 100%; padding: 8px 14px; border: 1px solid var(--line);
+    font-size: .84rem; margin-bottom: 12px; font-family: var(--sans);
   }
 
   .job-card {
-    background: #fff; border-radius: 10px; padding: 16px;
-    box-shadow: 0 1px 4px rgba(0,0,0,.06); margin-bottom: 10px;
+    background: var(--white); padding: 16px;
+    border: 1px solid var(--line-light); margin-bottom: 10px;
   }
-  .job-card .job-type { font-size: .72rem; text-transform: uppercase; color: #888; font-weight: 700; }
+  .job-card .job-type {
+    font-family: var(--mono); font-size: .65rem; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--ink-3); font-weight: 500;
+  }
   .job-card .job-status { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
   .spinner {
-    width: 16px; height: 16px; border: 2px solid #e5e7eb;
-    border-top-color: #D97706; border-radius: 50%;
+    width: 16px; height: 16px; border: 2px solid var(--line);
+    border-top-color: var(--gold); border-radius: 50%;
     animation: spin .6s linear infinite;
   }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
   .result-video {
-    width: 100%; max-width: 640px; border-radius: 10px;
-    margin-top: 12px; background: #000;
+    width: 100%; max-width: 640px;
+    margin-top: 12px; background: var(--deep);
   }
   .result-image {
-    max-width: 400px; border-radius: 10px; margin-top: 12px;
+    max-width: 400px; margin-top: 12px;
   }
 
   .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
   .tabs button {
-    padding: 8px 20px; border: none; background: #e5e7eb; border-radius: 8px;
-    font-size: .85rem; font-weight: 600; cursor: pointer; color: #555;
+    padding: 8px 20px; border: 1px solid var(--line); background: var(--white);
+    font-family: var(--mono); font-size: .72rem; font-weight: 500;
+    letter-spacing: .08em; text-transform: uppercase;
+    cursor: pointer; color: var(--ink-3); transition: all .2s;
   }
-  .tabs button.active { background: #D97706; color: #fff; }
+  .tabs button.active { background: var(--ink); color: var(--cream); border-color: var(--ink); }
   .format-toggle {
     display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
   }
   .format-toggle button {
-    border: 1px solid #d1d5db; background: #fff; color: #555;
-    border-radius: 999px; padding: 8px 14px; font-size: .8rem; font-weight: 600;
-    cursor: pointer;
+    border: 1px solid var(--line); background: var(--white); color: var(--ink-2);
+    padding: 8px 14px; font-size: .78rem; font-weight: 600;
+    cursor: pointer; transition: all .2s;
   }
   .format-toggle button.active {
-    background: #111827; color: #fff; border-color: #111827;
+    background: var(--ink); color: var(--cream); border-color: var(--ink);
   }
 </style>
 {% endblock %}
@@ -100,43 +106,43 @@
 
   <!-- Usage banner -->
   <template x-if="usage">
-    <div style="background:#fff;border-radius:10px;padding:14px 20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(0,0,0,.06);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div style="background:var(--white);padding:14px 20px;margin-bottom:16px;border:1px solid var(--line-light);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       <div style="display:flex;align-items:center;gap:16px">
         <div>
-          <span style="font-size:.82rem;color:#888" x-text="t('videos_this_month')"></span>
-          <strong style="font-size:1.1rem;margin-left:6px" x-text="usage.videos_used + '/' + usage.total_allowed"></strong>
+          <span style="font-family:var(--mono);font-size:.72rem;color:var(--ink-3);text-transform:uppercase;letter-spacing:.08em" x-text="t('videos_this_month')"></span>
+          <strong style="font-family:var(--serif);font-size:1.1rem;margin-left:6px;color:var(--ink)" x-text="usage.videos_used + '/' + usage.total_allowed"></strong>
         </div>
-        <div style="width:120px;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden">
-          <div style="height:100%;border-radius:4px;transition:width .3s"
-               :style="'width:' + Math.min(usage.videos_used / usage.total_allowed * 100, 100) + '%;background:' + (usage.remaining <= 0 ? '#dc2626' : usage.remaining <= 1 ? '#f59e0b' : '#10b981')"></div>
+        <div style="width:120px;height:6px;background:var(--line-light);overflow:hidden">
+          <div style="height:100%;transition:width .3s"
+               :style="'width:' + Math.min(usage.videos_used / usage.total_allowed * 100, 100) + '%;background:' + (usage.remaining <= 0 ? 'var(--red)' : usage.remaining <= 1 ? 'var(--gold)' : 'var(--green)')"></div>
         </div>
-        <span style="font-size:.78rem;color:#888" x-text="usage.remaining + ' ' + t('remaining')"></span>
+        <span style="font-family:var(--mono);font-size:.72rem;color:var(--ink-3)" x-text="usage.remaining + ' ' + t('remaining')"></span>
       </div>
-      <button class="btn btn-outline" style="font-size:.78rem" @click="showPurchase = !showPurchase" x-text="t('buy_videos')"></button>
+      <button class="btn btn-outline" style="font-size:.72rem" @click="showPurchase = !showPurchase" x-text="t('buy_videos')"></button>
     </div>
   </template>
 
   <!-- Purchase modal -->
   <template x-if="showPurchase">
-    <div style="background:#fff;border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.1);border:1px solid #e5e7eb">
-      <h3 style="font-size:.95rem;font-weight:700;margin-bottom:8px" x-text="t('buy_additional')"></h3>
+    <div style="background:var(--white);padding:20px 24px;margin-bottom:16px;border:1px solid var(--line)">
+      <h3 style="font-family:var(--serif);font-size:1rem;font-weight:500;margin-bottom:8px" x-text="t('buy_additional')"></h3>
 
       <!-- ARS (MercadoPago) -->
       <template x-if="purchaseCurrency === 'ARS'">
         <div>
-          <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+          <p style="font-size:.82rem;color:var(--ink-3);margin-bottom:12px">
             <span x-text="t('each_video_costs')"></span> <strong>$<span x-text="(usage.extra_video_price_ars || 0).toLocaleString('es-AR')"></span> ARS</strong>.
             <span x-text="t('added_to_limit')"></span>
           </p>
           <div style="display:flex;gap:10px;align-items:center">
             <label style="font-size:.82rem" x-text="t('quantity')"></label>
-            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid var(--line);font-size:.84rem;font-family:var(--sans)">
               <option value="1" x-text="'1 ' + t('video_word') + ' — $' + (usage.extra_video_price_ars || 0).toLocaleString('es-AR')"></option>
               <option value="2" x-text="'2 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 2).toLocaleString('es-AR')"></option>
               <option value="5" x-text="'5 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 5).toLocaleString('es-AR')"></option>
               <option value="10" x-text="'10 ' + t('videos_word') + ' — $' + (usage.extra_video_price_ars * 10).toLocaleString('es-AR')"></option>
             </select>
-            <span style="font-size:.9rem;font-weight:700;color:#D97706" x-text="'Total $' + (purchaseCount * (usage.extra_video_price_ars || 0)).toLocaleString('es-AR') + ' ARS'"></span>
+            <span style="font-family:var(--serif);font-size:.95rem;font-weight:500;color:var(--gold)" x-text="'Total $' + (purchaseCount * (usage.extra_video_price_ars || 0)).toLocaleString('es-AR') + ' ARS'"></span>
           </div>
           <div style="margin-top:12px;display:flex;gap:10px">
             <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
@@ -148,19 +154,19 @@
       <!-- USD option -->
       <template x-if="purchaseCurrency === 'USD'">
         <div>
-          <p style="font-size:.82rem;color:#666;margin-bottom:12px">
+          <p style="font-size:.82rem;color:var(--ink-3);margin-bottom:12px">
             <span x-text="t('each_video_costs')"></span> <strong>USD <span x-text="usage.extra_video_price_usd"></span></strong>.
             <span x-text="t('added_to_limit')"></span>
           </p>
           <div style="display:flex;gap:10px;align-items:center">
             <label style="font-size:.82rem" x-text="t('quantity')"></label>
-            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.85rem">
+            <select x-model.number="purchaseCount" style="padding:6px 12px;border:1px solid var(--line);font-size:.84rem;font-family:var(--sans)">
               <option value="1" x-text="'1 ' + t('video_word') + ' — USD ' + usage.extra_video_price_usd"></option>
               <option value="2" x-text="'2 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 2)"></option>
               <option value="5" x-text="'5 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 5)"></option>
               <option value="10" x-text="'10 ' + t('videos_word') + ' — USD ' + (usage.extra_video_price_usd * 10)"></option>
             </select>
-            <span style="font-size:.9rem;font-weight:700;color:#D97706" x-text="'Total USD ' + (purchaseCount * usage.extra_video_price_usd)"></span>
+            <span style="font-family:var(--serif);font-size:.95rem;font-weight:500;color:var(--gold)" x-text="'Total USD ' + (purchaseCount * usage.extra_video_price_usd)"></span>
           </div>
           <div style="margin-top:12px;display:flex;gap:10px">
             <button class="btn btn-primary" @click="purchaseVideos()" x-text="t('confirm_purchase')"></button>
@@ -170,15 +176,15 @@
       </template>
 
       <template x-if="purchaseMsg">
-        <p style="font-size:.82rem;color:#10b981;margin-top:8px" x-text="purchaseMsg"></p>
+        <p style="font-size:.82rem;color:var(--green);margin-top:8px" x-text="purchaseMsg"></p>
       </template>
 
       <!-- Embedded checkout iframe -->
       <template x-if="checkoutUrl">
-        <div style="margin-top:16px;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f9fafb;border-bottom:1px solid #e5e7eb">
-            <span style="font-size:.82rem;font-weight:600;color:#333">Completar pago</span>
-            <button @click="checkoutUrl = ''" style="font-size:.78rem;color:#666;cursor:pointer;border:none;background:none">Cerrar</button>
+        <div style="margin-top:16px;border:1px solid var(--line);overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--cream);border-bottom:1px solid var(--line)">
+            <span style="font-family:var(--mono);font-size:.75rem;font-weight:500;color:var(--ink);text-transform:uppercase;letter-spacing:.08em">Completar pago</span>
+            <button @click="checkoutUrl = ''" style="font-family:var(--mono);font-size:.72rem;color:var(--ink-3);cursor:pointer;border:none;background:none;text-transform:uppercase;letter-spacing:.06em">Cerrar</button>
           </div>
           <iframe :src="checkoutUrl" style="width:100%;height:600px;border:none"></iframe>
         </div>
@@ -221,7 +227,7 @@
             </button>
           </div>
           <div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <select x-model="filterProperty" style="padding:6px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:.82rem">
+            <select x-model="filterProperty" style="padding:6px 12px;border:1px solid var(--line);font-size:.82rem;font-family:var(--sans)">
               <option value="">Todas las propiedades</option>
               <template x-for="prop in uniqueProperties" :key="prop">
                 <option :value="prop" x-text="prop"></option>
@@ -259,14 +265,14 @@
           </p>
           <!-- Property name (appears as text overlay on video) -->
           <div style="margin-bottom:14px">
-            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:4px">Nombre de la propiedad</div>
+            <div style="font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ink-2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Nombre de la propiedad</div>
             <input type="text" placeholder="Ej: Depto 2 amb - Palermo" x-model="videoProperty">
-            <div style="font-size:.78rem;color:#999;margin-top:2px">Aparece como texto en el video</div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:2px">Aparece como texto en el video</div>
           </div>
 
           <!-- Video template presets -->
           <div style="margin-bottom:14px">
-            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Estilo del video</div>
+            <div style="font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ink-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Estilo del video</div>
             <div class="format-toggle">
               <button type="button" :class="{ active: videoTemplate === '' }" @click="applyTemplate('')">Personalizado</button>
               <button type="button" :class="{ active: videoTemplate === 'luxury' }" @click="applyTemplate('luxury')">Luxury</button>
@@ -274,20 +280,20 @@
               <button type="button" :class="{ active: videoTemplate === 'family' }" @click="applyTemplate('family')">Familiar</button>
               <button type="button" :class="{ active: videoTemplate === 'investment' }" @click="applyTemplate('investment')">Inversión</button>
             </div>
-            <div style="font-size:.78rem;color:#999;margin-top:4px" x-show="videoTemplate">Prompt pre-configurado para este estilo. Podés editarlo abajo.</div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:4px" x-show="videoTemplate">Prompt pre-configurado para este estilo. Podés editarlo abajo.</div>
           </div>
 
           <!-- Video prompt (instructions for Gemini AI) -->
           <div style="margin-bottom:14px">
-            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:4px">Instrucciones para el video (prompt IA)</div>
+            <div style="font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ink-2);margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em">Instrucciones para el video (prompt IA)</div>
             <textarea placeholder="Ej: Movimiento de camara lento, mostrar la luz natural, enfocarse en los detalles del living..."
                       x-model="videoPrompt" style="min-height:50px"></textarea>
-            <div style="font-size:.78rem;color:#999;margin-top:2px">Opcional. Le dice a la IA como generar el video. Si lo dejas vacio, usa un prompt profesional por defecto.</div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:2px">Opcional. Le dice a la IA como generar el video. Si lo dejas vacio, usa un prompt profesional por defecto.</div>
           </div>
 
           <!-- Video format -->
           <div style="margin-bottom:14px">
-            <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px" x-text="t('video_format')"></div>
+            <div style="font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ink-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em" x-text="t('video_format')"></div>
             <div class="format-toggle">
               <button type="button"
                       :class="{ active: videoFormat === 'vertical' }"
@@ -298,22 +304,22 @@
                       @click="videoFormat = 'horizontal'"
                       x-text="t('format_horizontal')"></button>
             </div>
-            <div style="font-size:.78rem;color:#666;margin-top:6px" x-text="t('video_format_help')"></div>
+            <div style="font-size:.78rem;color:var(--ink-3);margin-top:6px" x-text="t('video_format_help')"></div>
           </div>
 
           <!-- Voiceover section (disabled — AI voices sound robotic, revisit when quality improves)
-          <div style="margin-bottom:14px;padding:16px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+          <div style="margin-bottom:14px;padding:16px;background:var(--cream);border:1px solid var(--line-light)">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
               <div style="font-size:.88rem;font-weight:700;color:#333">Voz en off</div>
-              <span style="font-size:.7rem;background:#10b981;color:#fff;padding:2px 8px;border-radius:99px;font-weight:600">GRATIS</span>
+              <span style="font-size:.7rem;background:var(--green);color:var(--cream);padding:2px 8px;font-weight:600">GRATIS</span>
             </div>
             <textarea placeholder="Escribi el texto que queres que se escuche. Ej: Hermoso departamento de 2 ambientes, luminoso, con balcon..."
                       x-model="voiceoverText" style="min-height:70px"></textarea>
-            <div style="font-size:.78rem;color:#999;margin-top:4px">Si lo dejas vacio, el video no tiene voz. Cuanto mas texto, mas largo el audio.</div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:4px">Si lo dejas vacio, el video no tiene voz. Cuanto mas texto, mas largo el audio.</div>
 
             <template x-if="voiceoverText.trim().length > 0">
               <div style="margin-top:10px">
-                <div style="font-size:.82rem;font-weight:600;color:#444;margin-bottom:6px">Elegir voz</div>
+                <div style="font-family:var(--mono);font-size:.72rem;font-weight:500;color:var(--ink-2);margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em">Elegir voz</div>
                 <div class="format-toggle">
                   <template x-for="v in availableVoices" :key="v.id">
                     <button type="button" :class="{ active: voice === v.id }" @click="voice = v.id" x-text="v.label"></button>
@@ -328,12 +334,12 @@
           -->
 
           <!-- Image quality -->
-          <div style="margin-bottom:14px;padding:12px 16px;background:#f9fafb;border-radius:10px;border:1px solid #e5e7eb">
+          <div style="margin-bottom:14px;padding:12px 16px;background:var(--cream);border:1px solid var(--line-light)">
             <div style="display:flex;align-items:center;gap:8px">
-              <input type="checkbox" id="enhancePhotos" x-model="enhancePhotos" style="width:16px;height:16px;accent-color:#D97706">
-              <label for="enhancePhotos" style="font-size:.85rem;font-weight:600;color:#333;cursor:pointer">Mejorar calidad de fotos</label>
+              <input type="checkbox" id="enhancePhotos" x-model="enhancePhotos" style="width:16px;height:16px;accent-color:var(--gold)">
+              <label for="enhancePhotos" style="font-size:.85rem;font-weight:600;color:var(--ink);cursor:pointer">Mejorar calidad de fotos</label>
             </div>
-            <div style="font-size:.78rem;color:#999;margin-top:4px;margin-left:24px">Mejora nitidez y contraste automaticamente antes de generar el video</div>
+            <div style="font-size:.75rem;color:var(--ink-3);margin-top:4px;margin-left:24px">Mejora nitidez y contraste automaticamente antes de generar el video</div>
           </div>
           <div style="margin-top:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <button class="btn btn-primary" @click="generateVideo()" :disabled="generating || (usage && usage.remaining <= 0)">
@@ -343,15 +349,15 @@
             <span x-show="generating" class="spinner"></span>
             <span x-show="generating" style="font-size:.82rem;color:#666" x-text="genProgress"></span>
             <template x-if="usage && usage.remaining <= 0 && !generating">
-              <span style="font-size:.82rem;color:#dc2626"><span x-text="t('no_videos_available')"></span> <a href="#" @click.prevent="showPurchase = true" style="color:#D97706;text-decoration:underline" x-text="t('buy_more')"></a></span>
+              <span style="font-size:.82rem;color:var(--red)"><span x-text="t('no_videos_available')"></span> <a href="#" @click.prevent="showPurchase = true" style="color:var(--gold);text-decoration:underline" x-text="t('buy_more')"></a></span>
             </template>
           </div>
           <template x-if="genError">
-            <p style="color:#dc2626;font-size:.82rem;margin-top:8px" x-text="genError"></p>
+            <p style="color:var(--red);font-size:.82rem;margin-top:8px" x-text="genError"></p>
           </template>
           <template x-if="genResult">
             <div style="margin-top:16px">
-              <p style="font-size:.85rem;font-weight:600;color:#10b981;margin-bottom:8px" x-text="t('video_generated')"></p>
+              <p style="font-size:.85rem;font-weight:600;color:var(--green);margin-bottom:8px" x-text="t('video_generated')"></p>
               <video class="result-video" :src="genResult" controls></video>
               <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
                 <a class="btn btn-outline" :href="genResult" download x-text="t('download_video')"></a>
@@ -395,7 +401,7 @@
             <span style="font-size:.82rem;color:#666" x-text="j.progress"></span>
           </div>
           <template x-if="j.status === 'error'">
-            <p style="color:#dc2626;font-size:.82rem;margin-top:6px" x-text="j.error"></p>
+            <p style="color:var(--red);font-size:.82rem;margin-top:6px" x-text="j.error"></p>
           </template>
           <template x-if="j.status === 'completed' && j.result_url">
             <div style="margin-top:8px">
@@ -421,7 +427,7 @@
               </template>
             </div>
           </template>
-          <div style="font-size:.7rem;color:#aaa;margin-top:6px" x-text="j.created_at"></div>
+          <div style="font-size:.7rem;color:var(--ink-3);margin-top:6px" x-text="j.created_at"></div>
         </div>
       </template>
     </div>

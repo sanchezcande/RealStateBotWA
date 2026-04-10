@@ -4,10 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PropBot — Login</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%2392400E'/><stop offset='1' stop-color='%23D97706'/></linearGradient></defs><rect width='44' height='44' rx='13' fill='url(%23g)'/><path d='M12 30V16l10-5 10 5v14' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M18 30v-8h8v8' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/><path d='M12 30h20' stroke='white' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>" type="image/svg+xml">
+<link rel="icon" href="/static/img/propbot-logo-180.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="/static/js/i18n.js?v={{ v }}"></script>
 <link rel="stylesheet" href="/static/css/dashboard.css?v={{ v }}">
 </head>
@@ -36,14 +35,14 @@
       </div>
     </div>
     <div class="login-box">
-      <h1><span style="color:#fff">Prop</span><span style="color:#FCD34D">Bot</span></h1>
-      <p data-i18n="login_subtitle">Ingresa para acceder al dashboard</p>
+      <h1><span style="color:#1A1814">Prop</span><span style="color:#9A6B2F;font-style:italic">Bot</span></h1>
+      <p data-i18n="login_subtitle">Ingresá para acceder al dashboard</p>
       {% if error %}
         <div class="login-error" data-i18n="invalid_credentials">{{ error }}</div>
       {% endif %}
       <form method="POST">
-        <label for="password" data-i18n="password">Contrasena</label>
-        <input type="password" id="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Tu contrasena" autofocus>
+        <label for="password" data-i18n="password">Contraseña</label>
+        <input type="password" id="password" name="password" data-i18n-placeholder="password_placeholder" placeholder="Tu contraseña" autofocus>
         <div class="login-divider" data-i18n="or">o</div>
         <label for="token" data-i18n="access_token">Token de acceso</label>
         <input type="text" id="token" name="token" data-i18n-placeholder="token_placeholder" placeholder="Token del dashboard">

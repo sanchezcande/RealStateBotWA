@@ -1,8 +1,8 @@
-/* Shared chart helpers */
-const BLUE  = "rgba(217,119,6,0.85)";
-const GREEN = "rgba(16,185,129,0.85)";
-const PAL   = ["#D97706","#10b981","#F59E0B","#ef4444","#8b5cf6","#06b6d4","#ec4899","#84cc16"];
-const CHANNEL_PAL = ["#16a34a", "#e11d48", "#D97706", "#94a3b8"];
+/* Shared chart helpers — Editorial palette */
+const BLUE  = "rgba(154,107,47,0.85)";
+const GREEN = "rgba(45,106,79,0.85)";
+const PAL   = ["#9A6B2F","#2D6A4F","#D4A957","#8B3A1F","#6B5B95","#2A6B6B","#B85C5C","#5B8C2A"];
+const CHANNEL_PAL = ["#2D6A4F", "#8B3A1F", "#2A4A6B", "#6C6257"];
 
 const OPTS_CLEAN  = { plugins: { legend: { display: false } } };
 const OPTS_LEGEND = { plugins: { legend: { position: "bottom" } } };
@@ -14,8 +14,12 @@ const DONUT_OPTS  = {
   responsive: true,
   maintainAspectRatio: true,
 };
-const SCALE_Y     = { scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } };
+const SCALE_Y     = { scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(217,207,191,.25)" } }, x: { grid: { color: "rgba(217,207,191,.15)" } } } };
 const SCALE_X     = { scales: { x: { beginAtZero: true, ticks: { precision: 0 } } } };
+
+Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+Chart.defaults.color = "#6C6257";
+Chart.defaults.borderColor = "rgba(217,207,191,.3)";
 
 function makeChart(canvasId, type, labels, datasets, options) {
   const el = document.getElementById(canvasId);

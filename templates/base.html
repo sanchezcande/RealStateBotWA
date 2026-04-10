@@ -7,7 +7,6 @@
 <link rel="icon" href="/static/img/propbot-logo-180.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <script src="/static/js/i18n.js?v={{ v }}"></script>
@@ -21,16 +20,16 @@
     <div class="sidebar-header">
       <div style="display:flex;align-items:center;gap:10px">
         <img class="logo-icon" src="/static/img/propbot-logo-180.png" alt="PropBot" width="44" height="44">
-        <h1 class="logo"><span style="color:#fff">Prop</span><span style="color:#FCD34D">Bot</span></h1>
+        <h1 class="logo"><span style="color:#F7F3EC">Prop</span><span style="color:#9A6B2F;font-style:italic">Bot</span></h1>
       </div>
       {% if branch %}<span class="branch-badge">{{ branch }}</span>{% endif %}
       <span class="plan-badge plan-{{ plan }}">{{ plan | upper }}</span>
     </div>
     <div style="padding:12px 22px 0;display:flex;align-items:center;gap:10px">
-      <img src="/static/img/Avatar.png" alt="Vera" width="36" height="36" style="border-radius:50%;object-fit:cover;border:2px solid rgba(217,119,6,.4)">
+      <img src="/static/img/Avatar.png" alt="Vera" width="36" height="36" style="border-radius:50%;object-fit:cover;border:2px solid rgba(154,107,47,.4)">
       <div>
-        <div style="font-size:.78rem;font-weight:700;color:#fff">Vera</div>
-        <div style="font-size:.65rem;color:rgba(255,255,255,.45)">Asistente IA activa</div>
+        <div style="font-size:.78rem;font-weight:500;color:#F7F3EC;font-family:'Fraunces',serif">Vera</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(247,243,236,.4);text-transform:uppercase;letter-spacing:.1em">Asistente IA activa</div>
       </div>
     </div>
     <ul class="nav-links">
@@ -54,12 +53,12 @@
     </ul>
     <div class="sidebar-footer">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <a href="/dashboard/logout" class="logout-link" data-i18n="logout">Cerrar sesion</a>
+        <a href="/dashboard/logout" class="logout-link" data-i18n="logout">Cerrar sesión</a>
         <button id="langToggle" class="lang-toggle" onclick="toggleLang()">EN</button>
       </div>
-      <a href="https://opengatehub.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08);text-decoration:none;color:rgba(255,255,255,.35);font-size:.68rem;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <a href="https://opengatehub.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(247,243,236,.06);text-decoration:none;color:rgba(247,243,236,.3);font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         <span>Desarrollado por</span>
-        <img src="/static/img/Logo4.png" alt="OpenGateHub" height="14" style="background:#fff;padding:2px 6px;border-radius:3px">
+        <img src="/static/img/opengatehub-footer.png" alt="OpenGateHub" height="14">
       </a>
     </div>
   </nav>
