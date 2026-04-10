@@ -201,12 +201,12 @@
       <figcaption>Villa · Bali</figcaption>
     </figure>
     <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/detail.jpg" alt="Architectural detail">
-      <figcaption>Penthouse · Buenos Aires</figcaption>
+      <img src="/static/img/editorial/house-exterior.jpg" alt="Casa moderna">
+      <figcaption>Casa · Córdoba</figcaption>
     </figure>
     <figure class="pb-photostrip-item anim-card">
       <img src="/static/img/editorial/cityscape.jpg" alt="Modern facade">
-      <figcaption>Casa · Nordelta</figcaption>
+      <figcaption>Departamento · Microcentro</figcaption>
     </figure>
     <figure class="pb-photostrip-item anim-card">
       <img src="/static/img/editorial/skyline.jpg" alt="Skyline">
@@ -524,11 +524,41 @@
       <h3>Webhook CRM universal</h3>
       <p>Si no usás Tokko, conectá cualquier CRM vía webhook. Cada lead calificado y visita agendada dispara un evento a tu sistema.</p>
     </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">13</span>
+      <h3>Transcripción de audios</h3>
+      <p>El cliente manda un audio de WhatsApp y el bot lo transcribe con IA, entiende qué busca y responde como si fuera texto. No se pierde ni un lead por mandar un audio en vez de escribir.</p>
+    </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">14</span>
+      <h3>Lead scoring automático</h3>
+      <p>Cada lead recibe un puntaje según presupuesto definido, cantidad de mensajes, visitas agendadas y nivel de avance. Priorizá los que están más cerca de cerrar.</p>
+    </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">15</span>
+      <h3>Modo flexible de visitas</h3>
+      <p>Dos modos: el bot agenda directo en Google Calendar, o te notifica por WhatsApp para que vos confirmes. Elegís el nivel de control que querés.</p>
+    </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">16</span>
+      <h3>Horarios de visita por propiedad</h3>
+      <p>Cada propiedad tiene sus propios horarios de visita en la planilla. El bot solo ofrece turnos dentro de esas franjas. No propone horarios imposibles.</p>
+    </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">17</span>
+      <h3>Control anti-duplicados</h3>
+      <p>Si un cliente ya agendó una visita a una propiedad, el bot no le ofrece agendar de nuevo. Evita confusiones y visitas repetidas.</p>
+    </div>
+    <div class="pb-feature-card anim-card">
+      <span class="pb-feature-icon">18</span>
+      <h3>Videos con IA generativa (Veo)</h3>
+      <p>El Media Studio usa Veo de Google para generar videos profesionales desde las fotos de cada propiedad. Ken Burns, textos, voiceover y música — todo generado por IA.</p>
+    </div>
   </div>
 
   <div class="pb-features-toggle-wrap">
-    <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');this.querySelector('span').textContent=document.getElementById('features-extra').classList.contains('show')?'Ver menos':'Ver las 12 funcionalidades'">
-      <span>Ver las 12 funcionalidades</span>
+    <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');this.querySelector('span').textContent=document.getElementById('features-extra').classList.contains('show')?'Ver menos':'Ver las 18 funcionalidades'">
+      <span>Ver las 18 funcionalidades</span>
     </button>
   </div>
 </section>
@@ -722,17 +752,17 @@
         <div class="off">Sin bot · Asesor redes</div>
         <div>PropBot · Automatizado</div>
       </div>
-      <div class="pb-compare-row"><div>Horario de atención</div><div class="bad">8hs × 5 días</div><div class="good">24/7 · 365 días</div></div>
-      <div class="pb-compare-row"><div>Tiempo de 1ª respuesta</div><div class="bad">15–60 minutos</div><div class="good">&lt; 5 segundos</div></div>
-      <div class="pb-compare-row"><div>Canales cubiertos</div><div class="bad">1 (difícil cubrir 3)</div><div class="good">WhatsApp + IG + FB</div></div>
-      <div class="pb-compare-row"><div>Tiempo libre del equipo</div><div class="bad">0 — todos al chat</div><div class="good">3+ horas/día recuperadas</div></div>
-      <div class="pb-compare-row"><div>Feriados y fines de semana</div><div class="bad">Sin cobertura</div><div class="good">Funciona igual</div></div>
-      <div class="pb-compare-row"><div>Escala a humano</div><div class="bad">Siempre manual</div><div class="good">Automático con contexto</div></div>
-      <div class="pb-compare-row"><div>Vacaciones / bajas</div><div class="bad">Para todo</div><div class="good">No aplica</div></div>
-      <div class="pb-compare-row"><div>Agendado de visitas</div><div class="bad">Manual, ida y vuelta</div><div class="good">Auto + Calendar + recordatorio</div></div>
-      <div class="pb-compare-row"><div>Leads calificados</div><div class="bad">Depende de quién atienda</div><div class="good">Auto + alerta WhatsApp</div></div>
-      <div class="pb-compare-row"><div>Follow-up a leads fríos</div><div class="bad">Nadie se acuerda</div><div class="good">Auto a los 3 días, personalizado</div></div>
-      <div class="pb-compare-row"><div>CRM actualizado</div><div class="bad">Si alguien lo carga</div><div class="good">Sync automático con Tokko</div></div>
+      <div class="pb-compare-row"><div>Horario de atención</div><div class="bad" data-label="Sin bot">8hs × 5 días</div><div class="good" data-label="PropBot">24/7 · 365 días</div></div>
+      <div class="pb-compare-row"><div>Tiempo de 1ª respuesta</div><div class="bad" data-label="Sin bot">15–60 minutos</div><div class="good" data-label="PropBot">&lt; 5 segundos</div></div>
+      <div class="pb-compare-row"><div>Canales cubiertos</div><div class="bad" data-label="Sin bot">1 (difícil cubrir 3)</div><div class="good" data-label="PropBot">WhatsApp + IG + FB</div></div>
+      <div class="pb-compare-row"><div>Tiempo libre del equipo</div><div class="bad" data-label="Sin bot">0 — todos al chat</div><div class="good" data-label="PropBot">3+ horas/día recuperadas</div></div>
+      <div class="pb-compare-row"><div>Feriados y fines de semana</div><div class="bad" data-label="Sin bot">Sin cobertura</div><div class="good" data-label="PropBot">Funciona igual</div></div>
+      <div class="pb-compare-row"><div>Escala a humano</div><div class="bad" data-label="Sin bot">Siempre manual</div><div class="good" data-label="PropBot">Automático con contexto</div></div>
+      <div class="pb-compare-row"><div>Vacaciones / bajas</div><div class="bad" data-label="Sin bot">Para todo</div><div class="good" data-label="PropBot">No aplica</div></div>
+      <div class="pb-compare-row"><div>Agendado de visitas</div><div class="bad" data-label="Sin bot">Manual, ida y vuelta</div><div class="good" data-label="PropBot">Auto + Calendar + recordatorio</div></div>
+      <div class="pb-compare-row"><div>Leads calificados</div><div class="bad" data-label="Sin bot">Depende de quién atienda</div><div class="good" data-label="PropBot">Auto + alerta WhatsApp</div></div>
+      <div class="pb-compare-row"><div>Follow-up a leads fríos</div><div class="bad" data-label="Sin bot">Nadie se acuerda</div><div class="good" data-label="PropBot">Auto a los 3 días, personalizado</div></div>
+      <div class="pb-compare-row"><div>CRM actualizado</div><div class="bad" data-label="Sin bot">Si alguien lo carga</div><div class="good" data-label="PropBot">Sync automático con Tokko</div></div>
     </div>
     <p style="text-align:center;margin-top:1.5rem;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)">
       PropBot no tiene sueldo, aportes, vacaciones ni días libres
@@ -959,7 +989,7 @@
 <!-- ═══ XIII — CONTACTO / CALENDLY ══════════════════════════════════ -->
 <section id="contacto" class="pb-contact">
   <div class="pb-contact-header">
-    <span class="eyebrow">XIII · Reservá tu lugar</span>
+    <span class="eyebrow">Reservá tu lugar</span>
     <h2>15 minutos y tu bot <em>está en camino</em></h2>
     <p>Te mostramos el bot en vivo, te armamos la propuesta y en 48hs tu inmobiliaria responde sola.</p>
   </div>
@@ -968,23 +998,23 @@
     <aside class="pb-contact-side anim-card">
       <h4>En 15 minutos vas a ver</h4>
       <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">i</span>
+        <span class="pb-contact-bullet-num">1</span>
         <span class="pb-contact-bullet-text">El bot respondiendo consultas en vivo con propiedades reales</span>
       </div>
       <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">ii</span>
+        <span class="pb-contact-bullet-num">2</span>
         <span class="pb-contact-bullet-text">Cómo se integra con tu Google Sheet o la plantilla que te damos</span>
       </div>
       <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">iii</span>
+        <span class="pb-contact-bullet-num">3</span>
         <span class="pb-contact-bullet-text">El proceso de setup de 48hs explicado paso a paso</span>
       </div>
       <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">iv</span>
+        <span class="pb-contact-bullet-num">4</span>
         <span class="pb-contact-bullet-text">Precio final según tu cantidad de canales y propiedades</span>
       </div>
       <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">v</span>
+        <span class="pb-contact-bullet-num">5</span>
         <span class="pb-contact-bullet-text">Garantía 30 días — si no te convence, te devolvemos el dinero</span>
       </div>
     </aside>

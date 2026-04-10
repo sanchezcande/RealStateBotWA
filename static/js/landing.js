@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (r.top <= probe && r.bottom >= probe) isDark = true;
       });
       header.classList.toggle("is-dark", isDark);
+      header.classList.toggle("is-scrolled", window.scrollY > 60 && !isDark);
     }
     window.addEventListener("scroll", check, { passive: true });
     window.addEventListener("resize", check, { passive: true });
@@ -212,7 +213,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const sticky = document.querySelector(".pb-sticky");
   const waFloat = document.querySelector(".pb-wa-float");
   const scrollTop = document.querySelector(".pb-scroll-top");
-
   window.addEventListener("scroll", () => {
     const show = window.scrollY > 700;
     if (sticky) sticky.classList.toggle("show", show);
