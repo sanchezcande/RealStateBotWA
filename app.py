@@ -705,17 +705,8 @@ def health_whatsapp():
     except Exception as e:
         result["app_subscriptions"] = {"error": str(e)}
 
-    # 7. Try to register the phone number for webhooks (Cloud API requirement)
-    try:
-        r = requests.post(
-            f"https://graph.facebook.com/v21.0/{phone_id}/register",
-            headers={**hdrs, "Content-Type": "application/json"},
-            json={"messaging_product": "whatsapp", "pin": "123456"},
-            timeout=10,
-        )
-        result["phone_register"] = r.json()
-    except Exception as e:
-        result["phone_register"] = {"error": str(e)}
+    # 7. Phone registration status (read-only, no side effects)
+    result["phone_register"] = "Use POST /health/waba-subscribe?register=1 to re-register if needed"
 
     return jsonify(result), 200
 
