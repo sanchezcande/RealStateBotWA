@@ -60,7 +60,7 @@ def serve_upload(filename):
 # and combine them into a single AI call.
 _pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}
 _pending_lock = threading.Lock()
-DEBOUNCE_SECONDS = 5
+DEBOUNCE_SECONDS = 8
 MAX_MESSAGE_LENGTH = 4000
 
 
