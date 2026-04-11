@@ -89,6 +89,7 @@ def verify_webhook():
 @app.post("/webhook")
 def receive_message():
     data = request.get_json(silent=True) or {}
+    logger.info("Webhook POST received: %s", json.dumps(data)[:500])
 
     # Always return 200 quickly so Meta doesn't retry
     try:
