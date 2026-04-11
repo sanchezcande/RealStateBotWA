@@ -618,6 +618,47 @@ def health():
     return jsonify({"status": "ok" if all_ok else "degraded", "checks": checks}), 200 if all_ok else 503
 
 
+@app.get("/health/whatsapp")
+def health_whatsapp():
+    """Diagnose WhatsApp Cloud API phone number status and webhook config."""
+    token = os.environ.get("WHATSAPP_TOKEN", "")
+    phone_id = PHONE_NUMBER_ID
+    result = {}
+    # 1. Phone number info
+    try:
+        r = requests.get(
+            f"https://graph.facebook.com/v21.0/{phone_id}",
+            params={"fields": "display_phone_number,verified_name,quality_rating,platform_type,status,name_status,messaging_limit_tier,is_official_business_account,account_mode"},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        result["phone"] = r.json()
+    except Exception as e:
+        result["phone"] = {"error": str(e)}
+    # 2. WABA ID from phone number
+    try:
+        r = requests.get(
+            f"https://graph.facebook.com/v21.0/{phone_id}",
+            params={"fields": "wabaId:whatsapp_business_account{id,name,message_template_namespace,on_behalf_of_business_info}"},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        waba_data = r.json()
+        result["waba"] = waba_data
+        waba_id = waba_data.get("whatsapp_business_account", {}).get("id")
+        if waba_id:
+            # 3. Check subscribed apps for this WABA
+            r2 = requests.get(
+                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10,
+            )
+            result["subscribed_apps"] = r2.json()
+    except Exception as e:
+        result["waba"] = {"error": str(e)}
+    return jsonify(result), 200
+
+
 @app.get("/health/deepseek")
 def health_deepseek():
     """
