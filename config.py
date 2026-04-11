@@ -65,11 +65,11 @@ BASE_URL = os.environ.get("BASE_URL", "")  # e.g. https://tu-app.up.railway.app
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "sanchezgcandelaria@gmail.com")
 
 # Asset cache busting
-import subprocess as _sp
+import subprocess as _sp, time as _time
 try:
-    ASSET_VERSION = _sp.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=_sp.DEVNULL).decode().strip()
+    ASSET_VERSION = _sp.check_output(["git", "rev-parse", "--short", "HEAD"], stderr=_sp.DEVNULL).decode().strip() + "." + str(int(_time.time()))
 except Exception:
-    ASSET_VERSION = "1"
+    ASSET_VERSION = str(int(_time.time()))
 
 # Tokko Broker CRM integration
 TOKKO_API_KEY = os.environ.get("TOKKO_API_KEY", "")
