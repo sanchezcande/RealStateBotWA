@@ -881,3 +881,41 @@ def run_vera_status():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
+
+
+@app.get("/health/db-verify")
+def db_verify():
+    """Verify database writes are actually reaching disk."""
+    import sqlite3
+    db_path = analytics._DB_PATH
+    result = {}
+    # 1. File info
+    try:
+        result["file_size"] = os.path.getsize(db_path)
+        result["file_exists"] = True
+    except Exception as e:
+        result["file_exists"] = False
+        result["file_error"] = str(e)
+    # 2. Check for WAL/SHM files
+    result["wal_exists"] = os.path.exists(db_path + "-wal")
+    result["shm_exists"] = os.path.exists(db_path + "-shm")
+    if result["wal_exists"]:
+        result["wal_size"] = os.path.getsize(db_path + "-wal")
+    # 3. Read from CACHED connection
+    try:
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            result["cached_journal_mode"] = conn.execute("PRAGMA journal_mode").fetchone()[0]
+            result["cached_synchronous"] = conn.execute("PRAGMA synchronous").fetchone()[0]
+            result["cached_chat_count"] = conn.execute("SELECT COUNT(*) FROM chat_messages").fetchone()[0]
+    except Exception as e:
+        result["cached_error"] = str(e)
+    # 4. Read from FRESH connection (to verify disk state)
+    try:
+        fresh = sqlite3.connect(db_path)
+        result["fresh_chat_count"] = fresh.execute("SELECT COUNT(*) FROM chat_messages").fetchone()[0]
+        result["fresh_journal_mode"] = fresh.execute("PRAGMA journal_mode").fetchone()[0]
+        fresh.close()
+    except Exception as e:
+        result["fresh_error"] = str(e)
+    return jsonify(result), 200
