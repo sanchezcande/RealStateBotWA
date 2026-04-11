@@ -624,51 +624,77 @@ def health_whatsapp():
     token = os.environ.get("WHATSAPP_TOKEN", "")
     phone_id = PHONE_NUMBER_ID
     result = {}
-    # 1. Phone number info
+    hdrs = {"Authorization": f"Bearer {token}"}
+
+    # 1. Phone number info (including webhook_configuration)
     try:
         r = requests.get(
             f"https://graph.facebook.com/v21.0/{phone_id}",
-            params={"fields": "display_phone_number,verified_name,quality_rating,platform_type,status,name_status,messaging_limit_tier,is_official_business_account,account_mode"},
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=10,
+            params={"fields": "display_phone_number,verified_name,quality_rating,platform_type,status,name_status,messaging_limit_tier,is_official_business_account,account_mode,webhook_configuration"},
+            headers=hdrs, timeout=10,
         )
         result["phone"] = r.json()
     except Exception as e:
         result["phone"] = {"error": str(e)}
-    # 2. Debug token to find app/business info
+
+    # 2. Debug token
     try:
         r = requests.get(
             f"https://graph.facebook.com/v21.0/debug_token",
             params={"input_token": token},
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=10,
+            headers=hdrs, timeout=10,
         )
         result["token_debug"] = r.json()
     except Exception as e:
         result["token_debug"] = {"error": str(e)}
-    # 3. Try multiple paths to find WABA and subscribe
-    user_id = result.get("token_debug", {}).get("data", {}).get("user_id")
+
     app_id = result.get("token_debug", {}).get("data", {}).get("app_id")
-    hdrs = {"Authorization": f"Bearer {token}"}
-    # Path A: system user's WABAs
+    waba_id = "1921482308505030"
+
+    # 3. WABA info
     try:
-        r = requests.get(f"https://graph.facebook.com/v21.0/{user_id}/whatsapp_business_accounts", headers=hdrs, timeout=10)
-        result["user_wabas"] = r.json()
-        for waba in r.json().get("data", []):
-            waba_id = waba.get("id")
-            if waba_id:
-                r2 = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
-                result[f"waba_{waba_id}_subs"] = r2.json()
-                r3 = requests.post(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
-                result[f"waba_{waba_id}_subscribe"] = r3.json()
+        r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}",
+                         params={"fields": "name,currency,timezone_id,message_template_namespace,account_review_status,on_behalf_of_business_info,primary_funding_id,purchase_order_number,id"},
+                         headers=hdrs, timeout=10)
+        result["waba_info"] = r.json()
     except Exception as e:
-        result["user_wabas"] = {"error": str(e)}
-    # Path B: app subscriptions
+        result["waba_info"] = {"error": str(e)}
+
+    # 4. WABA phone numbers (confirm this phone belongs to this WABA)
+    try:
+        r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/phone_numbers",
+                         params={"fields": "display_phone_number,verified_name,status,quality_rating,platform_type,id"},
+                         headers=hdrs, timeout=10)
+        result["waba_phones"] = r.json()
+    except Exception as e:
+        result["waba_phones"] = {"error": str(e)}
+
+    # 5. WABA subscribed apps
+    try:
+        r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+        result["waba_subs"] = r.json()
+    except Exception as e:
+        result["waba_subs"] = {"error": str(e)}
+
+    # 6. App subscriptions (needs app secret — will likely fail but try)
     try:
         r = requests.get(f"https://graph.facebook.com/v21.0/{app_id}/subscriptions", headers=hdrs, timeout=10)
         result["app_subscriptions"] = r.json()
     except Exception as e:
         result["app_subscriptions"] = {"error": str(e)}
+
+    # 7. Try to register the phone number for webhooks (Cloud API requirement)
+    try:
+        r = requests.post(
+            f"https://graph.facebook.com/v21.0/{phone_id}/register",
+            headers={**hdrs, "Content-Type": "application/json"},
+            json={"messaging_product": "whatsapp", "pin": "123456"},
+            timeout=10,
+        )
+        result["phone_register"] = r.json()
+    except Exception as e:
+        result["phone_register"] = {"error": str(e)}
+
     return jsonify(result), 200
 
 
