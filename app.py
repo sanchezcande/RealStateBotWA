@@ -281,18 +281,23 @@ def _enqueue(phone: str, text: str):
         if phone in _pending:
             _pending[phone]["timer"].cancel()
             _pending[phone]["texts"].append(text)
+            _pending[phone]["gen"] += 1
         else:
-            _pending[phone] = {"texts": [text]}
+            _pending[phone] = {"texts": [text], "gen": 0}
 
-        timer = threading.Timer(DEBOUNCE_SECONDS, _flush, args=[phone])
+        gen = _pending[phone]["gen"]
+        timer = threading.Timer(DEBOUNCE_SECONDS, _flush, args=[phone, gen])
         _pending[phone]["timer"] = timer
         timer.start()
 
 
-def _flush(phone: str):
+def _flush(phone: str, gen: int):
     """Called after the debounce window — combine buffered texts and reply once."""
     with _pending_lock:
         if phone not in _pending:
+            return
+        # Stale timer — a newer message arrived and bumped the generation
+        if _pending[phone]["gen"] != gen:
             return
         texts = _pending.pop(phone)["texts"]
 
@@ -405,11 +410,22 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # Safety net: strip re-introduction if conversation is already in progress
     history_after = conversations.get_messages(identifier)
     if len(history_after) > 2:
+        # Broad pattern to catch any variant of "Hola soy Vera / con quién hablo"
         clean_response = re.sub(
-            r'Hola[!.]?\s*[Ss]oy Vera[,.]?\s*con\s+qui[eé]n\s+hablo[?.!]*\s*',
+            r'[Hh]ola[!.]?\s*[Ss]oy Vera[^?!.]*[?.!]*\s*',
             '',
             clean_response,
         ).strip()
+        # Also catch standalone "con quién hablo?" variants
+        clean_response = re.sub(
+            r'[Cc]on\s+qui[eé]n\s+hablo[?.!]*\s*',
+            '',
+            clean_response,
+        ).strip()
+        # If stripping left nothing useful, don't send empty
+        if not clean_response:
+            logger.warning("Safety net stripped entire response for %s — skipping send", identifier)
+            return
 
     # Detect Drive URLs — download photos and send as images
     drive_urls = drive_photos.extract_drive_urls(clean_response)
@@ -600,16 +616,20 @@ def _enqueue_meta(sender_id: str, text: str, channel: str):
         if key in _pending_meta:
             _pending_meta[key]["timer"].cancel()
             _pending_meta[key]["texts"].append(text)
+            _pending_meta[key]["gen"] += 1
         else:
-            _pending_meta[key] = {"texts": [text], "channel": channel, "sender_id": sender_id}
-        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[key])
+            _pending_meta[key] = {"texts": [text], "channel": channel, "sender_id": sender_id, "gen": 0}
+        gen = _pending_meta[key]["gen"]
+        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[key, gen])
         _pending_meta[key]["timer"] = timer
         timer.start()
 
 
-def _flush_meta(key):
+def _flush_meta(key, gen: int):
     with _pending_meta_lock:
         if key not in _pending_meta:
+            return
+        if _pending_meta[key]["gen"] != gen:
             return
         payload = _pending_meta.pop(key)
         texts = payload["texts"]
