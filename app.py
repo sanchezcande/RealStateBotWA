@@ -656,6 +656,8 @@ def _flush_meta(key, gen: int):
 def health():
     checks = {"api": "ok"}
     checks["database"] = "ok" if analytics.health_check() else "error"
+    checks["volume"] = "ok" if os.path.isdir("/data") else "NO VOLUME - DATA WILL BE LOST ON REDEPLOY"
+    checks["db_path"] = analytics._DB_PATH
     all_ok = all(v == "ok" for v in checks.values())
     return jsonify({"status": "ok" if all_ok else "degraded", "checks": checks}), 200 if all_ok else 503
 
