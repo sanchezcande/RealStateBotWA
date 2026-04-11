@@ -635,33 +635,45 @@ def health_whatsapp():
         result["phone"] = r.json()
     except Exception as e:
         result["phone"] = {"error": str(e)}
-    # 2. WABA ID from phone number
+    # 2. Debug token to find app/business info
     try:
         r = requests.get(
-            f"https://graph.facebook.com/v21.0/{phone_id}/whatsapp_business_account",
+            f"https://graph.facebook.com/v21.0/debug_token",
+            params={"input_token": token},
             headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
-        waba_data = r.json()
-        result["waba"] = waba_data
-        waba_id = waba_data.get("id")
-        if waba_id:
-            # 3. Check subscribed apps for this WABA
-            r2 = requests.get(
-                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=10,
-            )
-            result["subscribed_apps"] = r2.json()
-            # 4. Try to subscribe the app (in case it's not subscribed)
-            r3 = requests.post(
-                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=10,
-            )
-            result["subscribe_result"] = r3.json()
+        result["token_debug"] = r.json()
     except Exception as e:
-        result["waba"] = {"error": str(e)}
+        result["token_debug"] = {"error": str(e)}
+    # 3. Try to get WABA via app's WABA list
+    try:
+        r = requests.get(
+            f"https://graph.facebook.com/v21.0/app/whatsapp_business_accounts",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10,
+        )
+        result["app_wabas"] = r.json()
+        # If we found WABAs, check subscriptions for each
+        wabas = r.json().get("data", [])
+        for waba in wabas:
+            waba_id = waba.get("id")
+            if waba_id:
+                r2 = requests.get(
+                    f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10,
+                )
+                result[f"waba_{waba_id}_subs"] = r2.json()
+                # Auto-subscribe
+                r3 = requests.post(
+                    f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+                    headers={"Authorization": f"Bearer {token}"},
+                    timeout=10,
+                )
+                result[f"waba_{waba_id}_subscribe"] = r3.json()
+    except Exception as e:
+        result["app_wabas"] = {"error": str(e)}
     return jsonify(result), 200
 
 
