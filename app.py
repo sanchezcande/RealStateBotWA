@@ -356,15 +356,23 @@ def _extract_property_type(text: str):
 
 def _extract_name(text: str):
     """Detect user's name from common Spanish self-introduction patterns."""
+    _NOT_NAMES = {"buenas", "buen", "bueno", "buenos", "hola", "bien", "todo", "algo",
+                  "como", "esta", "este", "esto", "eso", "esa", "que", "una", "uno",
+                  "con", "por", "para", "muy", "mas", "les", "los", "las", "del",
+                  "dia", "tarde", "noche", "aca", "ahi", "alla"}
     patterns = [
-        r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
-        r"(?:habla|te escribe|les escribe|te contacta|de parte de|acá)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
-        r"(?:les\s+habla|acá\s+habla)\s+([A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]{1,20})",
+        r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
+        r"(?:habla|te escribe|les escribe|te contacta|de parte de)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
+        r"(?:les\s+habla|acá\s+habla|aca\s+habla)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
+        r"^con\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})\s*[,.]?\s*$",
+        r"^con\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})[,]\s",
     ]
     for pattern in patterns:
         m = re.search(pattern, text, re.IGNORECASE)
         if m:
-            return m.group(1).capitalize()
+            name = m.group(1).lower()
+            if name not in _NOT_NAMES:
+                return m.group(1).capitalize()
     return None
 
 

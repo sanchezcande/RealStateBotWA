@@ -24,8 +24,10 @@ def _get_conn() -> sqlite3.Connection:
     global _conn
     if _conn is None:
         _conn = sqlite3.connect(_DB_PATH, check_same_thread=False, isolation_level=None)
-        _conn.execute("PRAGMA journal_mode=WAL")
-        _conn.execute("PRAGMA synchronous=FULL")  # FULL sync to prevent data loss on crash
+        # DELETE journal mode is more reliable on network/container volumes than WAL
+        _conn.execute("PRAGMA journal_mode=DELETE")
+        _conn.execute("PRAGMA synchronous=FULL")
+        logger.info("SQLite connection opened: %s", _DB_PATH)
     return _conn
 
 
@@ -213,7 +215,14 @@ def init_db():
         conn.execute("DELETE FROM media_jobs WHERE created_at < ?", (cutoff,))
     except Exception:
         pass
-    logger.info("Analytics DB initialised at %s", _DB_PATH)
+    # Startup diagnostic: log how much data survived the restart
+    try:
+        for tbl in ("chat_messages", "leads", "conversations", "events"):
+            cnt = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+            logger.info("DB startup: %s has %d rows", tbl, cnt)
+    except Exception:
+        pass
+    logger.info("Analytics DB initialised at %s (volume=%s)", _DB_PATH, os.path.isdir("/data"))
 
 
 def _purge_mock_data(conn):

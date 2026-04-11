@@ -98,7 +98,8 @@
                 <div class="msg-bubble" :class="{
                   'msg-user': m.role === 'user',
                   'msg-assistant': m.role === 'assistant',
-                  'msg-agent': m.role === 'agent'
+                  'msg-agent': m.role === 'agent',
+                  'msg-emoji-only': isEmojiOnly(m.content)
                 }" x-text="m.content"></div>
                 <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''">
                   <span x-show="m.role === 'agent'" class="agent-tag" x-text="t('agent_label')"></span>
@@ -125,11 +126,14 @@
                         :disabled="sending"></textarea>
               <div style="position:relative">
                 <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button">😊</button>
-                <div x-show="showEmoji" @click.outside="showEmoji=false" class="emoji-picker">
-                  <template x-for="e in emojis" :key="e">
-                    <button @click="replyText += e; showEmoji=false"
-                            class="emoji-pick" x-text="e"></button>
-                  </template>
+                <div x-show="showEmoji" x-transition @click.outside="showEmoji=false" class="emoji-picker">
+                  <div class="emoji-picker-header">Emojis</div>
+                  <div class="emoji-picker-grid">
+                    <template x-for="e in emojis" :key="e">
+                      <button @click="replyText += e; showEmoji=false"
+                              class="emoji-pick" x-text="e"></button>
+                    </template>
+                  </div>
                 </div>
               </div>
               <button class="btn-send" @click="sendReply()" :disabled="!replyText.trim() || sending">
@@ -163,8 +167,19 @@ function convViewer() {
     messages: [], leadInfo: null, loading: false,
     replyText: "", sending: false, botPaused: false,
     showEmoji: false,
-    emojis: ['👋','😊','👍','🏠','🔑','📍','📸','📅','✅','❌','⏰','💰','📞','🙏','😄','🤝','👀','💪','🎉','⭐','❤️','🔥','📝','🚗','🏡','🏢','🛏️','🚿','📐','🌳'],
+    emojis: [
+      '👋','😊','😄','🙏','🤝','👍','👀','💪','🎉','❤️','🔥','⭐',
+      '🏠','🏡','🏢','🔑','🛏️','🚿','📐','🌳','🚗','🏗️',
+      '📍','📅','⏰','📞','📸','📝','💰','✅','❌','➡️',
+    ],
     _pollTimer: null,
+
+    isEmojiOnly(text) {
+      if (!text) return false;
+      const stripped = text.replace(/[\s\uFE0F]/g, '');
+      const emojiRe = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)+$/u;
+      return stripped.length <= 12 && emojiRe.test(stripped);
+    },
 
     get totalPages() { return Math.max(1, Math.ceil(this.total / this.perPage)); },
 
