@@ -115,7 +115,7 @@
                 <span x-text="botPaused ? t('bot_paused') : t('bot_active')"></span>
               </label>
             </div>
-            <div class="conv-reply-input" style="position:relative">
+            <div class="conv-reply-input">
               <textarea x-model="replyText"
                         :placeholder="t('type_reply')"
                         @keydown.enter.exact.prevent="sendReply()"
@@ -123,17 +123,14 @@
                         rows="1"
                         maxlength="4000"
                         :disabled="sending"></textarea>
-              <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button"
-                      style="position:absolute;right:48px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px;opacity:0.6"
-                      @mouseover="$el.style.opacity='1'" @mouseout="$el.style.opacity='0.6'">😊</button>
-              <div x-show="showEmoji" @click.outside="showEmoji=false"
-                   style="position:absolute;bottom:100%;right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:4px;width:280px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:10">
-                <template x-for="e in emojis" :key="e">
-                  <button @click="replyText += e; showEmoji=false; $refs.replyInput && $refs.replyInput.focus()"
-                          style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px;border-radius:6px"
-                          @mouseover="$el.style.background='var(--border)'" @mouseout="$el.style.background='none'"
-                          x-text="e"></button>
-                </template>
+              <div style="position:relative">
+                <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button">😊</button>
+                <div x-show="showEmoji" @click.outside="showEmoji=false" class="emoji-picker">
+                  <template x-for="e in emojis" :key="e">
+                    <button @click="replyText += e; showEmoji=false"
+                            class="emoji-pick" x-text="e"></button>
+                  </template>
+                </div>
               </div>
               <button class="btn-send" @click="sendReply()" :disabled="!replyText.trim() || sending">
                 <template x-if="!sending">
