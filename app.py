@@ -646,45 +646,29 @@ def health_whatsapp():
         result["token_debug"] = r.json()
     except Exception as e:
         result["token_debug"] = {"error": str(e)}
-    # 3. Get business from system user, then find WABAs
+    # 3. Try multiple paths to find WABA and subscribe
     user_id = result.get("token_debug", {}).get("data", {}).get("user_id")
+    app_id = result.get("token_debug", {}).get("data", {}).get("app_id")
+    hdrs = {"Authorization": f"Bearer {token}"}
+    # Path A: system user's WABAs
     try:
-        # Get business ID from system user
-        r = requests.get(
-            f"https://graph.facebook.com/v21.0/{user_id}",
-            params={"fields": "business"},
-            headers={"Authorization": f"Bearer {token}"},
-            timeout=10,
-        )
-        result["user_business"] = r.json()
-        biz_id = r.json().get("business", {}).get("id")
-        if biz_id:
-            # Get WABAs owned by this business
-            r2 = requests.get(
-                f"https://graph.facebook.com/v21.0/{biz_id}/owned_whatsapp_business_accounts",
-                headers={"Authorization": f"Bearer {token}"},
-                timeout=10,
-            )
-            result["business_wabas"] = r2.json()
-            for waba in r2.json().get("data", []):
-                waba_id = waba.get("id")
-                if waba_id:
-                    # Check current subscriptions
-                    r3 = requests.get(
-                        f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
-                        headers={"Authorization": f"Bearer {token}"},
-                        timeout=10,
-                    )
-                    result[f"waba_{waba_id}_subs"] = r3.json()
-                    # AUTO-SUBSCRIBE the app to this WABA
-                    r4 = requests.post(
-                        f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
-                        headers={"Authorization": f"Bearer {token}"},
-                        timeout=10,
-                    )
-                    result[f"waba_{waba_id}_subscribe"] = r4.json()
+        r = requests.get(f"https://graph.facebook.com/v21.0/{user_id}/whatsapp_business_accounts", headers=hdrs, timeout=10)
+        result["user_wabas"] = r.json()
+        for waba in r.json().get("data", []):
+            waba_id = waba.get("id")
+            if waba_id:
+                r2 = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+                result[f"waba_{waba_id}_subs"] = r2.json()
+                r3 = requests.post(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+                result[f"waba_{waba_id}_subscribe"] = r3.json()
     except Exception as e:
-        result["user_business"] = {"error": str(e)}
+        result["user_wabas"] = {"error": str(e)}
+    # Path B: app subscriptions
+    try:
+        r = requests.get(f"https://graph.facebook.com/v21.0/{app_id}/subscriptions", headers=hdrs, timeout=10)
+        result["app_subscriptions"] = r.json()
+    except Exception as e:
+        result["app_subscriptions"] = {"error": str(e)}
     return jsonify(result), 200
 
 
