@@ -32,6 +32,15 @@ analytics.init_db()
 import followup
 followup.start()
 
+# Graceful shutdown: checkpoint SQLite WAL so no data is lost on redeploy
+import signal
+import atexit
+atexit.register(analytics.shutdown_db)
+def _handle_sigterm(*_):
+    analytics.shutdown_db()
+    raise SystemExit(0)
+signal.signal(signal.SIGTERM, _handle_sigterm)
+
 # Register dashboard blueprints
 from dashboard_routes import dashboard as dashboard_bp
 from dashboard_api import api as dashboard_api_bp
@@ -660,6 +669,7 @@ def health():
     # Informational (not part of health check)
     checks["volume"] = "mounted" if os.path.isdir("/data") else "NOT MOUNTED - data lost on redeploy"
     checks["db_path"] = analytics._DB_PATH
+    checks["db_stats"] = analytics.db_stats()
     return jsonify({"status": "ok" if all_ok else "degraded", "checks": checks}), 200 if all_ok else 503
 
 

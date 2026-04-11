@@ -25,8 +25,39 @@ def _get_conn() -> sqlite3.Connection:
     if _conn is None:
         _conn = sqlite3.connect(_DB_PATH, check_same_thread=False, isolation_level=None)
         _conn.execute("PRAGMA journal_mode=WAL")
-        _conn.execute("PRAGMA synchronous=NORMAL")
+        _conn.execute("PRAGMA synchronous=FULL")  # FULL sync to prevent data loss on crash
     return _conn
+
+
+def shutdown_db():
+    """Checkpoint WAL and close connection. Call on app shutdown."""
+    global _conn
+    with _db_lock:
+        if _conn:
+            try:
+                _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                _conn.close()
+                logger.info("DB shutdown: WAL checkpointed and connection closed")
+            except Exception as e:
+                logger.error("DB shutdown error: %s", e)
+            _conn = None
+
+
+def db_stats() -> dict:
+    """Return row counts for all tables (diagnostic)."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            tables = ["chat_messages", "leads", "conversations", "events", "visits"]
+            counts = {}
+            for t in tables:
+                try:
+                    counts[t] = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+                except Exception:
+                    counts[t] = -1
+            return counts
+    except Exception as e:
+        return {"error": str(e)}
 
 
 def init_db():
