@@ -879,6 +879,33 @@ def run_vera_status():
     return jsonify(payload), 200
 
 
+@app.get("/health/volume-test")
+def volume_test():
+    """Test if files persist on the volume across deploys."""
+    marker = "/data/.persistence_marker"
+    result = {}
+    # Read existing marker
+    if os.path.exists(marker):
+        with open(marker, "r") as f:
+            result["previous_marker"] = f.read().strip()
+        result["persisted"] = True
+    else:
+        result["previous_marker"] = None
+        result["persisted"] = False
+    # Write new marker with current timestamp
+    import datetime
+    now = datetime.datetime.utcnow().isoformat()
+    with open(marker, "w") as f:
+        f.write(now)
+    result["current_marker"] = now
+    # List /data directory
+    try:
+        result["data_files"] = os.listdir("/data")
+    except Exception as e:
+        result["data_files"] = str(e)
+    return jsonify(result), 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
 
