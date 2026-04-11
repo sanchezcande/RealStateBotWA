@@ -149,12 +149,18 @@ def init_db():
             );
             CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
         """)
-        # Seed mock data ONLY when explicitly requested via SEED_DEMO_DATA=true.
-        # Skipped for in-memory DBs (tests).
+        # Purge any leftover demo/mock data (demo phone hashes) on every startup.
+        _purge_mock_data(conn)
+
+        # Seed mock data ONLY when explicitly requested AND not in production.
         if _DB_PATH != ":memory:":
+            is_production = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_SERVICE_ID"))
             force_seed = os.environ.get("SEED_DEMO_DATA", "").lower() in ("true", "1", "yes")
-            logger.info("SEED_DEMO_DATA=%s, force_seed=%s", os.environ.get("SEED_DEMO_DATA", ""), force_seed)
-            if force_seed:
+            logger.info("SEED_DEMO_DATA=%s, force_seed=%s, is_production=%s",
+                        os.environ.get("SEED_DEMO_DATA", ""), force_seed, is_production)
+            if force_seed and is_production:
+                logger.warning("SEED_DEMO_DATA ignored in production environment!")
+            elif force_seed:
                 count = conn.execute("SELECT COUNT(*) FROM events").fetchone()[0]
                 if count > 0:
                     for tbl in ("events", "conversations", "chat_messages", "leads", "visits"):
@@ -177,6 +183,32 @@ def init_db():
     except Exception:
         pass
     logger.info("Analytics DB initialised at %s", _DB_PATH)
+
+
+def _purge_mock_data(conn):
+    """Remove all rows associated with demo phone numbers (5491100000000–5491100000024)."""
+    demo_hashes = [_hash_phone(str(5491100000000 + i)) for i in range(25)]
+    if not demo_hashes:
+        return
+    placeholders = ",".join("?" * len(demo_hashes))
+    tables_with_hash = ["events", "conversations", "leads", "visits"]
+    total = 0
+    for tbl in tables_with_hash:
+        try:
+            cur = conn.execute(f"DELETE FROM {tbl} WHERE phone_hash IN ({placeholders})", demo_hashes)
+            total += cur.rowcount
+        except Exception:
+            pass
+    # chat_messages uses raw phone, not hash
+    demo_phones = [str(5491100000000 + i) for i in range(25)]
+    pp = ",".join("?" * len(demo_phones))
+    try:
+        cur = conn.execute(f"DELETE FROM chat_messages WHERE phone IN ({pp})", demo_phones)
+        total += cur.rowcount
+    except Exception:
+        pass
+    if total:
+        logger.info("Purged %d demo/mock rows from database", total)
 
 
 def _seed_mock_data(conn):

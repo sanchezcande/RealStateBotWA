@@ -30,8 +30,20 @@ def _normalize_ar_number(phone: str) -> str:
     return phone
 
 
+_DEMO_PREFIX = "54110000"  # Demo phone range seeded by analytics mock data
+
+
+def _is_demo_number(phone: str) -> bool:
+    """Return True if *phone* belongs to the seeded demo range."""
+    normalized = _normalize_ar_number(phone)
+    return normalized.startswith(_DEMO_PREFIX)
+
+
 def send_message(to: str, text: str) -> bool:
     """Send a text message to a WhatsApp number. Returns True on success."""
+    if _is_demo_number(to):
+        logger.warning("Blocked message to demo number %s", to)
+        return False
     to = _normalize_ar_number(to)
     token = _get_token()
     token_preview = token[:20] if token else "(empty)"
@@ -75,6 +87,9 @@ def send_message(to: str, text: str) -> bool:
 
 def send_image(to: str, image_data: bytes, mime_type: str = "image/jpeg", caption: str = None) -> bool:
     """Upload an image to Meta and send it as a WhatsApp image message."""
+    if _is_demo_number(to):
+        logger.warning("Blocked image to demo number %s", to)
+        return False
     to = _normalize_ar_number(to)
     token = _get_token()
     if not token:
