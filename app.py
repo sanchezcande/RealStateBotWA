@@ -86,10 +86,25 @@ def verify_webhook():
 # Incoming messages (POST)
 # ---------------------------------------------------------------------------
 
+# In-memory webhook log for debugging (last 20 payloads)
+_webhook_log: list = []
+_webhook_log_lock = threading.Lock()
+
 @app.post("/webhook")
 def receive_message():
     data = request.get_json(silent=True) or {}
     logger.info("Webhook POST received: %s", json.dumps(data)[:500])
+
+    # Store for debugging
+    import datetime
+    with _webhook_log_lock:
+        _webhook_log.append({
+            "ts": datetime.datetime.utcnow().isoformat(),
+            "payload": json.dumps(data)[:2000],
+            "headers": {k: v for k, v in request.headers if k.lower().startswith(("x-hub", "content", "user-agent"))},
+        })
+        if len(_webhook_log) > 20:
+            _webhook_log.pop(0)
 
     # Always return 200 quickly so Meta doesn't retry
     try:
@@ -98,6 +113,13 @@ def receive_message():
         logger.error("Error processing webhook payload: %s", e, exc_info=True)
 
     return jsonify({"status": "ok"}), 200
+
+
+@app.get("/health/webhook-log")
+def webhook_log():
+    """Show last 20 webhook payloads received (debug only)."""
+    with _webhook_log_lock:
+        return jsonify({"count": len(_webhook_log), "entries": list(_webhook_log)}), 200
 
 
 def _process_payload(data: dict):
