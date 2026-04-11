@@ -2,7 +2,7 @@
 {% block title %}PropBot — {{ "Conversations" if request.args.get('lang') == 'en' else "Conversaciones" }}{% endblock %}
 
 {% block content %}
-<div x-data="convViewer()" x-init="loadList()">
+<div x-data="convViewer()" x-init="loadList(); _startListPoll()">
   <section class="subpage-hero">
     <div>
       <span class="section-kicker">Seguimiento de conversaciones</span>
@@ -127,12 +127,35 @@
               <div style="position:relative">
                 <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button">😊</button>
                 <div x-show="showEmoji" x-transition @click.outside="showEmoji=false" class="emoji-picker">
-                  <div class="emoji-picker-header">Emojis</div>
-                  <div class="emoji-picker-grid">
-                    <template x-for="e in emojis" :key="e">
-                      <button @click="replyText += e; showEmoji=false"
-                              class="emoji-pick" x-text="e"></button>
-                    </template>
+                  <div class="emoji-picker-header">Reacciones rápidas</div>
+                  <div class="emoji-picker-body">
+                    <div class="emoji-picker-section">
+                      <div class="emoji-section-label">Caras & gestos</div>
+                      <div class="emoji-picker-grid">
+                        <template x-for="e in emojis.slice(0,20)" :key="'a'+e">
+                          <button @click="replyText += e; showEmoji=false"
+                                  class="emoji-pick" x-text="e"></button>
+                        </template>
+                      </div>
+                    </div>
+                    <div class="emoji-picker-section">
+                      <div class="emoji-section-label">Inmobiliario</div>
+                      <div class="emoji-picker-grid">
+                        <template x-for="e in emojis.slice(20,30)" :key="'b'+e">
+                          <button @click="replyText += e; showEmoji=false"
+                                  class="emoji-pick" x-text="e"></button>
+                        </template>
+                      </div>
+                    </div>
+                    <div class="emoji-picker-section">
+                      <div class="emoji-section-label">Acciones</div>
+                      <div class="emoji-picker-grid">
+                        <template x-for="e in emojis.slice(30)" :key="'c'+e">
+                          <button @click="replyText += e; showEmoji=false"
+                                  class="emoji-pick" x-text="e"></button>
+                        </template>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -168,7 +191,8 @@ function convViewer() {
     replyText: "", sending: false, botPaused: false,
     showEmoji: false,
     emojis: [
-      '👋','😊','😄','🙏','🤝','👍','👀','💪','🎉','❤️','🔥','⭐',
+      '😊','😄','😍','🥰','😂','🤩','😎','🤔','👋','🙏',
+      '👍','👎','🤝','💪','👀','❤️','🔥','⭐','🎉','✨',
       '🏠','🏡','🏢','🔑','🛏️','🚿','📐','🌳','🚗','🏗️',
       '📍','📅','⏰','📞','📸','📝','💰','✅','❌','➡️',
     ],
@@ -176,9 +200,10 @@ function convViewer() {
 
     isEmojiOnly(text) {
       if (!text) return false;
-      const stripped = text.replace(/[\s\uFE0F]/g, '');
-      const emojiRe = /^(?:\p{Emoji_Presentation}|\p{Emoji}\uFE0F)+$/u;
-      return stripped.length <= 12 && emojiRe.test(stripped);
+      const t = text.trim();
+      if (t.length > 20 || t.length === 0) return false;
+      const noEmoji = t.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F\u200D\u20E3\u{E0020}-\u{E007F}\u{1F3FB}-\u{1F3FF}\s]/gu, '');
+      return noEmoji.length === 0;
     },
 
     get totalPages() { return Math.max(1, Math.ceil(this.total / this.perPage)); },
@@ -237,11 +262,15 @@ function convViewer() {
       });
     },
 
+    _startListPoll() {
+      // Always poll the list, even without a conversation selected
+      setInterval(() => { this.loadList(); }, 5000);
+    },
+
     _startPoll() {
       if (this._pollTimer) clearInterval(this._pollTimer);
       this._pollTimer = setInterval(() => {
         this._loadMessages();
-        this.loadList();  // also refresh the list (new messages, previews)
       }, 5000);
     },
 
