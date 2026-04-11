@@ -638,14 +638,13 @@ def health_whatsapp():
     # 2. WABA ID from phone number
     try:
         r = requests.get(
-            f"https://graph.facebook.com/v21.0/{phone_id}",
-            params={"fields": "wabaId:whatsapp_business_account{id,name,message_template_namespace,on_behalf_of_business_info}"},
+            f"https://graph.facebook.com/v21.0/{phone_id}/whatsapp_business_account",
             headers={"Authorization": f"Bearer {token}"},
             timeout=10,
         )
         waba_data = r.json()
         result["waba"] = waba_data
-        waba_id = waba_data.get("whatsapp_business_account", {}).get("id")
+        waba_id = waba_data.get("id")
         if waba_id:
             # 3. Check subscribed apps for this WABA
             r2 = requests.get(
@@ -654,6 +653,13 @@ def health_whatsapp():
                 timeout=10,
             )
             result["subscribed_apps"] = r2.json()
+            # 4. Try to subscribe the app (in case it's not subscribed)
+            r3 = requests.post(
+                f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=10,
+            )
+            result["subscribe_result"] = r3.json()
     except Exception as e:
         result["waba"] = {"error": str(e)}
     return jsonify(result), 200
