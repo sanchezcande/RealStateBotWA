@@ -672,6 +672,25 @@ def health_whatsapp():
     return jsonify(result), 200
 
 
+@app.get("/health/waba-subscribe")
+def waba_subscribe():
+    """Subscribe app to WABA for webhook delivery."""
+    token = os.environ.get("WHATSAPP_TOKEN", "")
+    waba_id = request.args.get("waba_id", "1921482308505030")
+    hdrs = {"Authorization": f"Bearer {token}"}
+    result = {}
+    # Check current subscriptions
+    r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+    result["current_subs"] = r.json()
+    # Subscribe
+    r2 = requests.post(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+    result["subscribe_result"] = r2.json()
+    # Verify
+    r3 = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+    result["after_subscribe"] = r3.json()
+    return jsonify(result), 200
+
+
 @app.get("/health/deepseek")
 def health_deepseek():
     """
