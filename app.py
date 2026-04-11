@@ -10,7 +10,7 @@ import time
 import threading
 import requests
 from flask import Flask, request, jsonify, render_template
-from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY, ASSET_VERSION
+from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY, ASSET_VERSION, PHONE_NUMBER_ID
 import analytics
 import conversations
 import ai
