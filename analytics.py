@@ -1,6 +1,6 @@
 """
 Analytics event store.
-Persists bot events to SQLite for the dashboard.
+Persists bot events to PostgreSQL (preferred) or SQLite (fallback).
 """
 from __future__ import annotations
 
@@ -9,46 +9,110 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from decimal import Decimal
 from typing import Optional
 
 from config import AR_TZ, ANALYTICS_DB_PATH
 
 logger = logging.getLogger(__name__)
-_DB_PATH = ANALYTICS_DB_PATH
-_conn: Optional[sqlite3.Connection] = None
-_conn_pid: Optional[int] = None  # PID that opened the connection
+
+# ── Database backend selection ──
+# If DATABASE_URL is set (Railway PostgreSQL addon), use PostgreSQL.
+# Otherwise fall back to SQLite at ANALYTICS_DB_PATH.
+DATABASE_URL = os.environ.get("DATABASE_URL")
+_USE_PG = bool(DATABASE_URL)
+_DB_PATH = ANALYTICS_DB_PATH  # only used for SQLite fallback
+
+_conn = None
+_conn_pid: Optional[int] = None
 _db_lock = threading.Lock()
-_startup_diag: dict = {}  # filled by init_db(), exposed via /health/startup-diag
+_startup_diag: dict = {}
+
+# Auto-increment primary key syntax differs between backends
+_AUTO_PK = "SERIAL PRIMARY KEY" if _USE_PG else "INTEGER PRIMARY KEY AUTOINCREMENT"
 
 
-def _get_conn() -> sqlite3.Connection:
+def _pg_val(v):
+    """Convert PostgreSQL-specific types to JSON-serializable Python types."""
+    if isinstance(v, date):
+        return v.isoformat() if isinstance(v, datetime) else str(v)
+    if isinstance(v, Decimal):
+        return float(v)
+    if isinstance(v, memoryview):
+        return bytes(v)
+    return v
+
+
+class _PgConn:
+    """Wraps a psycopg2 connection to match sqlite3's conn.execute() API.
+
+    This lets us keep ALL existing SQL queries unchanged — the wrapper
+    transparently translates ? placeholders to %s for PostgreSQL.
+    """
+
+    def __init__(self, dsn: str):
+        import psycopg2
+        self._conn = psycopg2.connect(dsn)
+        self._conn.autocommit = True
+
+    def execute(self, sql: str, params=None):
+        sql = sql.replace("?", "%s")
+        cur = self._conn.cursor()
+        cur.execute(sql, params or ())
+        return _PgCursor(cur)
+
+    def close(self):
+        self._conn.close()
+
+
+class _PgCursor:
+    """Wraps psycopg2 cursor to convert PG types to SQLite-compatible types."""
+
+    def __init__(self, cur):
+        self._cur = cur
+
+    def fetchone(self):
+        row = self._cur.fetchone()
+        return tuple(_pg_val(v) for v in row) if row else None
+
+    def fetchall(self):
+        return [tuple(_pg_val(v) for v in row) for row in self._cur.fetchall()]
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+
+def _get_conn():
     global _conn, _conn_pid
     current_pid = os.getpid()
-    # Detect fork: if connection was opened in a parent process (gunicorn master),
-    # discard it — SQLite connections MUST NOT be used across fork().
     if _conn is not None and _conn_pid != current_pid:
-        logger.info("Fork detected (parent=%s, worker=%s) — reopening SQLite connection", _conn_pid, current_pid)
-        _conn = None  # don't close — the fd belongs to the parent
+        logger.info("Fork detected (parent=%s, worker=%s) — reopening DB connection", _conn_pid, current_pid)
+        _conn = None
     if _conn is None:
-        _conn = sqlite3.connect(_DB_PATH, check_same_thread=False, isolation_level=None)
+        if _USE_PG:
+            _conn = _PgConn(DATABASE_URL)
+            logger.info("PostgreSQL connection opened (pid=%d)", current_pid)
+        else:
+            _conn = sqlite3.connect(_DB_PATH, check_same_thread=False, isolation_level=None)
+            _conn.execute("PRAGMA journal_mode=DELETE")
+            _conn.execute("PRAGMA synchronous=FULL")
+            logger.info("SQLite connection opened: %s (pid=%d)", _DB_PATH, current_pid)
         _conn_pid = current_pid
-        # DELETE journal mode is more reliable on network/container volumes than WAL
-        _conn.execute("PRAGMA journal_mode=DELETE")
-        _conn.execute("PRAGMA synchronous=FULL")
-        logger.info("SQLite connection opened: %s (pid=%d)", _DB_PATH, current_pid)
     return _conn
 
 
 def shutdown_db():
-    """Checkpoint WAL and close connection. Call on app shutdown."""
+    """Close connection cleanly. Call on app shutdown."""
     global _conn
     with _db_lock:
         if _conn:
             try:
-                _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+                if not _USE_PG:
+                    _conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
                 _conn.close()
-                logger.info("DB shutdown: WAL checkpointed and connection closed")
+                logger.info("DB shutdown: connection closed")
             except Exception as e:
                 logger.error("DB shutdown error: %s", e)
             _conn = None
@@ -66,6 +130,7 @@ def db_stats() -> dict:
                     counts[t] = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
                 except Exception:
                     counts[t] = -1
+            counts["backend"] = "postgresql" if _USE_PG else "sqlite"
             return counts
     except Exception as e:
         return {"error": str(e)}
@@ -81,54 +146,54 @@ def init_db():
         logger.info("init_db [%s]: %s", name, data)
 
     # ── Step 1: Check what exists BEFORE we touch anything ──
-    _step("db_path", _DB_PATH)
+    _step("backend", "postgresql" if _USE_PG else "sqlite")
     _step("pid", os.getpid())
-    _step("uid", os.getuid())
-    # Check if /data is on a different device than / (real mount vs same filesystem)
-    try:
-        root_dev = os.stat("/").st_dev
-        data_dev = os.stat("/data").st_dev if os.path.isdir("/data") else None
-        _step("device_check", {
-            "root_device": root_dev,
-            "data_device": data_dev,
-            "same_device": root_dev == data_dev,
-            "is_real_mount": root_dev != data_dev if data_dev else False,
-        })
-    except Exception as e:
-        _step("device_check_error", str(e))
-    _step("file_exists", os.path.isfile(_DB_PATH))
-    if os.path.isfile(_DB_PATH):
-        fsize = os.path.getsize(_DB_PATH)
-        _step("file_size_bytes", fsize)
+
+    if _USE_PG:
+        _step("database_url", DATABASE_URL[:30] + "..." if DATABASE_URL else None)
+        # Check if PG has existing data from previous deploys
         try:
-            tmp = sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
+            import psycopg2
+            tmp = psycopg2.connect(DATABASE_URL)
+            tmp.autocommit = True
+            cur = tmp.cursor()
             pre = {}
             for tbl in ("chat_messages", "leads", "conversations", "events"):
                 try:
-                    pre[tbl] = tmp.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+                    cur.execute(f"SELECT COUNT(*) FROM {tbl}")
+                    pre[tbl] = cur.fetchone()[0]
                 except Exception:
                     pre[tbl] = "table_missing"
+                    tmp.rollback()
             tmp.close()
             _step("pre_init_rows", pre)
         except Exception as e:
             _step("pre_init_read_error", str(e))
-
-    marker_path = os.path.join(os.path.dirname(_DB_PATH) or ".", ".persistence_marker")
-    if os.path.isfile(marker_path):
-        with open(marker_path) as f:
-            _step("marker_from_prev_deploy", f.read().strip())
     else:
-        _step("marker_from_prev_deploy", None)
+        _step("db_path", _DB_PATH)
+        _step("file_exists", os.path.isfile(_DB_PATH))
+        if os.path.isfile(_DB_PATH):
+            _step("file_size_bytes", os.path.getsize(_DB_PATH))
+            try:
+                tmp = sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
+                pre = {}
+                for tbl in ("chat_messages", "leads", "conversations", "events"):
+                    try:
+                        pre[tbl] = tmp.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+                    except Exception:
+                        pre[tbl] = "table_missing"
+                tmp.close()
+                _step("pre_init_rows", pre)
+            except Exception as e:
+                _step("pre_init_read_error", str(e))
 
     # ── Step 2: Open connection and create tables ──
     with _db_lock:
         conn = _get_conn()
 
-        # Use individual execute() instead of executescript() to avoid any
-        # implicit COMMIT/transaction behavior that might interfere.
         _ddl = [
-            """CREATE TABLE IF NOT EXISTS events (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL,
+            f"""CREATE TABLE IF NOT EXISTS events (
+                id {_AUTO_PK}, event_type TEXT NOT NULL,
                 phone_hash TEXT NOT NULL, channel TEXT DEFAULT 'whatsapp',
                 property TEXT, operation TEXT, property_type TEXT,
                 hour INTEGER, created_at TEXT NOT NULL)""",
@@ -140,8 +205,8 @@ def init_db():
                 first_seen_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
                 message_count INTEGER DEFAULT 0, became_lead INTEGER DEFAULT 0,
                 visit_count INTEGER DEFAULT 0, operation TEXT, property_type TEXT)""",
-            """CREATE TABLE IF NOT EXISTS chat_messages (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL,
+            f"""CREATE TABLE IF NOT EXISTS chat_messages (
+                id {_AUTO_PK}, phone TEXT NOT NULL,
                 phone_hash TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL,
                 channel TEXT DEFAULT 'whatsapp', created_at TEXT NOT NULL)""",
             "CREATE INDEX IF NOT EXISTS idx_chat_phone ON chat_messages(phone)",
@@ -154,8 +219,8 @@ def init_db():
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
             "CREATE INDEX IF NOT EXISTS idx_leads_hash ON leads(phone_hash)",
             "CREATE INDEX IF NOT EXISTS idx_leads_updated ON leads(updated_at)",
-            """CREATE TABLE IF NOT EXISTS visits (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL,
+            f"""CREATE TABLE IF NOT EXISTS visits (
+                id {_AUTO_PK}, phone TEXT NOT NULL,
                 phone_hash TEXT NOT NULL, client_name TEXT,
                 property_title TEXT NOT NULL, address TEXT,
                 visit_date TEXT NOT NULL, visit_time TEXT NOT NULL,
@@ -172,12 +237,12 @@ def init_db():
                 prompt TEXT DEFAULT '', result_path TEXT, result_url TEXT,
                 error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
             "CREATE INDEX IF NOT EXISTS idx_media_jobs_created ON media_jobs(created_at)",
-            """CREATE TABLE IF NOT EXISTS media_usage (
-                id INTEGER PRIMARY KEY AUTOINCREMENT, month TEXT NOT NULL,
+            f"""CREATE TABLE IF NOT EXISTS media_usage (
+                id {_AUTO_PK}, month TEXT NOT NULL UNIQUE,
                 videos_used INTEGER DEFAULT 0, videos_purchased INTEGER DEFAULT 0,
-                updated_at TEXT NOT NULL, UNIQUE(month))""",
-            """CREATE TABLE IF NOT EXISTS payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                updated_at TEXT NOT NULL)""",
+            f"""CREATE TABLE IF NOT EXISTS payments (
+                id {_AUTO_PK},
                 payment_id TEXT UNIQUE NOT NULL,
                 provider TEXT NOT NULL DEFAULT 'mercadopago',
                 status TEXT NOT NULL DEFAULT 'pending',
@@ -250,19 +315,10 @@ def init_db():
         except Exception:
             final[tbl] = -1
     _step("final_rows", final)
-    _step("ismount", os.path.ismount("/data"))
-    _step("isdir", os.path.isdir("/data"))
-
-    # Write persistence marker
-    try:
-        with open(marker_path, "w") as f:
-            f.write(f"written at {datetime.now().isoformat()} by init_db")
-        _step("marker_written", True)
-    except Exception as e:
-        _step("marker_write_error", str(e))
+    _step("backend_active", "postgresql" if _USE_PG else "sqlite")
 
     _startup_diag = diag
-    logger.info("init_db complete. Diag: %s", diag)
+    logger.info("init_db complete (%s). Diag: %s", "PG" if _USE_PG else "SQLite", diag)
 
 
 def _purge_mock_data(conn):
