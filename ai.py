@@ -317,17 +317,21 @@ def get_reply(messages: list, lead: dict = None) -> str:
     # This is much harder for the model to ignore than appending to the main system prompt.
     reminder_lines = []
 
+    def _sanitize(val: str, max_len: int = 60) -> str:
+        """Strip newlines and limit length to prevent prompt injection via lead data."""
+        return val.replace("\n", " ").replace("\r", " ").strip()[:max_len]
+
     if lead:
         if lead.get("name"):
-            reminder_lines.append(f"- Nombre del cliente: {lead['name']}")
+            reminder_lines.append(f"- Nombre del cliente: {_sanitize(lead['name'], 30)}")
         if lead.get("operation"):
-            reminder_lines.append(f"- Operación YA CONFIRMADA: {lead['operation']} — JAMÁS volver a preguntar esto")
+            reminder_lines.append(f"- Operación YA CONFIRMADA: {_sanitize(lead['operation'])} — JAMÁS volver a preguntar esto")
         if lead.get("property_type"):
-            reminder_lines.append(f"- Tipo de propiedad YA CONFIRMADO: {lead['property_type']} — JAMÁS volver a preguntar esto")
+            reminder_lines.append(f"- Tipo de propiedad YA CONFIRMADO: {_sanitize(lead['property_type'])} — JAMÁS volver a preguntar esto")
         if lead.get("budget"):
-            reminder_lines.append(f"- Presupuesto YA CONFIRMADO: {lead['budget']} — JAMÁS volver a preguntar esto")
+            reminder_lines.append(f"- Presupuesto YA CONFIRMADO: {_sanitize(lead['budget'])} — JAMÁS volver a preguntar esto")
         if lead.get("timeline"):
-            reminder_lines.append(f"- Plazo YA CONFIRMADO: {lead['timeline']}")
+            reminder_lines.append(f"- Plazo YA CONFIRMADO: {_sanitize(lead['timeline'])}")
 
     if messages:
         last_assistant = next(

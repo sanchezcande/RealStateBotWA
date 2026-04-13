@@ -521,15 +521,18 @@ def _send_meta_message(recipient_id: str, text: str):
         )
         if not resp.ok:
             logger.error("Meta send API error %s: %s", resp.status_code, resp.text)
+            return False
+        return True
     except Exception as e:
         logger.error("Failed to send Meta message: %s", e)
+        return False
 
 
 def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "image/jpeg"):
     """Send an image via Meta Graph API (Facebook Messenger / Instagram Direct)."""
     if not PAGE_ACCESS_TOKEN:
         logger.warning("PAGE_ACCESS_TOKEN not set — cannot send Meta image.")
-        return
+        return False
     try:
         ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
         resp = requests.post(
@@ -546,8 +549,11 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
         )
         if not resp.ok:
             logger.error("Meta image API error %s: %s", resp.status_code, resp.text)
+            return False
+        return True
     except Exception as e:
         logger.error("Failed to send Meta image: %s", e)
+        return False
 
 
 def _get_meta_profile_name(sender_id: str) -> str | None:
@@ -784,14 +790,23 @@ def waba_subscribe():
     hdrs = {"Authorization": f"Bearer {token}"}
     result = {}
     # Check current subscriptions
-    r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
-    result["current_subs"] = r.json()
+    try:
+        r = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+        result["current_subs"] = r.json() if r.ok else {"error": f"HTTP {r.status_code}"}
+    except Exception as e:
+        result["current_subs"] = {"error": str(e)}
     # Subscribe
-    r2 = requests.post(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
-    result["subscribe_result"] = r2.json()
+    try:
+        r2 = requests.post(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+        result["subscribe_result"] = r2.json() if r2.ok else {"error": f"HTTP {r2.status_code}"}
+    except Exception as e:
+        result["subscribe_result"] = {"error": str(e)}
     # Verify
-    r3 = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
-    result["after_subscribe"] = r3.json()
+    try:
+        r3 = requests.get(f"https://graph.facebook.com/v21.0/{waba_id}/subscribed_apps", headers=hdrs, timeout=10)
+        result["after_subscribe"] = r3.json() if r3.ok else {"error": f"HTTP {r3.status_code}"}
+    except Exception as e:
+        result["after_subscribe"] = {"error": str(e)}
     return jsonify(result), 200
 
 

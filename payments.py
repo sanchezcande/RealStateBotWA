@@ -102,7 +102,7 @@ def _get_mp_sdk() -> mercadopago.SDK:
 def create_mp_checkout(count: int) -> dict:
     """Create a MercadoPago checkout preference."""
     sdk = _get_mp_sdk()
-    price_ars = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "35385"))
+    price_ars = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
     base_url = os.environ.get("BASE_URL", "")
     total = price_ars * count
 

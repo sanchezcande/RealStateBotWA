@@ -204,7 +204,8 @@ def init_db():
                 phone_hash TEXT PRIMARY KEY, channel TEXT DEFAULT 'whatsapp',
                 first_seen_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
                 message_count INTEGER DEFAULT 0, became_lead INTEGER DEFAULT 0,
-                visit_count INTEGER DEFAULT 0, operation TEXT, property_type TEXT)""",
+                visit_count INTEGER DEFAULT 0, operation TEXT, property_type TEXT,
+                agent_takeover_until TEXT)""",
             f"""CREATE TABLE IF NOT EXISTS chat_messages (
                 id {_AUTO_PK}, phone TEXT NOT NULL,
                 phone_hash TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL,
@@ -255,6 +256,16 @@ def init_db():
         for sql in _ddl:
             conn.execute(sql)
         _step("ddl_done", True)
+
+        # Migrations — add columns that may not exist yet
+        _migrations = [
+            ("conversations", "agent_takeover_until", "TEXT"),
+        ]
+        for tbl, col, col_type in _migrations:
+            try:
+                conn.execute(f"ALTER TABLE {tbl} ADD COLUMN {col} {col_type}")
+            except Exception:
+                pass  # Column already exists
 
         # Check rows right after DDL
         post_ddl = {}
@@ -972,6 +983,53 @@ def load_lead(phone: str) -> dict | None:
         return None
 
 
+def set_agent_takeover(phone_hash: str, until_ts: float):
+    """Persist agent takeover timestamp to DB."""
+    try:
+        until_str = datetime.fromtimestamp(until_ts, tz=AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+        with _db_lock:
+            conn = _get_conn()
+            conn.execute(
+                "UPDATE conversations SET agent_takeover_until = ? WHERE phone_hash = ?",
+                (until_str, phone_hash),
+            )
+    except Exception as e:
+        logger.error("analytics.set_agent_takeover error: %s", e)
+
+
+def clear_agent_takeover(phone_hash: str):
+    """Clear agent takeover in DB."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            conn.execute(
+                "UPDATE conversations SET agent_takeover_until = NULL WHERE phone_hash = ?",
+                (phone_hash,),
+            )
+    except Exception as e:
+        logger.error("analytics.clear_agent_takeover error: %s", e)
+
+
+def load_agent_takeover(phone_hash: str) -> float | None:
+    """Load agent takeover timestamp from DB. Returns unix timestamp or None."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                "SELECT agent_takeover_until FROM conversations WHERE phone_hash = ?",
+                (phone_hash,),
+            ).fetchone()
+        if row and row[0]:
+            from pytz import timezone as _tz
+            dt = datetime.strptime(row[0], "%Y-%m-%dT%H:%M:%S")
+            dt = AR_TZ.localize(dt)
+            return dt.timestamp()
+        return None
+    except Exception as e:
+        logger.error("analytics.load_agent_takeover error: %s", e)
+        return None
+
+
 def save_visit(phone: str, property_title: str, address: str, client_name: str,
                date_str: str, time_str: str, event_id: str | None = None,
                channel: str = "whatsapp"):
@@ -1278,7 +1336,7 @@ def get_visits_calendar(month: str) -> dict:
 
 FREE_VIDEOS_PER_MONTH = int(os.environ.get("FREE_VIDEOS_PER_MONTH", "4"))
 EXTRA_VIDEO_PRICE_USD = 25
-EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "35385"))
+EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
 
 
 def get_media_usage(month: str = "") -> dict:
@@ -1388,14 +1446,21 @@ def save_media_job(job: dict):
         now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
         with _db_lock:
             conn = _get_conn()
-            conn.execute("""
+            _upsert_sql = """
                 INSERT INTO media_jobs (id, type, status, progress, property, photo_count, prompt, result_path, result_url, error, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
+            """
+            if _USE_PG:
+                _upsert_sql += """ ON CONFLICT (id) DO UPDATE SET
+                    status=EXCLUDED.status, progress=EXCLUDED.progress,
+                    result_path=EXCLUDED.result_path, result_url=EXCLUDED.result_url,
+                    error=EXCLUDED.error, updated_at=EXCLUDED.updated_at"""
+            else:
+                _upsert_sql += """ ON CONFLICT(id) DO UPDATE SET
                     status=excluded.status, progress=excluded.progress,
                     result_path=excluded.result_path, result_url=excluded.result_url,
-                    error=excluded.error, updated_at=excluded.updated_at
-            """, (
+                    error=excluded.error, updated_at=excluded.updated_at"""
+            conn.execute(_upsert_sql, (
                 job.get("id"), job.get("type", ""),
                 job.get("status", "queued"), job.get("progress", ""),
                 job.get("property", ""), job.get("photo_count", 0),
@@ -1496,15 +1561,21 @@ def record_payment(
         now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
         with _db_lock:
             conn = _get_conn()
-            conn.execute("""
+            _upsert_sql = """
                 INSERT INTO payments
                     (payment_id, provider, status, amount, currency, video_count,
                      payer_email, external_ref, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(payment_id) DO UPDATE SET
+            """
+            if _USE_PG:
+                _upsert_sql += """ ON CONFLICT (payment_id) DO UPDATE SET
+                    status=EXCLUDED.status, amount=EXCLUDED.amount,
+                    payer_email=EXCLUDED.payer_email, updated_at=EXCLUDED.updated_at"""
+            else:
+                _upsert_sql += """ ON CONFLICT(payment_id) DO UPDATE SET
                     status=excluded.status, amount=excluded.amount,
-                    payer_email=excluded.payer_email, updated_at=excluded.updated_at
-            """, (payment_id, provider, status, amount, currency, video_count,
+                    payer_email=excluded.payer_email, updated_at=excluded.updated_at"""
+            conn.execute(_upsert_sql, (payment_id, provider, status, amount, currency, video_count,
                   payer_email, external_ref, now, now))
     except Exception as e:
         logger.error("analytics.record_payment error: %s", e)

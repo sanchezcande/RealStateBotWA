@@ -69,27 +69,27 @@ def get(phone: str) -> dict:
 
 
 def add_message(phone: str, role: str, content: str, channel: str = "whatsapp"):
+    # Persist to DB first so data is safe even if worker crashes
+    analytics.save_message(phone, role, content, channel=channel)
     with _lock:
         _ensure_loaded(phone)
         msgs = _store[phone]["messages"]
         msgs.append({"role": role, "content": content})
         if len(msgs) > MAX_HISTORY:
             _store[phone]["messages"] = msgs[-MAX_HISTORY:]
-    # Write-through to SQLite (outside lock to avoid holding it during IO)
-    analytics.save_message(phone, role, content, channel=channel)
 
 
 def update_lead(phone: str, **kwargs):
-    with _lock:
-        _ensure_loaded(phone)
-        _store[phone]["lead"].update(kwargs)
-    # Persist serializable lead fields to SQLite
+    # Persist to DB first so data is safe even if worker crashes
     db_fields = {}
     for col in ("name", "operation", "property_type", "budget", "timeline", "notified"):
         if col in kwargs and kwargs[col] is not None:
             db_fields[col] = kwargs[col]
     if db_fields:
         analytics.upsert_lead(phone, **db_fields)
+    with _lock:
+        _ensure_loaded(phone)
+        _store[phone]["lead"].update(kwargs)
 
 
 def get_lead(phone: str) -> dict:
@@ -110,26 +110,50 @@ _TAKEOVER_TTL = 30 * 60  # 30 minutes
 
 def set_agent_takeover(phone: str, duration: int = _TAKEOVER_TTL):
     """Pause AI auto-replies for this conversation."""
+    until = _time.time() + duration
     with _lock:
-        _agent_takeover[phone] = {"until": _time.time() + duration}
+        _agent_takeover[phone] = {"until": until}
+    # Persist to DB so it survives redeploy
+    try:
+        phone_hash = analytics._hash_phone(phone)
+        analytics.set_agent_takeover(phone_hash, until)
+    except Exception:
+        pass
 
 
 def clear_agent_takeover(phone: str):
     """Resume AI auto-replies for this conversation."""
     with _lock:
         _agent_takeover.pop(phone, None)
+    try:
+        phone_hash = analytics._hash_phone(phone)
+        analytics.clear_agent_takeover(phone_hash)
+    except Exception:
+        pass
 
 
 def is_agent_takeover(phone: str) -> bool:
     """Check if AI is paused for this conversation."""
     with _lock:
         info = _agent_takeover.get(phone)
-        if not info:
-            return False
-        if _time.time() > info["until"]:
-            _agent_takeover.pop(phone, None)
-            return False
-        return True
+        if info:
+            if _time.time() > info["until"]:
+                _agent_takeover.pop(phone, None)
+                return False
+            return True
+    # Not in memory — check DB (could be from another worker or pre-restart)
+    try:
+        phone_hash = analytics._hash_phone(phone)
+        until = analytics.load_agent_takeover(phone_hash)
+        if until and _time.time() < until:
+            with _lock:
+                _agent_takeover[phone] = {"until": until}
+            return True
+        elif until:
+            analytics.clear_agent_takeover(phone_hash)
+    except Exception:
+        pass
+    return False
 
 
 def get_conversation_summary(phone: str, n_messages: int = 4) -> str:
