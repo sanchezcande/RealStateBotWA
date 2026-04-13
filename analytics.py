@@ -64,6 +64,33 @@ def db_stats() -> dict:
 
 def init_db():
     """Create tables if they don't exist. Call once at app startup."""
+    # ── Pre-init diagnostic: check what exists BEFORE we touch anything ──
+    marker_path = os.path.join(os.path.dirname(_DB_PATH), ".persistence_marker")
+    logger.info("=== DB PRE-INIT DIAGNOSTIC ===")
+    logger.info("DB path: %s", _DB_PATH)
+    logger.info("DB file exists: %s", os.path.isfile(_DB_PATH))
+    if os.path.isfile(_DB_PATH):
+        logger.info("DB file size: %d bytes", os.path.getsize(_DB_PATH))
+        # Read row counts with a FRESH temporary connection before any writes
+        try:
+            tmp = sqlite3.connect(_DB_PATH, timeout=5)
+            for tbl in ("chat_messages", "leads", "conversations", "events"):
+                try:
+                    cnt = tmp.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+                    logger.info("PRE-INIT %s: %d rows", tbl, cnt)
+                except Exception:
+                    logger.info("PRE-INIT %s: table doesn't exist yet", tbl)
+            tmp.close()
+        except Exception as e:
+            logger.warning("PRE-INIT read failed: %s", e)
+    # Check marker file from previous run
+    if os.path.isfile(marker_path):
+        with open(marker_path) as f:
+            logger.info("PERSISTENCE MARKER found from previous run: %s", f.read().strip())
+    else:
+        logger.warning("NO persistence marker found — volume may not be persisting!")
+    logger.info("=== END PRE-INIT DIAGNOSTIC ===")
+
     with _db_lock:
         conn = _get_conn()
         conn.executescript("""
@@ -226,6 +253,15 @@ def init_db():
                 _DB_PATH, os.path.ismount("/data"), os.path.isdir("/data"))
     if os.path.isdir("/data") and not os.path.ismount("/data"):
         logger.warning("⚠ /data EXISTS but is NOT a mount point — likely from Dockerfile mkdir, NOT a real volume!")
+    # Write persistence marker so next startup can verify the volume survives
+    try:
+        from datetime import datetime
+        marker_path = os.path.join(os.path.dirname(_DB_PATH), ".persistence_marker")
+        with open(marker_path, "w") as f:
+            f.write(f"written at {datetime.now().isoformat()} by init_db")
+        logger.info("Persistence marker written to %s", marker_path)
+    except Exception as e:
+        logger.warning("Failed to write persistence marker: %s", e)
 
 
 def _purge_mock_data(conn):
