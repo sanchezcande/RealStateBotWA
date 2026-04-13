@@ -222,7 +222,10 @@ def init_db():
             logger.info("DB startup: %s has %d rows", tbl, cnt)
     except Exception:
         pass
-    logger.info("Analytics DB initialised at %s (volume=%s)", _DB_PATH, os.path.isdir("/data"))
+    logger.info("Analytics DB initialised at %s (ismount=/data=%s, isdir=/data=%s)",
+                _DB_PATH, os.path.ismount("/data"), os.path.isdir("/data"))
+    if os.path.isdir("/data") and not os.path.ismount("/data"):
+        logger.warning("⚠ /data EXISTS but is NOT a mount point — likely from Dockerfile mkdir, NOT a real volume!")
 
 
 def _purge_mock_data(conn):

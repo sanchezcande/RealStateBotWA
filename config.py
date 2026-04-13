@@ -38,7 +38,18 @@ CRM_WEBHOOK_URL = os.environ.get("CRM_WEBHOOK_URL", "")
 CRM_WEBHOOK_SECRET = os.environ.get("CRM_WEBHOOK_SECRET", "")
 
 # Persistent data directory (Railway volume at /data, local fallback to cwd)
-_DATA_DIR = "/data" if os.path.isdir("/data") else "."
+# os.path.ismount is more reliable than os.path.isdir — avoids false positives
+# from Dockerfile "mkdir /data" which creates the dir in the ephemeral image layer.
+# Override with DATA_DIR=/data in env vars if ismount gives false negative.
+_DATA_DIR = os.environ.get("DATA_DIR") or ("/data" if os.path.ismount("/data") else ".")
+
+if _DATA_DIR == "/data":
+    print(f"[config] ✔ Railway volume detected at /data — data will persist across deploys")
+    os.makedirs("/data/uploads/photos", exist_ok=True)
+    os.makedirs("/data/uploads/videos", exist_ok=True)
+else:
+    print(f"[config] ⚠ NO volume mounted at /data — using '{os.path.abspath(_DATA_DIR)}', DATA WILL BE LOST on redeploy!")
+    print(f"[config]   isdir=/data: {os.path.isdir('/data')}, ismount=/data: {os.path.ismount('/data')}")
 
 # Analytics dashboard
 ANALYTICS_DB_PATH = os.environ.get("ANALYTICS_DB_PATH", os.path.join(_DATA_DIR, "analytics.db"))

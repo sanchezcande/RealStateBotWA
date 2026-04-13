@@ -675,7 +675,14 @@ def health():
     checks["database"] = "ok" if analytics.health_check() else "error"
     all_ok = all(v == "ok" for v in checks.values())
     # Informational (not part of health check)
-    checks["volume"] = "mounted" if os.path.isdir("/data") else "NOT MOUNTED - data lost on redeploy"
+    is_mount = os.path.ismount("/data")
+    is_dir = os.path.isdir("/data")
+    if is_mount:
+        checks["volume"] = "mounted (persistent)"
+    elif is_dir:
+        checks["volume"] = "⚠ /data exists but NOT a mount — ephemeral, data WILL be lost!"
+    else:
+        checks["volume"] = "NOT MOUNTED — data lost on redeploy"
     checks["db_path"] = analytics._DB_PATH
     checks["db_stats"] = analytics.db_stats()
     return jsonify({"status": "ok" if all_ok else "degraded", "checks": checks}), 200 if all_ok else 503
