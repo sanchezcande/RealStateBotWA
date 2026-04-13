@@ -70,6 +70,29 @@ def api_conversation_thread(phone_hash):
     return jsonify(data)
 
 
+@api.route("/conversations/<phone_hash>/delete", methods=["POST"])
+@_require_auth
+def api_delete_conversation(phone_hash):
+    """Delete a conversation and all associated data."""
+    try:
+        phone = analytics.resolve_phone_by_hash(phone_hash)
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            conn.execute("DELETE FROM chat_messages WHERE phone_hash = ?", (phone_hash,))
+            conn.execute("DELETE FROM conversations WHERE phone_hash = ?", (phone_hash,))
+            conn.execute("DELETE FROM leads WHERE phone_hash = ?", (phone_hash,))
+            conn.execute("DELETE FROM events WHERE phone_hash = ?", (phone_hash,))
+            conn.execute("DELETE FROM visits WHERE phone_hash = ?", (phone_hash,))
+        # Clear in-memory cache
+        if phone:
+            import conversations
+            with conversations._lock:
+                conversations._store.pop(phone, None)
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @api.route("/conversations/<phone_hash>/reply", methods=["POST"])
 @_require_auth
 def api_send_reply(phone_hash):
