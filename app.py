@@ -355,17 +355,27 @@ def _extract_property_type(text: str):
 
 
 def _extract_name(text: str):
-    """Detect user's name from common Spanish self-introduction patterns."""
+    """Detect user's name from Spanish and English self-introduction patterns."""
+    _LETTER = r"[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]"
     _NOT_NAMES = {"buenas", "buen", "bueno", "buenos", "hola", "bien", "todo", "algo",
                   "como", "esta", "este", "esto", "eso", "esa", "que", "una", "uno",
                   "con", "por", "para", "muy", "mas", "les", "los", "las", "del",
-                  "dia", "tarde", "noche", "aca", "ahi", "alla"}
+                  "dia", "tarde", "noche", "aca", "ahi", "alla",
+                  # English stop words
+                  "hey", "hello", "hi", "good", "fine", "great", "well", "thanks",
+                  "thank", "yes", "yeah", "yep", "sure", "okay", "the", "and",
+                  "not", "but", "just", "here", "there", "looking", "interested",
+                  "want", "need", "have", "are", "was", "were", "been", "being"}
     patterns = [
-        r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
-        r"(?:habla|te escribe|les escribe|te contacta|de parte de)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
-        r"(?:les\s+habla|acá\s+habla|aca\s+habla)\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})",
-        r"^con\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})\s*[,.]?\s*$",
-        r"^con\s+([a-záéíóúüñA-ZÁÉÍÓÚÜÑ]{2,20})[,]\s",
+        # Spanish patterns
+        r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+(" + _LETTER + r"{2,20})",
+        r"(?:habla|te escribe|les escribe|te contacta|de parte de)\s+(" + _LETTER + r"{2,20})",
+        r"(?:les\s+habla|acá\s+habla|aca\s+habla)\s+(" + _LETTER + r"{2,20})",
+        r"^con\s+(" + _LETTER + r"{2,20})\s*[,.]?\s*$",
+        r"^con\s+(" + _LETTER + r"{2,20})[,]\s",
+        # English patterns
+        r"(?:i'?\s*m|i\s+am|my\s+name\s+is|my\s+name'?\s*s|this\s+is|it'?\s*s)\s+(" + _LETTER + r"{2,20})",
+        r"(?:they\s+call\s+me|call\s+me|you\s+can\s+call\s+me)\s+(" + _LETTER + r"{2,20})",
     ]
     for pattern in patterns:
         m = re.search(pattern, text, re.IGNORECASE)
@@ -373,6 +383,13 @@ def _extract_name(text: str):
             name = m.group(1).lower()
             if name not in _NOT_NAMES:
                 return m.group(1).capitalize()
+    # Bare name response: single word (2-20 letters), possibly with punctuation
+    # Matches responses like "Cande", "cande!", "Cande."
+    bare = re.match(r"^\s*(" + _LETTER + r"{2,20})\s*[!.,;:?]*\s*$", text)
+    if bare:
+        name = bare.group(1).lower()
+        if name not in _NOT_NAMES:
+            return bare.group(1).capitalize()
     return None
 
 
