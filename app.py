@@ -913,6 +913,12 @@ def volume_test():
     return jsonify(result), 200
 
 
+@app.get("/health/startup-diag")
+def startup_diag():
+    """Show init_db() step-by-step diagnostic from this deploy."""
+    return jsonify(analytics._startup_diag), 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)
 

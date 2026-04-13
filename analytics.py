@@ -19,6 +19,7 @@ _DB_PATH = ANALYTICS_DB_PATH
 _conn: Optional[sqlite3.Connection] = None
 _conn_pid: Optional[int] = None  # PID that opened the connection
 _db_lock = threading.Lock()
+_startup_diag: dict = {}  # filled by init_db(), exposed via /health/startup-diag
 
 
 def _get_conn() -> sqlite3.Connection:
@@ -72,160 +73,135 @@ def db_stats() -> dict:
 
 def init_db():
     """Create tables if they don't exist. Call once at app startup."""
-    # ── Pre-init diagnostic: check what exists BEFORE we touch anything ──
-    marker_path = os.path.join(os.path.dirname(_DB_PATH), ".persistence_marker")
-    logger.info("=== DB PRE-INIT DIAGNOSTIC ===")
-    logger.info("DB path: %s", _DB_PATH)
-    logger.info("DB file exists: %s", os.path.isfile(_DB_PATH))
+    global _startup_diag
+    diag = {"steps": []}
+
+    def _step(name, data=None):
+        diag["steps"].append({"step": name, "data": data})
+        logger.info("init_db [%s]: %s", name, data)
+
+    # ── Step 1: Check what exists BEFORE we touch anything ──
+    _step("db_path", _DB_PATH)
+    _step("file_exists", os.path.isfile(_DB_PATH))
     if os.path.isfile(_DB_PATH):
-        logger.info("DB file size: %d bytes", os.path.getsize(_DB_PATH))
-        # Read row counts with a FRESH temporary connection before any writes
+        fsize = os.path.getsize(_DB_PATH)
+        _step("file_size_bytes", fsize)
         try:
-            tmp = sqlite3.connect(_DB_PATH, timeout=5)
+            tmp = sqlite3.connect(f"file:{_DB_PATH}?mode=ro", uri=True, timeout=5)
+            pre = {}
             for tbl in ("chat_messages", "leads", "conversations", "events"):
                 try:
-                    cnt = tmp.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
-                    logger.info("PRE-INIT %s: %d rows", tbl, cnt)
+                    pre[tbl] = tmp.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
                 except Exception:
-                    logger.info("PRE-INIT %s: table doesn't exist yet", tbl)
+                    pre[tbl] = "table_missing"
             tmp.close()
+            _step("pre_init_rows", pre)
         except Exception as e:
-            logger.warning("PRE-INIT read failed: %s", e)
-    # Check marker file from previous run
+            _step("pre_init_read_error", str(e))
+
+    marker_path = os.path.join(os.path.dirname(_DB_PATH) or ".", ".persistence_marker")
     if os.path.isfile(marker_path):
         with open(marker_path) as f:
-            logger.info("PERSISTENCE MARKER found from previous run: %s", f.read().strip())
+            _step("marker_from_prev_deploy", f.read().strip())
     else:
-        logger.warning("NO persistence marker found — volume may not be persisting!")
-    logger.info("=== END PRE-INIT DIAGNOSTIC ===")
+        _step("marker_from_prev_deploy", None)
 
+    # ── Step 2: Open connection and create tables ──
     with _db_lock:
         conn = _get_conn()
-        conn.executescript("""
-            CREATE TABLE IF NOT EXISTS events (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_type    TEXT NOT NULL,
-                phone_hash    TEXT NOT NULL,
-                channel       TEXT DEFAULT 'whatsapp',
-                property      TEXT,
-                operation     TEXT,
-                property_type TEXT,
-                hour          INTEGER,
-                created_at    TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_events_type    ON events(event_type);
-            CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at);
-            CREATE INDEX IF NOT EXISTS idx_events_hour    ON events(hour);
 
-            CREATE TABLE IF NOT EXISTS conversations (
-                phone_hash     TEXT PRIMARY KEY,
-                channel        TEXT DEFAULT 'whatsapp',
-                first_seen_at  TEXT NOT NULL,
-                last_seen_at   TEXT NOT NULL,
-                message_count  INTEGER DEFAULT 0,
-                became_lead    INTEGER DEFAULT 0,
-                visit_count    INTEGER DEFAULT 0,
-                operation      TEXT,
-                property_type  TEXT
-            );
+        # Use individual execute() instead of executescript() to avoid any
+        # implicit COMMIT/transaction behavior that might interfere.
+        _ddl = [
+            """CREATE TABLE IF NOT EXISTS events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL,
+                phone_hash TEXT NOT NULL, channel TEXT DEFAULT 'whatsapp',
+                property TEXT, operation TEXT, property_type TEXT,
+                hour INTEGER, created_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type)",
+            "CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)",
+            "CREATE INDEX IF NOT EXISTS idx_events_hour ON events(hour)",
+            """CREATE TABLE IF NOT EXISTS conversations (
+                phone_hash TEXT PRIMARY KEY, channel TEXT DEFAULT 'whatsapp',
+                first_seen_at TEXT NOT NULL, last_seen_at TEXT NOT NULL,
+                message_count INTEGER DEFAULT 0, became_lead INTEGER DEFAULT 0,
+                visit_count INTEGER DEFAULT 0, operation TEXT, property_type TEXT)""",
+            """CREATE TABLE IF NOT EXISTS chat_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL,
+                phone_hash TEXT NOT NULL, role TEXT NOT NULL, content TEXT NOT NULL,
+                channel TEXT DEFAULT 'whatsapp', created_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_chat_phone ON chat_messages(phone)",
+            "CREATE INDEX IF NOT EXISTS idx_chat_hash ON chat_messages(phone_hash)",
+            "CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at)",
+            """CREATE TABLE IF NOT EXISTS leads (
+                phone TEXT PRIMARY KEY, phone_hash TEXT NOT NULL, name TEXT,
+                operation TEXT, property_type TEXT, budget TEXT, timeline TEXT,
+                notified INTEGER DEFAULT 0, channel TEXT DEFAULT 'whatsapp',
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_leads_hash ON leads(phone_hash)",
+            "CREATE INDEX IF NOT EXISTS idx_leads_updated ON leads(updated_at)",
+            """CREATE TABLE IF NOT EXISTS visits (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, phone TEXT NOT NULL,
+                phone_hash TEXT NOT NULL, client_name TEXT,
+                property_title TEXT NOT NULL, address TEXT,
+                visit_date TEXT NOT NULL, visit_time TEXT NOT NULL,
+                calendar_event_id TEXT, status TEXT DEFAULT 'confirmed',
+                channel TEXT DEFAULT 'whatsapp',
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_visits_date ON visits(visit_date)",
+            "CREATE INDEX IF NOT EXISTS idx_visits_phone ON visits(phone)",
+            "CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status)",
+            """CREATE TABLE IF NOT EXISTS media_jobs (
+                id TEXT PRIMARY KEY, type TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'queued', progress TEXT DEFAULT '',
+                property TEXT DEFAULT '', photo_count INTEGER DEFAULT 0,
+                prompt TEXT DEFAULT '', result_path TEXT, result_url TEXT,
+                error TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_media_jobs_created ON media_jobs(created_at)",
+            """CREATE TABLE IF NOT EXISTS media_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, month TEXT NOT NULL,
+                videos_used INTEGER DEFAULT 0, videos_purchased INTEGER DEFAULT 0,
+                updated_at TEXT NOT NULL, UNIQUE(month))""",
+            """CREATE TABLE IF NOT EXISTS payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                payment_id TEXT UNIQUE NOT NULL,
+                provider TEXT NOT NULL DEFAULT 'mercadopago',
+                status TEXT NOT NULL DEFAULT 'pending',
+                amount REAL NOT NULL DEFAULT 0, currency TEXT NOT NULL DEFAULT 'ARS',
+                video_count INTEGER NOT NULL DEFAULT 1, payer_email TEXT DEFAULT '',
+                external_ref TEXT DEFAULT '',
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
+            "CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)",
+        ]
+        for sql in _ddl:
+            conn.execute(sql)
+        _step("ddl_done", True)
 
-            CREATE TABLE IF NOT EXISTS chat_messages (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                phone       TEXT NOT NULL,
-                phone_hash  TEXT NOT NULL,
-                role        TEXT NOT NULL,
-                content     TEXT NOT NULL,
-                channel     TEXT DEFAULT 'whatsapp',
-                created_at  TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_chat_phone   ON chat_messages(phone);
-            CREATE INDEX IF NOT EXISTS idx_chat_hash    ON chat_messages(phone_hash);
-            CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at);
+        # Check rows right after DDL
+        post_ddl = {}
+        for tbl in ("chat_messages", "leads", "conversations", "events"):
+            try:
+                post_ddl[tbl] = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+            except Exception:
+                post_ddl[tbl] = -1
+        _step("post_ddl_rows", post_ddl)
 
-            CREATE TABLE IF NOT EXISTS leads (
-                phone       TEXT PRIMARY KEY,
-                phone_hash  TEXT NOT NULL,
-                name        TEXT,
-                operation   TEXT,
-                property_type TEXT,
-                budget      TEXT,
-                timeline    TEXT,
-                notified    INTEGER DEFAULT 0,
-                channel     TEXT DEFAULT 'whatsapp',
-                created_at  TEXT NOT NULL,
-                updated_at  TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_leads_hash    ON leads(phone_hash);
-            CREATE INDEX IF NOT EXISTS idx_leads_updated ON leads(updated_at);
-
-            CREATE TABLE IF NOT EXISTS visits (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                phone           TEXT NOT NULL,
-                phone_hash      TEXT NOT NULL,
-                client_name     TEXT,
-                property_title  TEXT NOT NULL,
-                address         TEXT,
-                visit_date      TEXT NOT NULL,
-                visit_time      TEXT NOT NULL,
-                calendar_event_id TEXT,
-                status          TEXT DEFAULT 'confirmed',
-                channel         TEXT DEFAULT 'whatsapp',
-                created_at      TEXT NOT NULL,
-                updated_at      TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_visits_date   ON visits(visit_date);
-            CREATE INDEX IF NOT EXISTS idx_visits_phone  ON visits(phone);
-            CREATE INDEX IF NOT EXISTS idx_visits_status ON visits(status);
-
-            CREATE TABLE IF NOT EXISTS media_jobs (
-                id              TEXT PRIMARY KEY,
-                type            TEXT NOT NULL,
-                status          TEXT NOT NULL DEFAULT 'queued',
-                progress        TEXT DEFAULT '',
-                property        TEXT DEFAULT '',
-                photo_count     INTEGER DEFAULT 0,
-                prompt          TEXT DEFAULT '',
-                result_path     TEXT,
-                result_url      TEXT,
-                error           TEXT,
-                created_at      TEXT NOT NULL,
-                updated_at      TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_media_jobs_created ON media_jobs(created_at);
-
-            CREATE TABLE IF NOT EXISTS media_usage (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                month           TEXT NOT NULL,
-                videos_used     INTEGER DEFAULT 0,
-                videos_purchased INTEGER DEFAULT 0,
-                updated_at      TEXT NOT NULL,
-                UNIQUE(month)
-            );
-
-            CREATE TABLE IF NOT EXISTS payments (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                payment_id      TEXT UNIQUE NOT NULL,
-                provider        TEXT NOT NULL DEFAULT 'mercadopago',
-                status          TEXT NOT NULL DEFAULT 'pending',
-                amount          REAL NOT NULL DEFAULT 0,
-                currency        TEXT NOT NULL DEFAULT 'ARS',
-                video_count     INTEGER NOT NULL DEFAULT 1,
-                payer_email     TEXT DEFAULT '',
-                external_ref    TEXT DEFAULT '',
-                created_at      TEXT NOT NULL,
-                updated_at      TEXT NOT NULL
-            );
-            CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
-        """)
-        # Purge any leftover demo/mock data (demo phone hashes) on every startup.
+        # Purge demo data
         _purge_mock_data(conn)
+        post_purge = {}
+        for tbl in ("chat_messages", "leads", "conversations", "events"):
+            try:
+                post_purge[tbl] = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+            except Exception:
+                post_purge[tbl] = -1
+        _step("post_purge_rows", post_purge)
 
         # Seed mock data ONLY when explicitly requested AND not in production.
         if _DB_PATH != ":memory:":
             is_production = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RAILWAY_SERVICE_ID"))
             force_seed = os.environ.get("SEED_DEMO_DATA", "").lower() in ("true", "1", "yes")
-            logger.info("SEED_DEMO_DATA=%s, force_seed=%s, is_production=%s",
-                        os.environ.get("SEED_DEMO_DATA", ""), force_seed, is_production)
+            _step("seed_check", {"SEED_DEMO_DATA": os.environ.get("SEED_DEMO_DATA", ""),
+                                 "force_seed": force_seed, "is_production": is_production})
             if force_seed and is_production:
                 logger.warning("SEED_DEMO_DATA ignored in production environment!")
             elif force_seed:
@@ -233,9 +209,10 @@ def init_db():
                 if count > 0:
                     for tbl in ("events", "conversations", "chat_messages", "leads", "visits"):
                         conn.execute(f"DELETE FROM {tbl}")
-                    logger.info("Cleared existing data for demo reseed")
+                    _step("seed_cleared_all", True)
                 _seed_mock_data(conn)
-    # Cleanup old media jobs on startup
+
+    # Cleanup old media jobs
     try:
         cutoff = (datetime.now(AR_TZ) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
         old_files = conn.execute(
@@ -250,26 +227,28 @@ def init_db():
         conn.execute("DELETE FROM media_jobs WHERE created_at < ?", (cutoff,))
     except Exception:
         pass
-    # Startup diagnostic: log how much data survived the restart
+
+    # Final row counts
+    final = {}
+    for tbl in ("chat_messages", "leads", "conversations", "events"):
+        try:
+            final[tbl] = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
+        except Exception:
+            final[tbl] = -1
+    _step("final_rows", final)
+    _step("ismount", os.path.ismount("/data"))
+    _step("isdir", os.path.isdir("/data"))
+
+    # Write persistence marker
     try:
-        for tbl in ("chat_messages", "leads", "conversations", "events"):
-            cnt = conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0]
-            logger.info("DB startup: %s has %d rows", tbl, cnt)
-    except Exception:
-        pass
-    logger.info("Analytics DB initialised at %s (ismount=/data=%s, isdir=/data=%s)",
-                _DB_PATH, os.path.ismount("/data"), os.path.isdir("/data"))
-    if os.path.isdir("/data") and not os.path.ismount("/data"):
-        logger.warning("⚠ /data EXISTS but is NOT a mount point — likely from Dockerfile mkdir, NOT a real volume!")
-    # Write persistence marker so next startup can verify the volume survives
-    try:
-        from datetime import datetime
-        marker_path = os.path.join(os.path.dirname(_DB_PATH), ".persistence_marker")
         with open(marker_path, "w") as f:
             f.write(f"written at {datetime.now().isoformat()} by init_db")
-        logger.info("Persistence marker written to %s", marker_path)
+        _step("marker_written", True)
     except Exception as e:
-        logger.warning("Failed to write persistence marker: %s", e)
+        _step("marker_write_error", str(e))
+
+    _startup_diag = diag
+    logger.info("init_db complete. Diag: %s", diag)
 
 
 def _purge_mock_data(conn):
