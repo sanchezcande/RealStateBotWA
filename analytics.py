@@ -1137,7 +1137,7 @@ def resolve_phone_by_hash(phone_hash: str) -> str | None:
 
 def _lead_score(budget, visit_count, message_count, is_lead=True):
     """Return 'hot', 'warm', or 'cold' based on lead engagement signals."""
-    if (budget and visit_count > 0) or message_count >= 10:
+    if visit_count > 0:
         return "hot"
     if is_lead or message_count >= 5:
         return "warm"
