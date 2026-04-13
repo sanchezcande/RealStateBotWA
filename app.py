@@ -379,18 +379,11 @@ def _extract_name(text: str):
 def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
                     send_image_fn=None):
     """Shared AI pipeline for all channels (WhatsApp, Facebook, Instagram)."""
-    # Check if human agent has taken over this conversation
-    if conversations.is_agent_takeover(identifier):
-        conversations.add_message(identifier, "user", user_text, channel=channel)
-        analytics.log_event("message_in", identifier, channel=channel)
-        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
-        return
-
     is_new = len(conversations.get_messages(identifier)) == 0
     analytics.log_event("message_in", identifier, channel=channel)
     conversations.add_message(identifier, "user", user_text, channel=channel)
 
-    # Extract operation, property type, and name from user text
+    # Always extract lead info from every message, even during agent takeover
     operation = _extract_operation(user_text)
     if operation:
         current = conversations.get_lead(identifier)
@@ -411,6 +404,11 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         if not current.get("name"):
             conversations.update_lead(identifier, name=name)
             logger.info("Name extracted for %s: %s", identifier, name)
+
+    # If human agent has taken over, don't auto-reply but lead info is already extracted above
+    if conversations.is_agent_takeover(identifier):
+        logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
+        return
 
     if is_new:
         analytics.log_event("new_conversation", identifier, channel=channel,
