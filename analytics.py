@@ -17,17 +17,25 @@ from config import AR_TZ, ANALYTICS_DB_PATH
 logger = logging.getLogger(__name__)
 _DB_PATH = ANALYTICS_DB_PATH
 _conn: Optional[sqlite3.Connection] = None
+_conn_pid: Optional[int] = None  # PID that opened the connection
 _db_lock = threading.Lock()
 
 
 def _get_conn() -> sqlite3.Connection:
-    global _conn
+    global _conn, _conn_pid
+    current_pid = os.getpid()
+    # Detect fork: if connection was opened in a parent process (gunicorn master),
+    # discard it — SQLite connections MUST NOT be used across fork().
+    if _conn is not None and _conn_pid != current_pid:
+        logger.info("Fork detected (parent=%s, worker=%s) — reopening SQLite connection", _conn_pid, current_pid)
+        _conn = None  # don't close — the fd belongs to the parent
     if _conn is None:
         _conn = sqlite3.connect(_DB_PATH, check_same_thread=False, isolation_level=None)
+        _conn_pid = current_pid
         # DELETE journal mode is more reliable on network/container volumes than WAL
         _conn.execute("PRAGMA journal_mode=DELETE")
         _conn.execute("PRAGMA synchronous=FULL")
-        logger.info("SQLite connection opened: %s", _DB_PATH)
+        logger.info("SQLite connection opened: %s (pid=%d)", _DB_PATH, current_pid)
     return _conn
 
 
