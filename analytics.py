@@ -653,7 +653,7 @@ def get_dashboard_data(days: int = 30) -> dict:
                    FROM events
                    WHERE event_type = 'new_conversation'
                      AND created_at >= ?
-                   GROUP BY day
+                   GROUP BY DATE(created_at)
                    ORDER BY day""",
                 (cutoff,),
             ).fetchall()
@@ -837,7 +837,8 @@ def get_dashboard_data(days: int = 30) -> dict:
                    INNER JOIN conversations c ON cm1.phone_hash = c.phone_hash
                    WHERE c.last_seen_at >= ?
                    GROUP BY cm1.phone
-                   HAVING first_user IS NOT NULL AND first_bot IS NOT NULL""",
+                   HAVING MIN(CASE WHEN cm1.role = 'user' THEN cm1.created_at END) IS NOT NULL
+                      AND MIN(CASE WHEN cm1.role = 'assistant' THEN cm1.created_at END) IS NOT NULL""",
                 (cutoff,),
             ).fetchall()
 
@@ -1029,14 +1030,17 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                 params.append(channel)
 
             # Get distinct phones with latest message info
+            # PostgreSQL requires all non-aggregated columns in GROUP BY
             base_query = f"""
-                SELECT cm.phone, cm.phone_hash, cm.channel,
+                SELECT cm.phone,
+                       MAX(cm.phone_hash) as phone_hash,
+                       MAX(cm.channel) as channel,
                        MIN(cm.created_at) as first_msg,
                        MAX(cm.created_at) as last_msg,
                        COUNT(cm.id) as msg_count,
-                       l.name,
-                       COALESCE(c.became_lead, 0) as is_lead,
-                       COALESCE(c.visit_count, 0) as visits
+                       MAX(l.name) as name,
+                       MAX(COALESCE(c.became_lead, 0)) as is_lead,
+                       MAX(COALESCE(c.visit_count, 0)) as visits
                 FROM chat_messages cm
                 LEFT JOIN leads l ON cm.phone = l.phone
                 LEFT JOIN conversations c ON cm.phone_hash = c.phone_hash
@@ -1045,12 +1049,12 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
             """
 
             if status == "lead":
-                base_query += " HAVING is_lead = 1"
+                base_query += " HAVING MAX(COALESCE(c.became_lead, 0)) = 1"
             elif status == "visit":
-                base_query += " HAVING visits > 0"
+                base_query += " HAVING MAX(COALESCE(c.visit_count, 0)) > 0"
 
             # Count total
-            count_q = f"SELECT COUNT(*) FROM ({base_query})"
+            count_q = f"SELECT COUNT(*) FROM ({base_query}) sub"
             total = conn.execute(count_q, params).fetchone()[0]
 
             # Get page
