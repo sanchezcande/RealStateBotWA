@@ -82,6 +82,20 @@ def init_db():
 
     # ── Step 1: Check what exists BEFORE we touch anything ──
     _step("db_path", _DB_PATH)
+    _step("pid", os.getpid())
+    _step("uid", os.getuid())
+    # Check if /data is on a different device than / (real mount vs same filesystem)
+    try:
+        root_dev = os.stat("/").st_dev
+        data_dev = os.stat("/data").st_dev if os.path.isdir("/data") else None
+        _step("device_check", {
+            "root_device": root_dev,
+            "data_device": data_dev,
+            "same_device": root_dev == data_dev,
+            "is_real_mount": root_dev != data_dev if data_dev else False,
+        })
+    except Exception as e:
+        _step("device_check_error", str(e))
     _step("file_exists", os.path.isfile(_DB_PATH))
     if os.path.isfile(_DB_PATH):
         fsize = os.path.getsize(_DB_PATH)
