@@ -7,12 +7,15 @@ import json
 import time
 import logging
 import threading
+import os
 from config import GOOGLE_SHEET_ID, GOOGLE_CREDENTIALS_JSON, SHEET_CACHE_TTL
 
 logger = logging.getLogger(__name__)
 
 _cache: dict = {"data": None, "ts": 0}
 _cache_lock = threading.Lock()
+
+REQUIRE_SHEETS = os.environ.get("REQUIRE_SHEETS", "false").lower() in ("true", "1", "yes")
 
 SAMPLE_LISTINGS = [
     {
@@ -177,6 +180,9 @@ def _fetch_from_sheets() -> list:
         logger.info("Loaded %d listings from Google Sheets", len(rows))
         return rows
     except Exception as e:
+        if REQUIRE_SHEETS:
+            logger.error("Could not load from Google Sheets: %s. REQUIRE_SHEETS=true, returning empty list.", e)
+            return []
         logger.warning("Could not load from Google Sheets: %s. Using sample data.", e)
         return SAMPLE_LISTINGS
 
@@ -191,8 +197,12 @@ def get_listings() -> list:
     if GOOGLE_SHEET_ID and GOOGLE_CREDENTIALS_JSON:
         data = _fetch_from_sheets()
     else:
-        logger.info("No Google Sheets config — using sample listings.")
-        data = SAMPLE_LISTINGS
+        if REQUIRE_SHEETS:
+            logger.error("No Google Sheets config and REQUIRE_SHEETS=true — returning empty list.")
+            data = []
+        else:
+            logger.info("No Google Sheets config — using sample listings.")
+            data = SAMPLE_LISTINGS
 
     with _cache_lock:
         _cache["data"] = data

@@ -227,6 +227,10 @@ def process(phone: str, ai_text: str) -> str:
         time_str = cancel_data.get("time", "")
         visit_key = f"{property_title}|{date_str}|{time_str}"
         event_id = visit_events.get(visit_key)
+        if not event_id:
+            existing = analytics.get_visit_by_key(phone, property_title, date_str, time_str)
+            if existing:
+                event_id = existing.get("calendar_event_id")
         if event_id:
             success = calendar_client.cancel_visit_event(event_id)
             if not success:
@@ -265,6 +269,13 @@ def process(phone: str, ai_text: str) -> str:
             logger.info("Duplicate visit detected for %s, skipping: %s", phone, visit_key)
             continue
 
+        existing = analytics.get_visit_by_key(phone, property_title, date_str, time_str)
+        if existing and existing.get("status") == "confirmed":
+            if existing.get("calendar_event_id"):
+                logger.info("Visit already exists in DB for %s, skipping: %s", phone, visit_key)
+                continue
+            logger.info("Visit exists without calendar_event_id for %s — attempting to create event", phone)
+
         address = _find_address(property_title)
         event_id = calendar_client.create_visit_event(
             property_title=property_title,
@@ -294,6 +305,7 @@ def process(phone: str, ai_text: str) -> str:
                              operation=lead.get("operation"))
         analytics.save_visit(phone, property_title, address, client_name,
                              date_str, time_str, event_id=event_id)
+        analytics.update_visit_event_id(phone, property_title, date_str, time_str, event_id)
         crm_webhook.on_visit_scheduled(
             phone_hash=analytics._hash_phone(phone),
             client_name=client_name,

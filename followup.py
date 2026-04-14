@@ -41,6 +41,9 @@ def _build_followup_message(name: str = "", operation: str = "") -> str:
 def _check_inactive_leads():
     """Check for leads that haven't had contact in FOLLOWUP_DAYS days and send follow-up."""
     try:
+        if not analytics.acquire_lock("followup", ttl_seconds=60 * 60):
+            logger.info("Follow-up lock not acquired; skipping this run")
+            return
         cutoff = (datetime.now(AR_TZ) - timedelta(days=FOLLOWUP_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
         recent = (datetime.now(AR_TZ) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
 
@@ -63,6 +66,9 @@ def _check_inactive_leads():
         sent_count = 0
         for phone, name, last_seen, operation in rows:
             if phone in _followed_up:
+                continue
+            if analytics.has_recent_event(phone, "followup_sent", days=30):
+                _followed_up.add(phone)
                 continue
 
             if conversations.is_agent_takeover(phone):

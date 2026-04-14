@@ -252,6 +252,15 @@ def init_db():
                 external_ref TEXT DEFAULT '',
                 created_at TEXT NOT NULL, updated_at TEXT NOT NULL)""",
             "CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status)",
+            """CREATE TABLE IF NOT EXISTS locks (
+                name TEXT PRIMARY KEY,
+                acquired_at INTEGER NOT NULL,
+                owner TEXT NOT NULL)""",
+            """CREATE TABLE IF NOT EXISTS processed_messages (
+                message_id TEXT NOT NULL,
+                channel TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                PRIMARY KEY (message_id, channel))""",
         ]
         for sql in _ddl:
             conn.execute(sql)
@@ -315,6 +324,13 @@ def init_db():
                 except OSError:
                     pass
         conn.execute("DELETE FROM media_jobs WHERE created_at < ?", (cutoff,))
+    except Exception:
+        pass
+
+    # Cleanup old processed message IDs (dedupe table)
+    try:
+        cutoff = (datetime.now(AR_TZ) - timedelta(days=7)).strftime("%Y-%m-%dT%H:%M:%S")
+        conn.execute("DELETE FROM processed_messages WHERE created_at < ?", (cutoff,))
     except Exception:
         pass
 
@@ -989,10 +1005,19 @@ def set_agent_takeover(phone_hash: str, until_ts: float):
         until_str = datetime.fromtimestamp(until_ts, tz=AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
         with _db_lock:
             conn = _get_conn()
-            conn.execute(
+            cur = conn.execute(
                 "UPDATE conversations SET agent_takeover_until = ? WHERE phone_hash = ?",
                 (until_str, phone_hash),
             )
+            if cur.rowcount == 0:
+                now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+                conn.execute(
+                    """INSERT INTO conversations
+                       (phone_hash, channel, first_seen_at, last_seen_at, message_count,
+                        became_lead, visit_count, operation, property_type, agent_takeover_until)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (phone_hash, "whatsapp", now, now, 0, 0, 0, None, None, until_str),
+                )
     except Exception as e:
         logger.error("analytics.set_agent_takeover error: %s", e)
 
@@ -1037,6 +1062,14 @@ def save_visit(phone: str, property_title: str, address: str, client_name: str,
     try:
         with _db_lock:
             conn = _get_conn()
+            existing = conn.execute(
+                """SELECT status FROM visits
+                   WHERE phone = ? AND property_title = ? AND visit_date = ? AND visit_time = ?
+                   ORDER BY id DESC LIMIT 1""",
+                (phone, property_title, date_str, time_str),
+            ).fetchone()
+            if existing and existing[0] == "confirmed":
+                return
             now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
             conn.execute(
                 """INSERT INTO visits (phone, phone_hash, client_name, property_title,
@@ -1065,6 +1098,130 @@ def cancel_visit(phone: str, property_title: str, date_str: str, time_str: str):
             )
     except Exception as e:
         logger.error("analytics.cancel_visit error: %s", e)
+
+
+def get_visit_by_key(phone: str, property_title: str, date_str: str, time_str: str) -> dict | None:
+    """Fetch a visit by key (phone + property + date + time)."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            row = conn.execute(
+                """SELECT id, status, calendar_event_id, created_at, updated_at
+                   FROM visits
+                   WHERE phone = ? AND property_title = ? AND visit_date = ? AND visit_time = ?
+                   ORDER BY id DESC LIMIT 1""",
+                (phone, property_title, date_str, time_str),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0],
+            "status": row[1],
+            "calendar_event_id": row[2],
+            "created_at": row[3],
+            "updated_at": row[4],
+        }
+    except Exception as e:
+        logger.error("analytics.get_visit_by_key error: %s", e)
+        return None
+
+
+def update_visit_event_id(phone: str, property_title: str, date_str: str, time_str: str, event_id: str) -> bool:
+    """Update calendar_event_id for a visit by key."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+            cur = conn.execute(
+                """UPDATE visits SET calendar_event_id = ?, updated_at = ?
+                   WHERE phone = ? AND property_title = ? AND visit_date = ? AND visit_time = ?""",
+                (event_id, now, phone, property_title, date_str, time_str),
+            )
+        return cur.rowcount > 0
+    except Exception as e:
+        logger.error("analytics.update_visit_event_id error: %s", e)
+        return False
+
+
+def acquire_lock(name: str, ttl_seconds: int = 600, owner: str = "") -> bool:
+    """Acquire a simple distributed lock backed by the DB."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            now = int(datetime.now(AR_TZ).timestamp())
+            owner = owner or str(os.getpid())
+            if _USE_PG:
+                cur = conn.execute(
+                    "INSERT INTO locks (name, acquired_at, owner) VALUES (?, ?, ?) ON CONFLICT(name) DO NOTHING",
+                    (name, now, owner),
+                )
+            else:
+                cur = conn.execute(
+                    "INSERT OR IGNORE INTO locks (name, acquired_at, owner) VALUES (?, ?, ?)",
+                    (name, now, owner),
+                )
+            if cur.rowcount:
+                return True
+            row = conn.execute(
+                "SELECT acquired_at FROM locks WHERE name = ?",
+                (name,),
+            ).fetchone()
+            if not row:
+                return False
+            acquired_at = int(row[0])
+            if now - acquired_at < ttl_seconds:
+                return False
+            cur = conn.execute(
+                "UPDATE locks SET acquired_at = ?, owner = ? WHERE name = ? AND acquired_at = ?",
+                (now, owner, name, acquired_at),
+            )
+            return cur.rowcount > 0
+    except Exception as e:
+        logger.error("analytics.acquire_lock error: %s", e)
+        return False
+
+
+def has_recent_event(phone: str, event_type: str, days: int = 30) -> bool:
+    """Return True if a matching event exists within the last N days."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            cutoff = (datetime.now(AR_TZ) - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%S")
+            phone_hash = _hash_phone(phone)
+            row = conn.execute(
+                """SELECT 1 FROM events
+                   WHERE event_type = ? AND phone_hash = ? AND created_at >= ?
+                   LIMIT 1""",
+                (event_type, phone_hash, cutoff),
+            ).fetchone()
+        return bool(row)
+    except Exception as e:
+        logger.error("analytics.has_recent_event error: %s", e)
+        return False
+
+
+def mark_message_processed(message_id: str, channel: str = "whatsapp") -> bool:
+    """Idempotency guard. Returns True if inserted, False if already seen."""
+    if not message_id:
+        return True
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            now = datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S")
+            if _USE_PG:
+                cur = conn.execute(
+                    "INSERT INTO processed_messages (message_id, channel, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING",
+                    (message_id, channel, now),
+                )
+            else:
+                cur = conn.execute(
+                    "INSERT OR IGNORE INTO processed_messages (message_id, channel, created_at) VALUES (?, ?, ?)",
+                    (message_id, channel, now),
+                )
+        return bool(cur.rowcount)
+    except Exception as e:
+        logger.error("analytics.mark_message_processed error: %s", e)
+        return True
 
 
 # ---------------------------------------------------------------------------

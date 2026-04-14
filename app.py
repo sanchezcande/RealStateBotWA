@@ -8,7 +8,14 @@ import os
 import re
 import time
 import threading
+import hmac
+import hashlib
+import ipaddress
+import socket
+import io
+from urllib.parse import urlparse
 import requests
+from functools import wraps
 from flask import Flask, request, jsonify, render_template
 from config import VERIFY_TOKEN, PAGE_ACCESS_TOKEN, DASHBOARD_PLAN, DASHBOARD_SECRET_KEY, ASSET_VERSION, PHONE_NUMBER_ID
 import analytics
@@ -71,6 +78,73 @@ _pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}
 _pending_lock = threading.Lock()
 DEBOUNCE_SECONDS = 8
 MAX_MESSAGE_LENGTH = 4000
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+def _health_auth_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        expected = os.environ.get("HEALTH_TOKEN", "") or os.environ.get("DASHBOARD_TOKEN", "")
+        if not expected:
+            return f(*args, **kwargs)
+        token = request.args.get("token", "")
+        auth = request.headers.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            token = token or auth.replace("Bearer ", "", 1).strip()
+        if token == expected:
+            return f(*args, **kwargs)
+        return jsonify({"error": "unauthorized"}), 403
+    return wrapper
+
+
+def _verify_meta_signature(raw_body: bytes) -> bool:
+    """Verify X-Hub-Signature-256 for Meta webhooks when META_APP_SECRET is set."""
+    secret = os.environ.get("META_APP_SECRET", "")
+    if not secret:
+        logger.warning("META_APP_SECRET not set — webhook signature not verified")
+        return True
+    header_sig = request.headers.get("X-Hub-Signature-256", "")
+    if not header_sig:
+        logger.warning("Missing X-Hub-Signature-256 header")
+        return False
+    expected = "sha256=" + hmac.new(secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, header_sig)
+
+
+def _is_private_host(host: str) -> bool:
+    if not host:
+        return True
+    host = host.strip().lower()
+    if host == "localhost" or host.endswith(".local"):
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        try:
+            ip = ipaddress.ip_address(socket.gethostbyname(host))
+        except Exception:
+            return True
+    return (
+        ip.is_private
+        or ip.is_loopback
+        or ip.is_reserved
+        or ip.is_link_local
+        or ip.is_multicast
+    )
+
+
+def _is_safe_image_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+    except Exception:
+        return False
+    if parsed.scheme not in ("http", "https"):
+        return False
+    if parsed.port and parsed.port not in (80, 443):
+        return False
+    if _is_private_host(parsed.hostname or ""):
+        return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -101,7 +175,13 @@ _webhook_log_lock = threading.Lock()
 
 @app.post("/webhook")
 def receive_message():
-    data = request.get_json(silent=True) or {}
+    raw_body = request.get_data(cache=False) or b""
+    if not _verify_meta_signature(raw_body):
+        return "Forbidden", 403
+    try:
+        data = json.loads(raw_body.decode("utf-8") or "{}")
+    except Exception:
+        data = {}
     logger.info("Webhook POST received: %s", json.dumps(data)[:500])
 
     # Store for debugging
@@ -125,6 +205,7 @@ def receive_message():
 
 
 @app.get("/health/webhook-log")
+@_health_auth_required
 def webhook_log():
     """Show last 20 webhook payloads received (debug only)."""
     with _webhook_log_lock:
@@ -145,6 +226,7 @@ def _process_payload(data: dict):
 def _handle_message(msg: dict):
     msg_type = msg.get("type")
     phone = msg.get("from")  # sender's WhatsApp number (no +)
+    msg_id = msg.get("id") or msg.get("message_id")
 
     if not phone:
         return
@@ -153,6 +235,9 @@ def _handle_message(msg: dict):
         text = (msg.get("text") or {}).get("body", "").strip()
         if not text:
             return
+        if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+            logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+            return
         logger.info("Incoming message from %s: %s", phone, text)
         _enqueue(phone, text)
         return
@@ -160,6 +245,9 @@ def _handle_message(msg: dict):
     if msg_type == "interactive":
         text = _extract_interactive_text(msg)
         if text:
+            if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+                logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+                return
             logger.info("Incoming interactive message from %s: %s", phone, text)
             _enqueue(phone, text)
             return
@@ -169,6 +257,9 @@ def _handle_message(msg: dict):
     if msg_type == "button":
         text = (msg.get("button") or {}).get("text", "").strip()
         if text:
+            if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+                logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+                return
             logger.info("Incoming button message from %s: %s", phone, text)
             _enqueue(phone, text)
             return
@@ -177,6 +268,9 @@ def _handle_message(msg: dict):
 
     if msg_type == "audio":
         media_id = (msg.get("audio") or {}).get("id")
+        if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+            logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+            return
         if media_id:
             threading.Thread(
                 target=_transcribe_and_enqueue,
@@ -188,6 +282,9 @@ def _handle_message(msg: dict):
         return
 
     if msg_type in ("image", "video", "document"):
+        if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+            logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+            return
         _enqueue(phone, "[archivo recibido — solo proceso texto]")
         return
 
@@ -474,17 +571,35 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         img_urls = _IMG_URL_RE.findall(clean_response)
         for img_url in img_urls[:5]:
             try:
-                r = requests.get(img_url, timeout=15)
+                if not _is_safe_image_url(img_url):
+                    logger.warning("Blocked unsafe image URL: %s", img_url)
+                    continue
+                r = requests.get(img_url, timeout=10, stream=True, allow_redirects=False)
                 if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/"):
+                    content_len = r.headers.get("content-length")
+                    if content_len and int(content_len) > MAX_IMAGE_BYTES:
+                        logger.warning("Image too large (%s bytes): %s", content_len, img_url)
+                        continue
+                    buf = io.BytesIO()
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if not chunk:
+                            continue
+                        buf.write(chunk)
+                        if buf.tell() > MAX_IMAGE_BYTES:
+                            logger.warning("Image exceeded max size while downloading: %s", img_url)
+                            buf = None
+                            break
+                    if not buf:
+                        continue
                     mime = r.headers.get("content-type", "image/jpeg").split(";")[0]
-                    ext_photos.append((img_url.split("/")[-1], r.content, mime))
+                    ext_photos.append((img_url.split("/")[-1], buf.getvalue(), mime))
                     clean_response = clean_response.replace(img_url, "").strip()
             except Exception as e:
                 logger.warning("Failed to download external image %s: %s", img_url, e)
         clean_response = re.sub(r'\n\s*\n\s*\n', '\n\n', clean_response).strip()
 
-    conversations.add_message(identifier, "assistant", clean_response, channel=channel)
     if clean_response:
+        conversations.add_message(identifier, "assistant", clean_response, channel=channel)
         send_fn(identifier, clean_response)
 
     # Send downloaded photos as actual images
@@ -604,7 +719,13 @@ def verify_meta_webhook():
 
 @app.post("/webhook/meta")
 def receive_meta_message():
-    data = request.get_json(silent=True) or {}
+    raw_body = request.get_data(cache=False) or b""
+    if not _verify_meta_signature(raw_body):
+        return "Forbidden", 403
+    try:
+        data = json.loads(raw_body.decode("utf-8") or "{}")
+    except Exception:
+        data = {}
     # object is "page" for Facebook Messenger, "instagram" for Instagram Direct
     obj_type = data.get("object", "")
     if obj_type not in ("page", "instagram"):
@@ -620,14 +741,10 @@ def receive_meta_message():
                 # Deduplicate by message ID (Meta sometimes sends the same webhook twice)
                 mid = message.get("mid", "")
                 if mid:
-                    with _processed_mids_lock:
-                        if mid in _processed_mids:
-                            logger.info("Duplicate Meta message ignored: %s", mid)
-                            continue
-                        _processed_mids[mid] = True
-                        if len(_processed_mids) > 1000:
-                            for _k in list(_processed_mids.keys())[:500]:
-                                del _processed_mids[_k]
+                    channel = "facebook" if obj_type == "page" else "instagram"
+                    if not analytics.mark_message_processed(mid, channel=channel):
+                        logger.info("Duplicate Meta message ignored: %s", mid)
+                        continue
                 text = message["text"].strip()
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
@@ -641,11 +758,6 @@ def receive_meta_message():
 # Separate pending dict for Meta channels to avoid collision with WhatsApp phone numbers
 _pending_meta: dict = {}
 _pending_meta_lock = threading.Lock()
-
-# Deduplication: track already-processed Meta message IDs to avoid double responses
-_processed_mids: dict = {}   # mid -> True; insertion-ordered for FIFO eviction
-_processed_mids_lock = threading.Lock()
-
 
 def _enqueue_meta(sender_id: str, text: str, channel: str):
     text = text[:MAX_MESSAGE_LENGTH]
@@ -712,6 +824,7 @@ def health():
 
 
 @app.get("/health/whatsapp")
+@_health_auth_required
 def health_whatsapp():
     """Diagnose WhatsApp Cloud API phone number status and webhook config."""
     token = os.environ.get("WHATSAPP_TOKEN", "")
@@ -783,6 +896,7 @@ def health_whatsapp():
 
 
 @app.get("/health/waba-subscribe")
+@_health_auth_required
 def waba_subscribe():
     """Subscribe app to WABA for webhook delivery."""
     token = os.environ.get("WHATSAPP_TOKEN", "")
@@ -811,6 +925,7 @@ def waba_subscribe():
 
 
 @app.get("/health/deepseek")
+@_health_auth_required
 def health_deepseek():
     """
     Lightweight DeepSeek connectivity check.
@@ -919,6 +1034,7 @@ def run_vera_status():
 
 
 @app.get("/health/volume-test")
+@_health_auth_required
 def volume_test():
     """Test if files persist on the volume across deploys."""
     marker = "/data/.persistence_marker"
@@ -945,17 +1061,8 @@ def volume_test():
     return jsonify(result), 200
 
 
-@app.get("/health/startup-diag")
-def startup_diag():
-    """Show init_db() step-by-step diagnostic from this deploy."""
-    return jsonify(analytics._startup_diag), 200
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
-
-
 @app.get("/health/db-verify")
+@_health_auth_required
 def db_verify():
     """Verify database writes are actually reaching disk."""
     import sqlite3
@@ -991,3 +1098,14 @@ def db_verify():
     except Exception as e:
         result["fresh_error"] = str(e)
     return jsonify(result), 200
+
+
+@app.get("/health/startup-diag")
+@_health_auth_required
+def startup_diag():
+    """Show init_db() step-by-step diagnostic from this deploy."""
+    return jsonify(analytics._startup_diag), 200
+
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=False)

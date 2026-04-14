@@ -6,9 +6,9 @@ then calls the DeepSeek API.
 import logging
 import time
 import socket
-from datetime import date
+from datetime import date, datetime
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ
 import sheets
 import calendar_client
 
@@ -45,7 +45,7 @@ def _ensure_dns_check():
 
 def _today_str() -> str:
     """Return today's date in Spanish, locale-independent."""
-    today = date.today()
+    today = datetime.now(AR_TZ).date()
     return f"{_DAYS_ES[today.weekday()]} {today.day} de {_MONTHS_ES[today.month - 1]} de {today.year}"
 
 SYSTEM_PROMPT_TEMPLATE = """Sos Vera, asesora inmobiliaria de una inmobiliaria argentina. Chateás por WhatsApp.
