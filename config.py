@@ -71,7 +71,7 @@ MEDIA_UPLOAD_DIR = os.environ.get("MEDIA_UPLOAD_DIR", os.path.join(_DATA_DIR, "u
 
 # MercadoPago
 MP_ACCESS_TOKEN = os.environ.get("MP_ACCESS_TOKEN", "")
-EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "25000"))
+EXTRA_VIDEO_PRICE_ARS = int(os.environ.get("EXTRA_VIDEO_PRICE_ARS", "35385"))
 BASE_URL = os.environ.get("BASE_URL", "")  # e.g. https://tu-app.up.railway.app
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "sanchezgcandelaria@gmail.com")
 
