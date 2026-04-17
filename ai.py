@@ -8,7 +8,7 @@ import time
 import socket
 from datetime import date, datetime
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ, SALES_NOTIFY_NUMBER
 import sheets
 import calendar_client
 
@@ -280,7 +280,25 @@ COORDINAR VISITAS — MODO DERIVACIÓN
 - Una vez derivada la visita, si el cliente pregunta otra cosa, respondé normalmente."""
         availability_block = ""
 
-    return SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today, visit_instructions=visit_instructions) + availability_block
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today, visit_instructions=visit_instructions) + availability_block
+
+    # Sales derivation: forward buy inquiries to a sales specialist instead of showing properties
+    if SALES_NOTIFY_NUMBER:
+        prompt += """
+
+════════════════════════════════════════
+PROPIEDADES EN VENTA — DERIVACIÓN A ESPECIALISTA
+════════════════════════════════════════
+- Cuando el cliente busca COMPRAR (operación: venta), NO presentás propiedades específicas en venta. No las mencionés, no des precios, no ofrezcas fotos de propiedades en venta.
+- Calificá normalmente: nombre, zona/barrio, tipo de propiedad, presupuesto. Recolectá toda la info que puedas de forma natural, de a una pregunta por vez.
+- Una vez que tengas al menos el nombre y sabés qué busca comprar, derivá al especialista de ventas. Variá la frase: "le paso tu consulta a nuestro especialista en ventas y te contacta", "le aviso a nuestro asesor de ventas para que te llame", etc. Que suene natural.
+- Después de derivar, incluís este bloque al final (invisible):
+<!--sales_notify:{"property_type":"tipo o null","zone":"zona o null","budget":"presupuesto o null"}-->
+- SOLO incluís <!--sales_notify:--> UNA VEZ por conversación. Si ya derivaste antes, NO lo incluyas de nuevo.
+- Si el cliente sigue preguntando sobre ventas después de derivar, decile que el especialista se va a comunicar pronto. No insistas con el bloque.
+- Si el cliente TAMBIÉN pregunta por ALQUILER, esas las manejás vos normalmente con el listado de propiedades."""
+
+    return prompt
 
 
 def get_reply(messages: list, lead: dict = None) -> str:

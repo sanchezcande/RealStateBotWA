@@ -96,3 +96,7 @@ PAGE_ACCESS_TOKEN = os.environ.get("PAGE_ACCESS_TOKEN", "")
 #   "notify" = Vera tells the client the agent will contact them, notifies NOTIFY_NUMBER with summary
 #   "self"   = Vera schedules directly via calendar (original behavior)
 VISIT_MODE = os.environ.get("VISIT_MODE", "notify")
+
+# Sales specialist — when set, sale/buy inquiries are forwarded to this number
+# instead of showing specific properties. The specialist contacts the client directly.
+SALES_NOTIFY_NUMBER = os.environ.get("SALES_NOTIFY_NUMBER", "")

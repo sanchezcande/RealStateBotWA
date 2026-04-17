@@ -6,7 +6,7 @@ Notifies the agent via WhatsApp when a lead is qualified or a callback is reques
 import re
 import json
 import logging
-from config import NOTIFY_NUMBER
+from config import NOTIFY_NUMBER, SALES_NOTIFY_NUMBER
 import analytics
 import conversations
 import crm_webhook
@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 LEAD_TAG_RE = re.compile(r"<!--lead:(.*?)-->", re.DOTALL)
 CALLBACK_TAG_RE = re.compile(r"<!--callback:(.*?)-->", re.DOTALL)
+SALES_NOTIFY_TAG_RE = re.compile(r"<!--sales_notify:(.*?)-->", re.DOTALL)
 
 
 def extract_lead_data(ai_text: str):
@@ -41,10 +42,22 @@ def extract_callback_data(ai_text: str):
         return None
 
 
+def extract_sales_notify_data(ai_text: str):
+    match = SALES_NOTIFY_TAG_RE.search(ai_text)
+    if not match:
+        return None
+    try:
+        return json.loads(match.group(1))
+    except json.JSONDecodeError:
+        logger.warning("Could not parse sales_notify JSON: %s", match.group(1))
+        return None
+
+
 def clean_response(ai_text: str) -> str:
     """Remove all hidden tags from the text before sending to user."""
     text = LEAD_TAG_RE.sub("", ai_text)
     text = CALLBACK_TAG_RE.sub("", text)
+    text = SALES_NOTIFY_TAG_RE.sub("", text)
     return text.strip()
 
 
@@ -98,6 +111,15 @@ def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
         _notify_callback(phone, callback_data, current_lead)
         analytics.log_event("callback_requested", phone, channel=channel)
 
+    # Notify sales specialist for buy/sale inquiries
+    sales_notify_data = extract_sales_notify_data(ai_text)
+    if sales_notify_data and SALES_NOTIFY_NUMBER:
+        if not current_lead.get("sales_notified"):
+            _notify_sales(phone, sales_notify_data, current_lead)
+            conversations.update_lead(phone, sales_notified=True)
+            analytics.log_event("sales_lead_notified", phone, channel=channel,
+                                 operation="comprar")
+
     return clean_text
 
 
@@ -144,3 +166,26 @@ def _notify_callback(phone: str, callback_data: dict, lead: dict):
         logger.info("Callback notification sent for %s", phone)
     else:
         logger.error("Failed to send callback notification for %s", phone)
+
+
+def _notify_sales(phone: str, sales_data: dict, lead: dict):
+    """Notify the sales specialist (SALES_NOTIFY_NUMBER) about a buy/sale inquiry."""
+    name = lead.get("name") or "Sin nombre"
+    prop_type = sales_data.get("property_type") or lead.get("property_type") or "No especificado"
+    zone = sales_data.get("zone") or "No especificada"
+    budget = sales_data.get("budget") or lead.get("budget") or "No especificado"
+    summary = conversations.get_conversation_summary(phone)
+    msg = (
+        f"Consulta por propiedad en VENTA\n"
+        f"Cliente: {name}\n"
+        f"Tel: +{phone}\n"
+        f"Tipo: {prop_type}\n"
+        f"Zona: {zone}\n"
+        f"Presupuesto: {budget}\n\n"
+        f"Resumen de la charla:\n{summary}"
+    )
+    success = whatsapp.send_message(SALES_NOTIFY_NUMBER, msg)
+    if success:
+        logger.info("Sales specialist notified for %s", phone)
+    else:
+        logger.error("Failed to notify sales specialist for %s", phone)

@@ -18,6 +18,7 @@ _store = defaultdict(lambda: {
         "timeline": None,
         "name": None,
         "notified": False,
+        "sales_notified": False,
         "visit_scheduled": False,
         "scheduled_visits": [],  # list of "property|date|time" keys to avoid duplicates
         "visit_events": {},      # dict mapping "property|date|time" -> Google Calendar event ID
