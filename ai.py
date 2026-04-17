@@ -8,7 +8,7 @@ import time
 import socket
 from datetime import date, datetime
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ, SALES_NOTIFY_NUMBER
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ, SALES_NOTIFY_NUMBER, AGENT_PHONE
 import sheets
 import calendar_client
 
@@ -297,6 +297,17 @@ PROPIEDADES EN VENTA — DERIVACIÓN A ESPECIALISTA
 - SOLO incluís <!--sales_notify:--> UNA VEZ por conversación. Si ya derivaste antes, NO lo incluyas de nuevo.
 - Si el cliente sigue preguntando sobre ventas después de derivar, decile que el especialista se va a comunicar pronto. No insistas con el bloque.
 - Si el cliente TAMBIÉN pregunta por ALQUILER, esas las manejás vos normalmente con el listado de propiedades."""
+
+    if AGENT_PHONE:
+        prompt += f"""
+
+════════════════════════════════════════
+CONTACTO DIRECTO DEL ASESOR
+════════════════════════════════════════
+- Si el cliente pide el teléfono, WhatsApp, contacto o número del asesor, SE LO DAS: {AGENT_PHONE}.
+- Decilo natural: "si, anotá: {AGENT_PHONE}", "te paso el contacto: {AGENT_PHONE}", etc. Variá la frase.
+- SOLO lo das si el cliente lo pide explícitamente. No lo ofrezcas de entrada.
+- Esto reemplaza la regla anterior de no dar contacto directo. Ahora SÍ lo das."""
 
     return prompt
 

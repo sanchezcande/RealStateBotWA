@@ -100,3 +100,8 @@ VISIT_MODE = os.environ.get("VISIT_MODE", "notify")
 # Sales specialist — when set, sale/buy inquiries are forwarded to this number
 # instead of showing specific properties. The specialist contacts the client directly.
 SALES_NOTIFY_NUMBER = os.environ.get("SALES_NOTIFY_NUMBER", "")
+
+# Agent phone number shared with clients — when set, Vera gives this number
+# to clients who ask for direct contact. Leave empty to keep current behavior
+# (Vera never shares a phone, only offers callback).
+AGENT_PHONE = os.environ.get("AGENT_PHONE", "")
