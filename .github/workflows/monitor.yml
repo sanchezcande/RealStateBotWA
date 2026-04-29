@@ -1,16 +1,19 @@
 name: Monitor Bot Health
 
-# Corre cada 15 minutos automáticamente
+# Corre cada 1 hora automáticamente
 on:
   schedule:
-    - cron: "*/15 * * * *"
-  workflow_dispatch: # también se puede correr manual desde GitHub
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   health-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: actions/setup-python@v5
         with:
