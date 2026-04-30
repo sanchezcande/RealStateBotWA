@@ -106,7 +106,7 @@ def get_messages(phone: str) -> list:
 
 
 _agent_takeover: dict = {}  # phone -> {"until": timestamp}
-_TAKEOVER_TTL = 30 * 60  # 30 minutes
+_TAKEOVER_TTL = 2 * 60 * 60  # 2 hours
 
 
 def set_agent_takeover(phone: str, duration: int = _TAKEOVER_TTL):

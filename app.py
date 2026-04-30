@@ -735,8 +735,14 @@ def receive_meta_message():
             for messaging in entry.get("messaging", []):
                 sender_id = messaging.get("sender", {}).get("id")
                 message = messaging.get("message", {})
-                # Skip delivery/read receipts and echo messages
-                if message.get("is_echo") or not message.get("text"):
+                # Echo = a human replied from the page inbox → pause Vera
+                if message.get("is_echo"):
+                    recipient_id = messaging.get("recipient", {}).get("id")
+                    if recipient_id:
+                        logger.info("Human agent replied to %s via %s — pausing AI 30 min", recipient_id, obj_type)
+                        conversations.set_agent_takeover(recipient_id)
+                    continue
+                if not message.get("text"):
                     continue
                 # Deduplicate by message ID (Meta sometimes sends the same webhook twice)
                 mid = message.get("mid", "")
