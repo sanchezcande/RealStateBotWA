@@ -882,11 +882,15 @@ def receive_meta_message():
             for messaging in entry.get("messaging", []):
                 sender_id = messaging.get("sender", {}).get("id")
                 message = messaging.get("message", {})
-                # Echo = a human replied from the page inbox → pause Vera
+                # Echo = message sent FROM the page. app_id present = sent by bot API, skip.
+                # No app_id = sent by human from page inbox → pause Vera.
                 if message.get("is_echo"):
+                    if message.get("app_id"):
+                        # Bot's own message echoed back — ignore
+                        continue
                     recipient_id = messaging.get("recipient", {}).get("id")
                     if recipient_id:
-                        logger.info("Human agent replied to %s via %s — pausing AI 30 min", recipient_id, obj_type)
+                        logger.info("Human agent replied to %s via %s — pausing AI", recipient_id, obj_type)
                         conversations.set_agent_takeover(recipient_id)
                     continue
                 if not message.get("text"):
