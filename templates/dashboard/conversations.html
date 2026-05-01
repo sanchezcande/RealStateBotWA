@@ -112,7 +112,7 @@
           <div class="conv-reply-bar">
             <div class="conv-takeover-toggle">
               <label class="toggle-label">
-                <input type="checkbox" :checked="!botPaused" @change="botPaused = !$event.target.checked; toggleBotPause()">
+                <input type="checkbox" :checked="botPaused" @change="botPaused = $event.target.checked; toggleBotPause()">
                 <span x-text="botPaused ? t('bot_paused') : t('bot_active')"></span>
               </label>
             </div>
