@@ -485,18 +485,35 @@ def _extract_property_type(text: str):
     return None
 
 
-def _extract_name(text: str):
-    """Detect user's name from Spanish and English self-introduction patterns."""
+def _extract_name(text: str, asked_for_name: bool = False):
+    """Detect user's name from Spanish and English self-introduction patterns.
+    asked_for_name: only match bare single-word responses when Vera already asked."""
     _LETTER = r"[a-záéíóúüñA-ZÁÉÍÓÚÜÑ]"
     _NOT_NAMES = {"buenas", "buen", "bueno", "buenos", "hola", "bien", "todo", "algo",
                   "como", "esta", "este", "esto", "eso", "esa", "que", "una", "uno",
                   "con", "por", "para", "muy", "mas", "les", "los", "las", "del",
                   "dia", "tarde", "noche", "aca", "ahi", "alla",
+                  # Common real estate / inquiry words (avoid false name matches)
+                  "precio", "precios", "alquiler", "alquilar", "compra", "comprar",
+                  "venta", "vender", "depto", "departamento", "departamentos",
+                  "casa", "casas", "info", "información", "informacion", "consulta",
+                  "presupuesto", "fotos", "foto", "horarios", "horario",
+                  "disponible", "disponibles", "ubicación", "ubicacion",
+                  "dirección", "direccion", "metros", "cochera", "duplex",
+                  "monoambiente", "terreno", "lote", "local", "oficina",
+                  "propiedad", "propiedades", "ambientes", "dormitorios",
+                  "habitaciones", "expensas", "garantía", "garantia",
+                  "contrato", "requisitos", "condiciones", "valores",
+                  "mañana", "manana", "hoy", "ahora", "listo", "dale",
+                  "gracias", "chau", "perdon", "disculpa", "claro", "perfecto",
+                  "genial", "excelente", "interesado", "interesada", "averiguar",
+                  "consultar", "reserva", "reservar", "visita", "visitar",
                   # English stop words
                   "hey", "hello", "hi", "good", "fine", "great", "well", "thanks",
                   "thank", "yes", "yeah", "yep", "sure", "okay", "the", "and",
                   "not", "but", "just", "here", "there", "looking", "interested",
-                  "want", "need", "have", "are", "was", "were", "been", "being"}
+                  "want", "need", "have", "are", "was", "were", "been", "being",
+                  "price", "rent", "buy", "sale", "available", "photos", "info"}
     patterns = [
         # Spanish patterns
         r"(?:soy|me llamo|mi nombre es|mi nombre:)\s+(" + _LETTER + r"{2,20})",
@@ -516,11 +533,14 @@ def _extract_name(text: str):
                 return m.group(1).capitalize()
     # Bare name response: single word (2-20 letters), possibly with punctuation
     # Matches responses like "Cande", "cande!", "Cande."
-    bare = re.match(r"^\s*(" + _LETTER + r"{2,20})\s*[!.,;:?]*\s*$", text)
-    if bare:
-        name = bare.group(1).lower()
-        if name not in _NOT_NAMES:
-            return bare.group(1).capitalize()
+    # Only applies when Vera already asked "con quién hablo?" to avoid
+    # treating inquiry words like "Precio" as names.
+    if asked_for_name:
+        bare = re.match(r"^\s*(" + _LETTER + r"{2,20})\s*[!.,;:?]*\s*$", text)
+        if bare:
+            name = bare.group(1).lower()
+            if name not in _NOT_NAMES:
+                return bare.group(1).capitalize()
     return None
 
 
@@ -546,7 +566,13 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
             conversations.update_lead(identifier, property_type=prop_type)
             logger.info("Property type extracted for %s: %s", identifier, prop_type)
 
-    name = _extract_name(user_text)
+    # Check if Vera already asked for the name (enables bare single-word detection)
+    history_so_far = conversations.get_messages(identifier)
+    _asked_name = any(
+        m["role"] == "assistant" and re.search(r"(?:qui[eé]n hablo|who am i speaking|what.?s your name)", m["content"], re.IGNORECASE)
+        for m in history_so_far
+    )
+    name = _extract_name(user_text, asked_for_name=_asked_name)
     if name:
         current = conversations.get_lead(identifier)
         if not current.get("name"):
@@ -592,69 +618,133 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
 
     # Detect Drive URLs — download photos and send as images
     drive_urls = drive_photos.extract_drive_urls(clean_response)
-    photos: list[tuple] = []
-    if drive_urls and send_image_fn:
-        photos = drive_photos.download_photos(drive_urls)
-        if photos:
-            clean_response = drive_photos.strip_drive_urls(clean_response)
-
-    # Detect external image URLs (e.g. esquelprop.com) and download them
-    ext_photos: list[tuple] = []
-    if send_image_fn and not photos:
-        _IMG_URL_RE = re.compile(r'(https?://[^\s)>\]]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s)>\]]*)?)', re.IGNORECASE)
-        img_urls = _IMG_URL_RE.findall(clean_response)
-        for img_url in img_urls[:5]:
-            try:
-                if not _is_safe_image_url(img_url):
-                    logger.warning("Blocked unsafe image URL: %s", img_url)
-                    continue
-                r = requests.get(img_url, timeout=10, stream=True, allow_redirects=False)
-                if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/"):
-                    content_len = r.headers.get("content-length")
-                    if content_len and int(content_len) > MAX_IMAGE_BYTES:
-                        logger.warning("Image too large (%s bytes): %s", content_len, img_url)
-                        continue
-                    buf = io.BytesIO()
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if not chunk:
-                            continue
-                        buf.write(chunk)
-                        if buf.tell() > MAX_IMAGE_BYTES:
-                            logger.warning("Image exceeded max size while downloading: %s", img_url)
-                            buf = None
-                            break
-                    if not buf:
-                        continue
-                    mime = r.headers.get("content-type", "image/jpeg").split(";")[0]
-                    ext_photos.append((img_url.split("/")[-1], buf.getvalue(), mime))
-                    clean_response = clean_response.replace(img_url, "").strip()
-            except Exception as e:
-                logger.warning("Failed to download external image %s: %s", img_url, e)
-        clean_response = re.sub(r'\n\s*\n\s*\n', '\n\n', clean_response).strip()
-
-    if clean_response:
-        conversations.add_message(identifier, "assistant", clean_response, channel=channel)
-        send_fn(identifier, clean_response)
-
-    # Send downloaded photos as actual images and save for dashboard
     import uuid as _uuid
-    sent_markers = []
-    for _name, img_data, mime in (photos or ext_photos):
-        try:
-            send_image_fn(identifier, img_data, mime)
-            # Save a copy for dashboard viewing
-            chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
-            os.makedirs(chat_dir, exist_ok=True)
-            ext = mime.split("/")[-1].replace("jpeg", "jpg") if mime else "jpg"
-            fname = f"{_uuid.uuid4().hex[:12]}.{ext}"
-            with open(os.path.join(chat_dir, fname), "wb") as fout:
-                fout.write(img_data)
-            sent_markers.append(f"[img:/uploads/chat_photos/{fname}]")
-            time.sleep(0.5)
-        except Exception as e:
-            logger.error("Failed sending photo to %s: %s", identifier, e)
-    if sent_markers:
-        conversations.add_message(identifier, "assistant", "\n".join(sent_markers), channel=channel)
+
+    if drive_urls and send_image_fn:
+        # Split response text around Drive URLs to interleave text + photos per property
+        # e.g. "Acá las del PH: <url1>\n\nY las del dúplex: <url2>\n\nFijate."
+        #   → ["Acá las del PH:", "Y las del dúplex:", "Fijate."]
+        text_parts = clean_response
+        for u in drive_urls:
+            text_parts = text_parts.replace(u["url"], "\x00")
+        segments = [s.strip() for s in text_parts.split("\x00")]
+        # segments has len(drive_urls)+1 parts: before_url1, between, ..., after_last
+
+        all_sent_markers = []
+        all_failed = 0
+        all_failed_urls = []
+
+        for i, url_info in enumerate(drive_urls):
+            # Send the text segment before this URL's photos
+            text_before = segments[i] if i < len(segments) else ""
+            text_before = re.sub(r'\n\s*\n\s*\n', '\n\n', text_before).strip()
+            if text_before:
+                send_fn(identifier, text_before)
+                conversations.add_message(identifier, "assistant", text_before, channel=channel)
+
+            # Download and send this URL's photos
+            photos = drive_photos.download_photos([url_info])
+            if photos:
+                for _name, img_data, mime in photos:
+                    try:
+                        success = send_image_fn(identifier, img_data, mime)
+                        if success:
+                            chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
+                            os.makedirs(chat_dir, exist_ok=True)
+                            ext = mime.split("/")[-1].replace("jpeg", "jpg") if mime else "jpg"
+                            fname = f"{_uuid.uuid4().hex[:12]}.{ext}"
+                            with open(os.path.join(chat_dir, fname), "wb") as fout:
+                                fout.write(img_data)
+                            all_sent_markers.append(f"[img:/uploads/chat_photos/{fname}]")
+                        else:
+                            all_failed += 1
+                            all_failed_urls.append(url_info["url"])
+                        time.sleep(1)
+                    except Exception as e:
+                        logger.error("Failed sending photo to %s: %s", identifier, e)
+                        all_failed += 1
+                        all_failed_urls.append(url_info["url"])
+            else:
+                # Drive download failed — send URL as text fallback
+                send_fn(identifier, url_info["url"])
+                conversations.add_message(identifier, "assistant", url_info["url"], channel=channel)
+                logger.warning("Drive download failed for %s — sent URL as text", url_info["url"])
+
+        # Send trailing text after the last URL (e.g. "Fijate y decime")
+        trailing = segments[-1] if len(segments) > len(drive_urls) else ""
+        trailing = re.sub(r'\n\s*\n\s*\n', '\n\n', trailing).strip()
+        if trailing:
+            send_fn(identifier, trailing)
+            conversations.add_message(identifier, "assistant", trailing, channel=channel)
+
+        # Fallback: if any image sends failed, re-send those Drive URLs
+        if all_failed > 0 and all_failed_urls:
+            unique_urls = list(dict.fromkeys(all_failed_urls))
+            fallback_text = "Te paso los links de las fotos: " + " ".join(unique_urls)
+            send_fn(identifier, fallback_text)
+            conversations.add_message(identifier, "assistant", fallback_text, channel=channel)
+            logger.warning("Sent %d Drive URL(s) as text fallback after %d image send failures", len(unique_urls), all_failed)
+
+        if all_sent_markers:
+            conversations.add_message(identifier, "assistant", "\n".join(all_sent_markers), channel=channel)
+
+    else:
+        # No Drive URLs — check for external image URLs (e.g. esquelprop.com)
+        ext_photos: list[tuple] = []
+        if send_image_fn:
+            _IMG_URL_RE = re.compile(r'(https?://[^\s)>\]]+\.(?:jpg|jpeg|png|webp)(?:\?[^\s)>\]]*)?)', re.IGNORECASE)
+            img_urls = _IMG_URL_RE.findall(clean_response)
+            for img_url in img_urls[:5]:
+                try:
+                    if not _is_safe_image_url(img_url):
+                        logger.warning("Blocked unsafe image URL: %s", img_url)
+                        continue
+                    r = requests.get(img_url, timeout=10, stream=True, allow_redirects=False)
+                    if r.status_code == 200 and r.headers.get("content-type", "").startswith("image/"):
+                        content_len = r.headers.get("content-length")
+                        if content_len and int(content_len) > MAX_IMAGE_BYTES:
+                            logger.warning("Image too large (%s bytes): %s", content_len, img_url)
+                            continue
+                        buf = io.BytesIO()
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if not chunk:
+                                continue
+                            buf.write(chunk)
+                            if buf.tell() > MAX_IMAGE_BYTES:
+                                logger.warning("Image exceeded max size while downloading: %s", img_url)
+                                buf = None
+                                break
+                        if not buf:
+                            continue
+                        mime = r.headers.get("content-type", "image/jpeg").split(";")[0]
+                        ext_photos.append((img_url.split("/")[-1], buf.getvalue(), mime))
+                        clean_response = clean_response.replace(img_url, "").strip()
+                except Exception as e:
+                    logger.warning("Failed to download external image %s: %s", img_url, e)
+            clean_response = re.sub(r'\n\s*\n\s*\n', '\n\n', clean_response).strip()
+
+        if clean_response:
+            conversations.add_message(identifier, "assistant", clean_response, channel=channel)
+            send_fn(identifier, clean_response)
+
+        # Send external photos
+        sent_markers = []
+        for _name, img_data, mime in ext_photos:
+            try:
+                success = send_image_fn(identifier, img_data, mime)
+                if success:
+                    chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
+                    os.makedirs(chat_dir, exist_ok=True)
+                    ext = mime.split("/")[-1].replace("jpeg", "jpg") if mime else "jpg"
+                    fname = f"{_uuid.uuid4().hex[:12]}.{ext}"
+                    with open(os.path.join(chat_dir, fname), "wb") as fout:
+                        fout.write(img_data)
+                    sent_markers.append(f"[img:/uploads/chat_photos/{fname}]")
+                time.sleep(1)
+            except Exception as e:
+                logger.error("Failed sending photo to %s: %s", identifier, e)
+        if sent_markers:
+            conversations.add_message(identifier, "assistant", "\n".join(sent_markers), channel=channel)
 
 
 def _reply(phone: str, user_text: str):
@@ -690,45 +780,56 @@ def _send_meta_message(recipient_id: str, text: str):
 
 
 def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "image/jpeg"):
-    """Send an image via Meta Graph API (Facebook Messenger / Instagram Direct)."""
+    """Send an image via Meta Graph API (Facebook Messenger / Instagram Direct).
+    Retries once on failure. Returns True on success."""
     if not PAGE_ACCESS_TOKEN:
         logger.warning("PAGE_ACCESS_TOKEN not set — cannot send Meta image.")
         return False
-    try:
-        ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
-        resp = requests.post(
-            "https://graph.facebook.com/v19.0/me/messages",
-            params={"access_token": PAGE_ACCESS_TOKEN},
-            data={
-                "recipient": json.dumps({"id": recipient_id}),
-                "message": json.dumps({
-                    "attachment": {"type": "image", "payload": {}}
-                }),
-            },
-            files={"filedata": (f"photo.{ext}", image_data, mime_type)},
-            timeout=30,
-        )
-        if not resp.ok:
-            logger.error("Meta image API error %s: %s", resp.status_code, resp.text)
-            return False
-        return True
-    except Exception as e:
-        logger.error("Failed to send Meta image: %s", e)
-        return False
+    ext = mime_type.split("/")[-1].replace("jpeg", "jpg")
+    for attempt in range(2):
+        try:
+            resp = requests.post(
+                "https://graph.facebook.com/v19.0/me/messages",
+                params={"access_token": PAGE_ACCESS_TOKEN},
+                data={
+                    "recipient": json.dumps({"id": recipient_id}),
+                    "message": json.dumps({
+                        "attachment": {"type": "image", "payload": {}}
+                    }),
+                },
+                files={"filedata": (f"photo.{ext}", image_data, mime_type)},
+                timeout=45,
+            )
+            if resp.ok:
+                return True
+            logger.error("Meta image API error (attempt %d) %s: %s", attempt + 1, resp.status_code, resp.text)
+        except Exception as e:
+            logger.error("Failed to send Meta image (attempt %d): %s", attempt + 1, e)
+        if attempt == 0:
+            time.sleep(1)
+    return False
 
 
 def _get_meta_profile_name(sender_id: str) -> str | None:
-    """Fetch the user's first name from Meta Graph API (works for FB & IG)."""
+    """Fetch the user's name from Meta Graph API (FB & IG).
+    Tries first_name, then name, then username as fallbacks."""
     if not PAGE_ACCESS_TOKEN:
         return None
     try:
         resp = requests.get(
             f"https://graph.facebook.com/v19.0/{sender_id}",
-            params={"fields": "first_name", "access_token": PAGE_ACCESS_TOKEN},
+            params={"fields": "first_name,name,username", "access_token": PAGE_ACCESS_TOKEN},
             timeout=5,
         )
         if resp.ok:
-            return resp.json().get("first_name")
+            data = resp.json()
+            # Prefer first_name, fall back to first word of full name, then username
+            if data.get("first_name"):
+                return data["first_name"]
+            if data.get("name"):
+                return data["name"].split()[0]
+            if data.get("username"):
+                return data["username"]
     except Exception as e:
         logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
     return None
