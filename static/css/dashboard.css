@@ -654,6 +654,12 @@ tr:hover td{background:var(--gold-light)}
 }
 .emoji-pick:active{transform:scale(.92)}
 
+/* ── Chat photos ──────────────────────────────────────────────── */
+.chat-photo{
+  max-width:100%;border-radius:8px;margin:6px 0 2px;cursor:pointer;
+  display:block;
+}
+
 /* ── Emoji-only messages ──────────────────────────────────────── */
 .msg-bubble.msg-emoji-only{
   background:none !important;border:none !important;

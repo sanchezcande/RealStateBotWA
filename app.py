@@ -281,7 +281,23 @@ def _handle_message(msg: dict):
             _enqueue(phone, "[audio recibido — no se pudo procesar]")
         return
 
-    if msg_type in ("image", "video", "document"):
+    if msg_type == "image":
+        media_id = (msg.get("image") or {}).get("id")
+        caption = (msg.get("image") or {}).get("caption", "").strip()
+        if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
+            logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
+            return
+        if media_id:
+            threading.Thread(
+                target=_save_chat_photo,
+                args=(phone, media_id, caption),
+                daemon=True,
+            ).start()
+        else:
+            _enqueue(phone, caption or "[imagen recibida]")
+        return
+
+    if msg_type in ("video", "document"):
         if msg_id and not analytics.mark_message_processed(msg_id, channel="whatsapp"):
             logger.info("Duplicate WhatsApp message ignored: %s", msg_id)
             return
@@ -328,6 +344,24 @@ def _download_whatsapp_media(media_id: str) -> bytes | None:
     except Exception as e:
         logger.error("Failed to download WhatsApp media %s: %s", media_id, e)
         return None
+
+
+def _save_chat_photo(phone: str, media_id: str, caption: str = ""):
+    """Download a user-sent photo, save it locally, and enqueue with image marker."""
+    import uuid
+    data = _download_whatsapp_media(media_id)
+    if not data:
+        _enqueue(phone, caption or "[imagen recibida]")
+        return
+    chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
+    os.makedirs(chat_dir, exist_ok=True)
+    filename = f"{uuid.uuid4().hex[:12]}.jpg"
+    filepath = os.path.join(chat_dir, filename)
+    with open(filepath, "wb") as f:
+        f.write(data)
+    img_marker = f"[img:/uploads/chat_photos/{filename}]"
+    text = f"{caption}\n{img_marker}" if caption else img_marker
+    _enqueue(phone, text)
 
 
 def _transcribe_audio_gemini(audio_bytes: bytes, mime_type: str = "audio/ogg") -> str | None:
@@ -602,13 +636,25 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         conversations.add_message(identifier, "assistant", clean_response, channel=channel)
         send_fn(identifier, clean_response)
 
-    # Send downloaded photos as actual images
+    # Send downloaded photos as actual images and save for dashboard
+    import uuid as _uuid
+    sent_markers = []
     for _name, img_data, mime in (photos or ext_photos):
         try:
             send_image_fn(identifier, img_data, mime)
-            time.sleep(0.5)  # small delay between images
+            # Save a copy for dashboard viewing
+            chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
+            os.makedirs(chat_dir, exist_ok=True)
+            ext = mime.split("/")[-1].replace("jpeg", "jpg") if mime else "jpg"
+            fname = f"{_uuid.uuid4().hex[:12]}.{ext}"
+            with open(os.path.join(chat_dir, fname), "wb") as fout:
+                fout.write(img_data)
+            sent_markers.append(f"[img:/uploads/chat_photos/{fname}]")
+            time.sleep(0.5)
         except Exception as e:
             logger.error("Failed sending photo to %s: %s", identifier, e)
+    if sent_markers:
+        conversations.add_message(identifier, "assistant", "\n".join(sent_markers), channel=channel)
 
 
 def _reply(phone: str, user_text: str):

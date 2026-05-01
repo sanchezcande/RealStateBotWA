@@ -100,7 +100,7 @@
                   'msg-assistant': m.role === 'assistant',
                   'msg-agent': m.role === 'agent',
                   'msg-emoji-only': isEmojiOnly(m.content)
-                }" x-text="m.content"></div>
+                }" x-html="renderMsg(m.content)"></div>
                 <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''">
                   <span x-show="m.role === 'agent'" class="agent-tag" x-text="t('agent_label')"></span>
                   <span x-text="formatTime(m.time)"></span>
@@ -197,6 +197,17 @@ function convViewer() {
       '📍','📅','⏰','📞','📸','📝','💰','✅','❌','➡️',
     ],
     _pollTimer: null,
+
+    renderMsg(text) {
+      if (!text) return '';
+      // Escape HTML first to prevent XSS
+      const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      // Replace [img:url] markers with <img> tags
+      const withImgs = esc.replace(/\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]/g,
+        '<img src="$1" class="chat-photo" loading="lazy" onclick="window.open(this.src)">');
+      // Convert newlines to <br>
+      return withImgs.replace(/\n/g, '<br>');
+    },
 
     isEmojiOnly(text) {
       if (!text) return false;

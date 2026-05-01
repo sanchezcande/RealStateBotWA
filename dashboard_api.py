@@ -185,7 +185,10 @@ def api_conversation_export(phone_hash):
         role_label = "Cliente" if m["role"] == "user" else ("Agente" if m["role"] == "agent" else "Vera (Bot)")
         role_class = m["role"]
         time_str = m.get("time", "")
-        content = m["content"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>")
+        content = m["content"].replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        import re as _re
+        content = _re.sub(r'\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]', r'<img src="\1" style="max-width:300px;border-radius:8px;margin:6px 0">', content)
+        content = content.replace("\n", "<br>")
         msgs_html.append(f'<div class="msg {role_class}"><div class="role">{role_label} <span class="time">{time_str}</span></div><div class="text">{content}</div></div>')
 
     lead_info = ""
