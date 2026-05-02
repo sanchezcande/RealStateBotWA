@@ -605,6 +605,8 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
     clean_response = visit_scheduler.process(identifier, clean_response)
     clean_response = clean_response.replace("¿", "").replace("¡", "")
+    # Strip markdown-style separators (---) the model sometimes adds
+    clean_response = re.sub(r'\n*-{3,}\n*', '\n\n', clean_response).strip()
 
     # Safety net: strip re-introduction if conversation is already in progress
     history_after = conversations.get_messages(identifier)
@@ -638,6 +640,8 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         for u in drive_urls:
             text_parts = text_parts.replace(u["url"], "\x00")
         segments = [s.strip() for s in text_parts.split("\x00")]
+        # Clean decoration-only segments (e.g. bare "---" separators)
+        segments = [re.sub(r'^-{2,}\s*$', '', s, flags=re.MULTILINE).strip() for s in segments]
         # segments has len(drive_urls)+1 parts: before_url1, between, ..., after_last
 
         all_sent_markers = []
