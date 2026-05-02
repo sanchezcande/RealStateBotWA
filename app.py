@@ -866,18 +866,15 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
     return None
 
 
-def _handle_meta_image(sender_id: str, img_url: str, channel: str):
-    """Download image from Meta CDN and process with vision."""
+def _download_meta_image(sender_id: str, img_url: str):
+    """Download image from Meta CDN and store for vision processing."""
     try:
         resp = requests.get(img_url, timeout=15)
         resp.raise_for_status()
-        img_data = resp.content
-        mime = resp.headers.get("content-type", "image/jpeg")
-        _pending_images[sender_id] = {"data": img_data, "mime": mime}
-        _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
+        _pending_images[sender_id] = {"data": resp.content, "mime": resp.headers.get("content-type", "image/jpeg")}
+        logger.info("Image downloaded for vision: %s (%d bytes)", sender_id, len(resp.content))
     except Exception as e:
         logger.error("Failed to download Meta image for %s: %s", sender_id, e)
-        _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
 
 
 def _reply_meta(sender_id: str, user_text: str, channel: str):
@@ -950,22 +947,21 @@ def receive_meta_message():
                     continue
                 # Handle image attachments (IG/FB)
                 attachments = message.get("attachments", {}).get("data", []) if isinstance(message.get("attachments"), dict) else message.get("attachments", [])
-                if not message.get("text") and attachments:
-                    img_att = next((a for a in attachments if a.get("type") == "image"), None)
-                    if img_att and sender_id:
-                        img_url = img_att.get("payload", {}).get("url", "")
-                        if img_url:
-                            mid_img = message.get("mid", "")
-                            if mid_img:
-                                ch = "facebook" if obj_type == "page" else "instagram"
-                                if not analytics.mark_message_processed(mid_img, channel=ch):
-                                    continue
-                            logger.info("Meta (%s) image from %s", obj_type, sender_id)
-                            threading.Thread(
-                                target=_handle_meta_image,
-                                args=(sender_id, img_url, "facebook" if obj_type == "page" else "instagram"),
-                                daemon=True,
-                            ).start()
+                img_att = next((a for a in attachments if a.get("type") == "image"), None) if attachments else None
+                if img_att and sender_id:
+                    img_url = img_att.get("payload", {}).get("url", "")
+                    if img_url:
+                        _download_meta_image(sender_id, img_url)
+                if not message.get("text") and img_att:
+                    # Image-only message — enqueue placeholder so AI sees the image
+                    mid_img = message.get("mid", "")
+                    if mid_img:
+                        ch = "facebook" if obj_type == "page" else "instagram"
+                        if not analytics.mark_message_processed(mid_img, channel=ch):
+                            continue
+                    logger.info("Meta (%s) image-only from %s", obj_type, sender_id)
+                    channel = "facebook" if obj_type == "page" else "instagram"
+                    _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
                     continue
                 if not message.get("text"):
                     continue
