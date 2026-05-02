@@ -116,9 +116,12 @@
           <!-- Agent reply bar -->
           <div class="conv-reply-bar">
             <div class="conv-takeover-toggle">
-              <label class="toggle-label">
-                <input type="checkbox" :checked="botPaused" @change="botPaused = $event.target.checked; toggleBotPause()">
-                <span x-text="botPaused ? t('bot_paused') : t('bot_active')"></span>
+              <label class="switch-label">
+                <div class="switch" :class="{'switch-off': botPaused}">
+                  <input type="checkbox" :checked="!botPaused" @change="botPaused = !$event.target.checked; toggleBotPause()">
+                  <span class="switch-slider"></span>
+                </div>
+                <span x-text="botPaused ? t('bot_paused') : t('bot_active')" :style="botPaused ? 'color:var(--gold)' : ''"></span>
               </label>
             </div>
             <div class="conv-reply-input">

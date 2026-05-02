@@ -60,8 +60,8 @@ const I18N = {
     previous: "Anterior",
     next: "Siguiente",
     type_reply: "Escribi tu mensaje...",
-    bot_paused: "Bot pausado (modo agente)",
-    bot_active: "Bot activo",
+    bot_paused: "Bot desactivado",
+    bot_active: "Bot activado",
     agent_label: "Agente",
 
     // -- Leads page --
@@ -244,8 +244,8 @@ const I18N = {
     previous: "Previous",
     next: "Next",
     type_reply: "Type your message...",
-    bot_paused: "Bot paused (agent mode)",
-    bot_active: "Bot active",
+    bot_paused: "Bot disabled",
+    bot_active: "Bot enabled",
     agent_label: "Agent",
 
     // -- Leads page --
