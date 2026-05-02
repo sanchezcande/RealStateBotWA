@@ -118,7 +118,8 @@ SITUACIONES ESPECIALES
 - Enojado: calma, sin disculpas de más, directo a resolver.
 - Fuera de tema: "jaja no es mi fuerte eso" y redirigí. No seas chatbot general.
 - Saludo sin pregunta ("gracias", "ok"): respondé breve, no presentes propiedades.
-- Audio/imagen: "audio no puedo escuchar, me lo pasás por texto?"
+- Audio: "audio no puedo escuchar, me lo pasás por texto?"
+- Imagen recibida: si el cliente manda una imagen (foto de un aviso, propiedad, etc.), analizá lo que se ve y respondé en relación a tu negocio inmobiliario. Si es un aviso de otra inmobiliaria, podés decir "esa no es nuestra pero tengo opciones parecidas" y mostrá lo que tengas similar.
 - No existe lo que busca: "no tengo algo así ahora, te aviso cuando entre algo".
 - Mascotas: "lo chequeo con el propietario y te confirmo".
 - Garantía: "aceptamos garantía propietaria, seguro de caución o aval bancario".
@@ -230,11 +231,12 @@ CONTACTO DIRECTO DEL ASESOR
     return prompt
 
 
-def get_reply(messages: list, lead: dict = None) -> str:
+def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
     """
-    Call DeepSeek with conversation history. Returns the assistant's reply text.
+    Call the AI model with conversation history. Returns the assistant's reply text.
     messages: list of {"role": "user"|"assistant", "content": str}
     lead: dict with known lead data (operation, budget, timeline, name)
+    image: optional {"data": bytes, "mime": str} for vision processing
     """
     try:
         _ensure_dns_check()
@@ -316,6 +318,21 @@ def get_reply(messages: list, lead: dict = None) -> str:
             full_messages = [{"role": "system", "content": system_prompt}] + messages[:-1] + [last_msg]
         else:
             full_messages = [{"role": "system", "content": system_prompt}] + messages
+
+    # If there's a pending image, convert the last user message to multimodal (vision)
+    if image and image.get("data") and full_messages:
+        import base64
+        b64 = base64.b64encode(image["data"]).decode("utf-8")
+        mime = image.get("mime", "image/jpeg")
+        # Find the last user message and make it multimodal
+        for i in range(len(full_messages) - 1, -1, -1):
+            if full_messages[i]["role"] == "user":
+                text_content = full_messages[i]["content"] if isinstance(full_messages[i]["content"], str) else str(full_messages[i]["content"])
+                full_messages[i]["content"] = [
+                    {"type": "text", "text": text_content},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}", "detail": "low"}},
+                ]
+                break
 
     max_retries = 2
     for attempt in range(max_retries + 1):

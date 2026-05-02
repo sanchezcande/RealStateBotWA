@@ -349,7 +349,7 @@ def _download_whatsapp_media(media_id: str) -> bytes | None:
 
 
 def _save_chat_photo(phone: str, media_id: str, caption: str = ""):
-    """Download a user-sent photo, save it locally, and enqueue with image marker."""
+    """Download a user-sent photo, save it locally, store for vision, and enqueue."""
     import uuid
     data = _download_whatsapp_media(media_id)
     if not data:
@@ -361,8 +361,10 @@ def _save_chat_photo(phone: str, media_id: str, caption: str = ""):
     filepath = os.path.join(chat_dir, filename)
     with open(filepath, "wb") as f:
         f.write(data)
+    # Store image for GPT vision processing
+    _pending_images[phone] = {"data": data, "mime": "image/jpeg"}
     img_marker = f"[img:/uploads/chat_photos/{filename}]"
-    text = f"{caption}\n{img_marker}" if caption else img_marker
+    text = f"{caption}\n{img_marker}" if caption else f"[El cliente envió una imagen]\n{img_marker}"
     _enqueue(phone, text)
 
 
@@ -595,7 +597,9 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
 
     history = conversations.get_messages(identifier)
     lead = conversations.get_lead(identifier)
-    ai_response = ai.get_reply(history, lead=lead)
+    # Check for pending image to include in vision request
+    image_data = _pending_images.pop(identifier, None)
+    ai_response = ai.get_reply(history, lead=lead, image=image_data)
 
     clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
     clean_response = visit_scheduler.process(identifier, clean_response)
@@ -768,6 +772,10 @@ def _reply(phone: str, user_text: str):
 _bot_sent_ts: dict[str, float] = {}
 _BOT_ECHO_WINDOW = 60  # seconds — echoes within this window after bot send are ignored
 
+# Temporary storage for user-sent images pending AI processing.
+# Key: phone/sender_id, Value: {"data": bytes, "mime": str}
+_pending_images: dict = {}
+
 def _send_meta_message(recipient_id: str, text: str):
     """Send a reply via Meta Graph API (Facebook Messenger / Instagram Direct)."""
     if not PAGE_ACCESS_TOKEN:
@@ -858,6 +866,20 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
     return None
 
 
+def _handle_meta_image(sender_id: str, img_url: str, channel: str):
+    """Download image from Meta CDN and process with vision."""
+    try:
+        resp = requests.get(img_url, timeout=15)
+        resp.raise_for_status()
+        img_data = resp.content
+        mime = resp.headers.get("content-type", "image/jpeg")
+        _pending_images[sender_id] = {"data": img_data, "mime": mime}
+        _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
+    except Exception as e:
+        logger.error("Failed to download Meta image for %s: %s", sender_id, e)
+        _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
+
+
 def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
     if DASHBOARD_PLAN == "starter":
@@ -925,6 +947,25 @@ def receive_meta_message():
                             continue
                         logger.info("Human agent replied to %s via %s — pausing AI", recipient_id, obj_type)
                         conversations.set_agent_takeover(recipient_id)
+                    continue
+                # Handle image attachments (IG/FB)
+                attachments = message.get("attachments", {}).get("data", []) if isinstance(message.get("attachments"), dict) else message.get("attachments", [])
+                if not message.get("text") and attachments:
+                    img_att = next((a for a in attachments if a.get("type") == "image"), None)
+                    if img_att and sender_id:
+                        img_url = img_att.get("payload", {}).get("url", "")
+                        if img_url:
+                            mid_img = message.get("mid", "")
+                            if mid_img:
+                                ch = "facebook" if obj_type == "page" else "instagram"
+                                if not analytics.mark_message_processed(mid_img, channel=ch):
+                                    continue
+                            logger.info("Meta (%s) image from %s", obj_type, sender_id)
+                            threading.Thread(
+                                target=_handle_meta_image,
+                                args=(sender_id, img_url, "facebook" if obj_type == "page" else "instagram"),
+                                daemon=True,
+                            ).start()
                     continue
                 if not message.get("text"):
                     continue
