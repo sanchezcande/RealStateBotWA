@@ -77,6 +77,18 @@ def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
     # Update lead state
     if lead_data:
         update = {k: v for k, v in lead_data.items() if v}
+        # Validate name — reject obvious non-names from AI hallucinations
+        if "name" in update:
+            _name_lower = update["name"].strip().lower()
+            _INVALID_NAMES = {
+                "gracias", "ok", "dale", "listo", "buenas", "hola", "chau",
+                "perfecto", "genial", "excelente", "claro", "si", "no",
+                "precio", "precios", "alquiler", "consulta", "info",
+                "disponible", "interesado", "interesada", "bueno", "bien",
+                "disculpa", "perdon", "nada", "todo", "algo", "null",
+            }
+            if _name_lower in _INVALID_NAMES or len(_name_lower) < 2:
+                del update["name"]
         conversations.update_lead(phone, **update)
         logger.info("Lead updated for %s: %s", phone, update)
 

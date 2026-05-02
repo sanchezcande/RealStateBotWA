@@ -506,8 +506,8 @@ def _extract_name(text: str, asked_for_name: bool = False):
                   "propiedad", "propiedades", "ambientes", "dormitorios",
                   "habitaciones", "expensas", "garantía", "garantia",
                   "contrato", "requisitos", "condiciones", "valores",
-                  "mañana", "manana", "hoy", "ahora", "listo", "dale",
-                  "gracias", "chau", "perdon", "disculpa", "claro", "perfecto",
+                  "mañana", "manana", "hoy", "ahora", "listo", "dale", "ok",
+                  "gracias", "chau", "perdon", "disculpa", "claro", "perfecto", "si",
                   "genial", "excelente", "interesado", "interesada", "averiguar",
                   "consultar", "reserva", "reservar", "visita", "visitar",
                   # English stop words
@@ -571,7 +571,10 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # Check if Vera already asked for the name (enables bare single-word detection)
     history_so_far = conversations.get_messages(identifier)
     _asked_name = any(
-        m["role"] == "assistant" and re.search(r"(?:qui[eé]n hablo|who am i speaking|what.?s your name)", m["content"], re.IGNORECASE)
+        m["role"] == "assistant" and re.search(
+            r"(?:qui[eé]n hablo|tu nombre|me dec[ií]s tu nombre|c[oó]mo te llam[aá]s|who am i speaking|what.?s your name)",
+            m["content"], re.IGNORECASE
+        )
         for m in history_so_far
     )
     name = _extract_name(user_text, asked_for_name=_asked_name)
