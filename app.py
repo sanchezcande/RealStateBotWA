@@ -824,23 +824,25 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
     return False
 
 
-def _get_meta_profile_name(sender_id: str) -> str | None:
+def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | None:
     """Fetch the user's name from Meta Graph API (FB & IG).
-    Tries first_name, then name, then username as fallbacks."""
+    Instagram only supports 'name' and 'username'; Facebook supports 'first_name' too."""
     if not PAGE_ACCESS_TOKEN:
         logger.warning("No PAGE_ACCESS_TOKEN — cannot fetch profile name for %s", sender_id)
         return None
+    # Instagram doesn't support first_name field
+    fields = "name,username" if channel == "instagram" else "first_name,name,username"
     try:
         resp = requests.get(
             f"https://graph.facebook.com/v21.0/{sender_id}",
-            params={"fields": "first_name,name,username", "access_token": PAGE_ACCESS_TOKEN},
+            params={"fields": fields, "access_token": PAGE_ACCESS_TOKEN},
             timeout=5,
         )
         if resp.ok:
             data = resp.json()
             logger.info("Meta profile data for %s: %s", sender_id,
                         {k: v for k, v in data.items() if k != "id"})
-            # Prefer first_name, fall back to first word of full name, then username
+            # Prefer first_name (FB only), fall back to first word of full name, then username
             if data.get("first_name"):
                 return data["first_name"]
             if data.get("name"):
@@ -867,7 +869,7 @@ def _reply_meta(sender_id: str, user_text: str, channel: str):
     if not current.get("channel"):
         conversations.update_lead(sender_id, channel=channel)
     if not current.get("name"):
-        profile_name = _get_meta_profile_name(sender_id)
+        profile_name = _get_meta_profile_name(sender_id, channel=channel)
         if profile_name:
             conversations.update_lead(sender_id, name=profile_name)
             logger.info("Profile name pre-loaded for %s: %s", sender_id, profile_name)
