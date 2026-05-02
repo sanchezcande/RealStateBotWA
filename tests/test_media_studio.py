@@ -36,9 +36,8 @@ def test_build_video_prompt_includes_base_and_property():
 
 
 @patch("media_studio._normalize_video_for_concat")
-@patch("os.unlink")
 @patch("subprocess.run")
-def test_concat_videos_reencodes(mock_run, mock_unlink, mock_normalize, tmp_path):
+def test_concat_videos_reencodes(mock_run, mock_normalize, tmp_path):
     from media_studio import _concat_videos
 
     clip_a = tmp_path / "a.mp4"
@@ -50,16 +49,12 @@ def test_concat_videos_reencodes(mock_run, mock_unlink, mock_normalize, tmp_path
     _concat_videos([str(clip_a), str(clip_b)], str(out))
 
     cmd = mock_run.call_args.args[0]
-    list_path = str(out) + ".list.txt"
-    list_contents = (tmp_path / "out.mp4.list.txt").read_text()
 
     assert mock_normalize.call_count == 2
-    assert mock_unlink.called
     assert "-c:v" in cmd
     assert "libx264" in cmd
-    assert list_path in cmd
-    assert str(clip_a.resolve()) in list_contents
-    assert str(clip_b.resolve()) in list_contents
+    assert "-filter_complex" in cmd
+    assert "-i" in cmd
 
 
 @patch("media_studio._normalize_video_for_concat")
@@ -90,8 +85,8 @@ def test_generate_video_tour_stores_selected_video_format():
         )
 
     args = mock_thread.call_args.kwargs["args"]
-    # args = (job_id, photo_paths, prompt, property_name, video_format, voice, enhance)
-    assert args[4] == "horizontal"
+    # args = (job_id, photo_paths, prompt, voiceover_text, property_name, video_format, voice, enhance)
+    assert args[5] == "horizontal"
 
 
 def test_generate_voiceover_returns_false_on_empty_text():

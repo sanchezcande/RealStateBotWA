@@ -2,6 +2,8 @@
 Download photos from Google Drive folders and send them as images
 instead of just sharing the Drive link.
 """
+from __future__ import annotations
+
 import io
 import re
 import json

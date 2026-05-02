@@ -95,13 +95,18 @@
           <div class="conv-messages" id="msgScroll">
             <template x-for="(m, i) in messages" :key="i">
               <div>
+                <template x-if="i === 0 || isDifferentDay(messages[i-1].time, m.time)">
+                  <div class="msg-date-sep">
+                    <span x-text="formatDateSeparator(m.time)"></span>
+                  </div>
+                </template>
                 <div class="msg-bubble" :class="{
                   'msg-user': m.role === 'user',
                   'msg-assistant': m.role === 'assistant',
                   'msg-agent': m.role === 'agent',
                   'msg-emoji-only': isEmojiOnly(m.content)
                 }" x-html="renderMsg(m.content)"></div>
-                <div class="msg-time" :style="m.role === 'user' ? 'text-align:right' : ''">
+                <div class="msg-time" :style="m.role !== 'user' ? 'text-align:right' : ''">
                   <span x-show="m.role === 'agent'" class="agent-tag" x-text="t('agent_label')"></span>
                   <span x-text="formatTime(m.time)"></span>
                 </div>

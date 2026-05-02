@@ -537,18 +537,18 @@ tr:hover td{background:var(--gold-light)}
 }
 .msg-user{
   background:linear-gradient(180deg,#E8E1D5,var(--cream-2));
-  margin-left:auto;
+  margin-right:auto;
   border:1px solid var(--line);
 }
 .msg-assistant{
-  background:var(--white);margin-right:auto;
+  background:var(--white);margin-left:auto;
   border:1px solid var(--line-light);
 }
 .msg-agent{
   background:var(--gold-light);
-  margin-right:auto;
+  margin-left:auto;
   border:1px solid rgba(154,107,47,.25);
-  border-left:3px solid var(--gold);
+  border-right:3px solid var(--gold);
 }
 .agent-tag{
   display:inline-block;background:var(--gold);color:var(--cream);
@@ -557,6 +557,17 @@ tr:hover td{background:var(--gold-light)}
   letter-spacing:.06em;text-transform:uppercase;margin-right:4px;
 }
 .msg-time{font-family:var(--mono);font-size:.62rem;color:var(--line);margin-top:2px;text-align:right}
+.msg-date-sep{
+  display:flex;align-items:center;gap:12px;
+  margin:16px 0 12px;
+}
+.msg-date-sep::before,.msg-date-sep::after{
+  content:"";flex:1;height:1px;background:var(--line-light);
+}
+.msg-date-sep span{
+  font-family:var(--mono);font-size:.68rem;color:var(--text-2);
+  white-space:nowrap;text-transform:capitalize;letter-spacing:.03em;
+}
 
 /* ── Reply bar ────────────────────────────────────────────────── */
 .conv-reply-bar{

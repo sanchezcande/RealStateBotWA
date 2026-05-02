@@ -57,6 +57,26 @@ function formatTime(dateStr) {
   return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
 }
 
+/* Format date for chat day separators */
+function formatDateSeparator(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  const now = new Date();
+  const locale = (typeof getLang === "function" && getLang() === "en") ? "en-US" : "es-AR";
+  const isToday = d.toDateString() === now.toDateString();
+  const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  if (isToday) return locale === "en-US" ? "Today" : "Hoy";
+  if (isYesterday) return locale === "en-US" ? "Yesterday" : "Ayer";
+  return d.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+}
+
+/* Check if two ISO dates are on different calendar days */
+function isDifferentDay(dateStr1, dateStr2) {
+  if (!dateStr1 || !dateStr2) return true;
+  return new Date(dateStr1).toDateString() !== new Date(dateStr2).toDateString();
+}
+
 /* Build HTML legend beside a doughnut chart */
 function buildLegend(containerId, labels, values, colors, total) {
   const el = document.getElementById(containerId);

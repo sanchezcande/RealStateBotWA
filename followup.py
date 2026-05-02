@@ -54,7 +54,7 @@ def _check_inactive_leads():
                    FROM leads l
                    INNER JOIN conversations c ON l.phone_hash = c.phone_hash
                    INNER JOIN (
-                       SELECT phone, phone_hash FROM chat_messages GROUP BY phone
+                       SELECT phone, phone_hash FROM chat_messages GROUP BY phone, phone_hash
                    ) cm ON cm.phone_hash = l.phone_hash
                    WHERE c.last_seen_at < ?
                      AND c.last_seen_at >= ?

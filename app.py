@@ -2,6 +2,8 @@
 Main Flask app.
 Handles Meta WhatsApp, Facebook Messenger, and Instagram Direct webhook messages.
 """
+from __future__ import annotations
+
 import logging
 import json
 import os
