@@ -83,7 +83,7 @@ def add_message(phone: str, role: str, content: str, channel: str = "whatsapp"):
 def update_lead(phone: str, **kwargs):
     # Persist to DB first so data is safe even if worker crashes
     db_fields = {}
-    for col in ("name", "operation", "property_type", "budget", "timeline", "notified"):
+    for col in ("name", "operation", "property_type", "budget", "timeline", "notified", "channel"):
         if col in kwargs and kwargs[col] is not None:
             db_fields[col] = kwargs[col]
     if db_fields:

@@ -963,7 +963,7 @@ def upsert_lead(phone: str, channel: str = "whatsapp", **fields):
                 )
             else:
                 parts, vals = [], []
-                for col in ("name", "operation", "property_type", "budget", "timeline"):
+                for col in ("name", "operation", "property_type", "budget", "timeline", "channel"):
                     if fields.get(col) is not None:
                         parts.append(f"{col} = ?")
                         vals.append(fields[col])
@@ -985,7 +985,7 @@ def load_lead(phone: str) -> dict | None:
         with _db_lock:
             conn = _get_conn()
             row = conn.execute(
-                "SELECT name, operation, property_type, budget, timeline, notified FROM leads WHERE phone = ?",
+                "SELECT name, operation, property_type, budget, timeline, notified, channel FROM leads WHERE phone = ?",
                 (phone,),
             ).fetchone()
         if row is None:
@@ -993,6 +993,7 @@ def load_lead(phone: str) -> dict | None:
         return {
             "name": row[0], "operation": row[1], "property_type": row[2],
             "budget": row[3], "timeline": row[4], "notified": bool(row[5]),
+            "channel": row[6],
         }
     except Exception as e:
         logger.error("analytics.load_lead error: %s", e)
@@ -1292,7 +1293,7 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                     "first_message": r[3],
                     "last_message": r[4],
                     "message_count": r[5],
-                    "name": r[6] or "",
+                    "name": r[6] or {"instagram": "Instagram", "facebook": "Facebook"}.get(r[2], ""),
                     "is_lead": bool(r[7]),
                     "visit_count": r[8],
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
