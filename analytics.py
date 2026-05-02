@@ -663,14 +663,31 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "SELECT COUNT(*) FROM conversations WHERE last_seen_at >= ?",
                 (cutoff,),
             ).fetchone()[0]
-            total_leads = conn.execute(
+            # Count leads from leads table (anyone with at least operation detected)
+            # Falls back to conversations.became_lead for backward compat
+            total_leads_table = conn.execute(
+                "SELECT COUNT(*) FROM leads WHERE (operation IS NOT NULL AND operation != '') AND updated_at >= ?",
+                (cutoff,),
+            ).fetchone()[0]
+            total_leads_conv = conn.execute(
                 "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= ?",
                 (cutoff,),
             ).fetchone()[0]
-            total_visits = conn.execute(
+            total_leads = max(total_leads_table, total_leads_conv)
+            # Count visits from visits table + visit request events
+            total_visits_table = conn.execute(
+                "SELECT COUNT(*) FROM visits WHERE created_at >= ? AND status != 'cancelled'",
+                (cutoff,),
+            ).fetchone()[0]
+            total_visits_events = conn.execute(
+                "SELECT COUNT(*) FROM events WHERE event_type = 'visit_request_notified' AND created_at >= ?",
+                (cutoff,),
+            ).fetchone()[0]
+            total_visits_conv = conn.execute(
                 "SELECT COALESCE(SUM(visit_count), 0) FROM conversations WHERE last_seen_at >= ?",
                 (cutoff,),
             ).fetchone()[0]
+            total_visits = max(total_visits_table + total_visits_events, int(total_visits_conv))
             conv_to_lead = round(total_leads / total_convs * 100, 1) if total_convs else 0
             conv_to_visit = round(total_visits / total_convs * 100, 1) if total_convs else 0
 
@@ -725,6 +742,36 @@ def get_dashboard_data(days: int = 30) -> dict:
                 }
                 for r in rows
             ]
+            # Merge with property inquiries from events (photo requests, etc.)
+            inquiry_rows = conn.execute(
+                """SELECT property, COUNT(*) as cnt
+                   FROM events
+                   WHERE property IS NOT NULL AND property != ''
+                     AND event_type = 'property_inquiry'
+                     AND created_at >= ?
+                   GROUP BY property
+                   ORDER BY cnt DESC
+                   LIMIT 10""",
+                (cutoff,),
+            ).fetchall()
+            # Merge inquiry counts into existing visit-based items
+            existing_titles = {item["title"] for item in top_property_items}
+            for r in inquiry_rows:
+                title, cnt = r[0], r[1]
+                found = False
+                for item in top_property_items:
+                    if item["title"] == title:
+                        item["count"] += cnt
+                        item["confirmed"] += cnt
+                        found = True
+                        break
+                if not found:
+                    top_property_items.append(
+                        {"title": title, "address": "", "confirmed": cnt, "cancelled": 0, "count": cnt}
+                    )
+            # Re-sort by count
+            top_property_items.sort(key=lambda x: x["count"], reverse=True)
+            top_property_items = top_property_items[:10]
             top_properties = {
                 "labels": [item["title"] for item in top_property_items],
                 "values": [item["count"] for item in top_property_items],
@@ -802,11 +849,17 @@ def get_dashboard_data(days: int = 30) -> dict:
             }
 
             # --- Escalated to human vs resolved by bot (filtered) ---
+            # Count conversations where a human agent replied OR callback was requested
             escalated = conn.execute(
-                """SELECT COUNT(DISTINCT phone_hash) FROM events
-                   WHERE event_type = 'callback_requested'
-                     AND created_at >= ?""",
-                (cutoff,),
+                """SELECT COUNT(DISTINCT sub.phone_hash) FROM (
+                     SELECT cm.phone_hash FROM chat_messages cm
+                       INNER JOIN conversations c ON cm.phone_hash = c.phone_hash
+                       WHERE cm.role = 'agent' AND c.last_seen_at >= ?
+                     UNION
+                     SELECT e.phone_hash FROM events e
+                       WHERE e.event_type = 'callback_requested' AND e.created_at >= ?
+                   ) sub""",
+                (cutoff, cutoff),
             ).fetchone()[0]
             bot_resolved = max(total_convs - escalated, 0)
             escalation_split = {
@@ -815,18 +868,13 @@ def get_dashboard_data(days: int = 30) -> dict:
             }
 
             # --- Lead quality split (filtered) ---
-            leads_qualified = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 1 AND last_seen_at >= ?",
-                (cutoff,),
-            ).fetchone()[0]
+            # Use leads table for more accurate count
+            leads_qualified = total_leads  # already computed above
             no_interaction = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count <= 2 AND last_seen_at >= ?",
+                "SELECT COUNT(*) FROM conversations WHERE message_count <= 2 AND last_seen_at >= ?",
                 (cutoff,),
             ).fetchone()[0]
-            cold = conn.execute(
-                "SELECT COUNT(*) FROM conversations WHERE became_lead = 0 AND message_count > 2 AND last_seen_at >= ?",
-                (cutoff,),
-            ).fetchone()[0]
+            cold = max(total_convs - leads_qualified - no_interaction, 0)
             lead_quality_split = {
                 "labels": ["Leads calificados", "Interaccion sin calificar", "Sin interaccion"],
                 "values": [leads_qualified, cold, no_interaction],
@@ -842,7 +890,7 @@ def get_dashboard_data(days: int = 30) -> dict:
             ).fetchone()[0]
             prev_visits = conn.execute(
                 """SELECT COUNT(*) FROM events
-                   WHERE event_type = 'visit_scheduled'
+                   WHERE event_type IN ('visit_scheduled', 'visit_request_notified')
                      AND created_at >= ?
                      AND created_at < ?""",
                 (prev_cutoff, cutoff),
@@ -1282,13 +1330,20 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
             items = []
             for r in rows:
                 phone = r[0]
+                phone_hash = r[1]
                 last_row = conn.execute(
                     "SELECT content, role FROM chat_messages WHERE phone = ? ORDER BY id DESC LIMIT 1",
                     (phone,),
                 ).fetchone()
+                visit_interest = conn.execute(
+                    """SELECT COUNT(*) FROM events
+                       WHERE phone_hash = ?
+                         AND event_type IN ('visit_scheduled', 'visit_request_notified')""",
+                    (phone_hash,),
+                ).fetchone()[0]
                 items.append({
                     "phone": phone[:4] + "****" + phone[-4:] if len(phone) > 8 else phone,
-                    "phone_hash": r[1],
+                    "phone_hash": phone_hash,
                     "channel": r[2],
                     "first_message": r[3],
                     "last_message": r[4],
@@ -1298,7 +1353,8 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                     "visit_count": r[8],
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
                     "last_role": last_row[1] if last_row else "",
-                    "score": _lead_score(None, r[8], r[5], is_lead=bool(r[7])),
+                    "score": _lead_score(None, r[8], r[5], is_lead=bool(r[7]),
+                                         has_visit_interest=visit_interest > 0),
                 })
 
         return {"items": items, "total": total, "page": page, "per_page": per_page}
@@ -1351,9 +1407,9 @@ def resolve_phone_by_hash(phone_hash: str) -> str | None:
         return None
 
 
-def _lead_score(budget, visit_count, message_count, is_lead=True):
+def _lead_score(budget, visit_count, message_count, is_lead=True, has_visit_interest=False):
     """Return 'hot', 'warm', or 'cold' based on lead engagement signals."""
-    if visit_count > 0:
+    if visit_count > 0 or has_visit_interest:
         return "hot"
     if is_lead or message_count >= 5:
         return "warm"
@@ -1381,7 +1437,10 @@ def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
             query = f"""
                 SELECT l.phone, l.phone_hash, l.name, l.operation, l.property_type,
                        l.budget, l.timeline, l.notified, l.channel, l.created_at, l.updated_at,
-                       COALESCE(c.message_count, 0), COALESCE(c.visit_count, 0)
+                       COALESCE(c.message_count, 0), COALESCE(c.visit_count, 0),
+                       (SELECT COUNT(*) FROM visits v WHERE v.phone_hash = l.phone_hash) +
+                       (SELECT COUNT(*) FROM events e WHERE e.phone_hash = l.phone_hash
+                        AND e.event_type IN ('visit_scheduled', 'visit_request_notified')) as visit_interest
                 FROM leads l
                 LEFT JOIN conversations c ON l.phone_hash = c.phone_hash
                 WHERE {' AND '.join(where)}
@@ -1399,6 +1458,7 @@ def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
                 days_since = (now - updated_dt).days
             except Exception:
                 days_since = -1
+            visit_interest = r[13] if len(r) > 13 else 0
             items.append({
                 "phone": r[0][:4] + "****" + r[0][-4:] if len(r[0]) > 8 else r[0],
                 "phone_hash": r[1], "name": r[2] or "", "operation": r[3] or "",
@@ -1406,7 +1466,7 @@ def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
                 "notified": bool(r[7]), "channel": r[8], "created_at": r[9],
                 "updated_at": r[10], "message_count": r[11], "visit_count": r[12],
                 "days_since_contact": days_since,
-                "score": _lead_score(r[5], r[12], r[11]),
+                "score": _lead_score(r[5], r[12], r[11], has_visit_interest=visit_interest > 0),
             })
         return {"items": items, "total": count, "page": page, "per_page": per_page}
     except Exception as e:

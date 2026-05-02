@@ -27,6 +27,7 @@ import lead_qualifier
 import visit_scheduler
 import whatsapp
 import drive_photos
+import sheets
 
 logging.basicConfig(
     level=logging.INFO,
@@ -631,6 +632,19 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # Detect Drive URLs — download photos and send as images
     drive_urls = drive_photos.extract_drive_urls(clean_response)
     import uuid as _uuid
+
+    # Track property inquiries when photos are sent
+    if drive_urls:
+        _url_to_property = {}
+        for listing in sheets.get_listings():
+            furl = str(listing.get("fotos_url", "") or "").strip()
+            if furl:
+                _url_to_property[furl] = listing.get("titulo", "")
+        for url_info in drive_urls:
+            matched_title = _url_to_property.get(url_info["url"], "")
+            if matched_title:
+                analytics.log_event("property_inquiry", identifier, channel=channel,
+                                    property=matched_title)
 
     if drive_urls and send_image_fn:
         # Split response text around Drive URLs to interleave text + photos per property
