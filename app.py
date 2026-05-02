@@ -766,7 +766,7 @@ def _reply(phone: str, user_text: str):
 # Track recent bot-sent messages to distinguish bot echoes from human agent echoes.
 # Key: recipient_id, Value: timestamp of last bot-sent message.
 _bot_sent_ts: dict[str, float] = {}
-_BOT_ECHO_WINDOW = 15  # seconds — echoes within this window after bot send are ignored
+_BOT_ECHO_WINDOW = 60  # seconds — echoes within this window after bot send are ignored
 
 def _send_meta_message(recipient_id: str, text: str):
     """Send a reply via Meta Graph API (Facebook Messenger / Instagram Direct)."""
