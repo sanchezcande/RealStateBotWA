@@ -178,6 +178,10 @@ def _fetch_from_sheets() -> list:
         sheet = client.open_by_key(GOOGLE_SHEET_ID).get_worksheet_by_id(567871247)
         rows = sheet.get_all_records()
         logger.info("Loaded %d listings from Google Sheets", len(rows))
+        if rows:
+            logger.info("Sheet columns: %s", list(rows[0].keys()))
+            logger.info("First row sample (precio fields): %s",
+                        {k: v for k, v in rows[0].items() if 'precio' in k.lower() or 'price' in k.lower()})
         return rows
     except Exception as e:
         if REQUIRE_SHEETS:
