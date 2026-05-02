@@ -816,15 +816,18 @@ def _get_meta_profile_name(sender_id: str) -> str | None:
     """Fetch the user's name from Meta Graph API (FB & IG).
     Tries first_name, then name, then username as fallbacks."""
     if not PAGE_ACCESS_TOKEN:
+        logger.warning("No PAGE_ACCESS_TOKEN — cannot fetch profile name for %s", sender_id)
         return None
     try:
         resp = requests.get(
-            f"https://graph.facebook.com/v19.0/{sender_id}",
+            f"https://graph.facebook.com/v21.0/{sender_id}",
             params={"fields": "first_name,name,username", "access_token": PAGE_ACCESS_TOKEN},
             timeout=5,
         )
         if resp.ok:
             data = resp.json()
+            logger.info("Meta profile data for %s: %s", sender_id,
+                        {k: v for k, v in data.items() if k != "id"})
             # Prefer first_name, fall back to first word of full name, then username
             if data.get("first_name"):
                 return data["first_name"]
@@ -832,6 +835,10 @@ def _get_meta_profile_name(sender_id: str) -> str | None:
                 return data["name"].split()[0]
             if data.get("username"):
                 return data["username"]
+            logger.warning("Meta profile for %s returned no name fields", sender_id)
+        else:
+            logger.warning("Meta profile lookup failed for %s: HTTP %s — %s",
+                           sender_id, resp.status_code, resp.text[:200])
     except Exception as e:
         logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
     return None
@@ -843,8 +850,10 @@ def _reply_meta(sender_id: str, user_text: str, channel: str):
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
 
-    # Pre-load profile name from FB/IG so Vera doesn't need to ask
+    # Mark as meta channel so AI never asks for name on FB/IG
     current = conversations.get_lead(sender_id)
+    if not current.get("channel"):
+        conversations.update_lead(sender_id, channel=channel)
     if not current.get("name"):
         profile_name = _get_meta_profile_name(sender_id)
         if profile_name:
