@@ -79,6 +79,7 @@ def serve_upload(filename):
 _pending: dict = {}   # phone -> {"texts": [...], "timer": Timer}
 _pending_lock = threading.Lock()
 DEBOUNCE_SECONDS = 8
+DEBOUNCE_SECONDS_META = 12  # IG/FB users send rapid short messages
 MAX_MESSAGE_LENGTH = 4000
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 
@@ -1012,7 +1013,7 @@ def _enqueue_meta(sender_id: str, text: str, channel: str):
         else:
             _pending_meta[key] = {"texts": [text], "channel": channel, "sender_id": sender_id, "gen": 0}
         gen = _pending_meta[key]["gen"]
-        timer = threading.Timer(DEBOUNCE_SECONDS, _flush_meta, args=[key, gen])
+        timer = threading.Timer(DEBOUNCE_SECONDS_META, _flush_meta, args=[key, gen])
         _pending_meta[key]["timer"] = timer
         timer.start()
 
