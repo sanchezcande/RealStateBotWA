@@ -760,6 +760,11 @@ def _reply(phone: str, user_text: str):
 # Instagram settings (subscribed_fields: messages, messaging_postbacks).
 # ---------------------------------------------------------------------------
 
+# Track recent bot-sent messages to distinguish bot echoes from human agent echoes.
+# Key: recipient_id, Value: timestamp of last bot-sent message.
+_bot_sent_ts: dict[str, float] = {}
+_BOT_ECHO_WINDOW = 15  # seconds — echoes within this window after bot send are ignored
+
 def _send_meta_message(recipient_id: str, text: str):
     """Send a reply via Meta Graph API (Facebook Messenger / Instagram Direct)."""
     if not PAGE_ACCESS_TOKEN:
@@ -775,6 +780,8 @@ def _send_meta_message(recipient_id: str, text: str):
         if not resp.ok:
             logger.error("Meta send API error %s: %s", resp.status_code, resp.text)
             return False
+        import time as _time
+        _bot_sent_ts[recipient_id] = _time.time()
         return True
     except Exception as e:
         logger.error("Failed to send Meta message: %s", e)
@@ -803,6 +810,8 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
                 timeout=45,
             )
             if resp.ok:
+                import time as _time
+                _bot_sent_ts[recipient_id] = _time.time()
                 return True
             logger.error("Meta image API error (attempt %d) %s: %s", attempt + 1, resp.status_code, resp.text)
         except Exception as e:
@@ -895,12 +904,20 @@ def receive_meta_message():
                 message = messaging.get("message", {})
                 # Echo = message sent FROM the page. app_id present = sent by bot API, skip.
                 # No app_id = sent by human from page inbox → pause Vera.
+                # BUT: Instagram echoes sometimes lack app_id even for bot messages,
+                # so also check if bot sent a message to this recipient recently.
                 if message.get("is_echo"):
                     if message.get("app_id"):
                         # Bot's own message echoed back — ignore
                         continue
                     recipient_id = messaging.get("recipient", {}).get("id")
                     if recipient_id:
+                        import time as _time
+                        last_bot_send = _bot_sent_ts.get(recipient_id, 0)
+                        if (_time.time() - last_bot_send) < _BOT_ECHO_WINDOW:
+                            logger.info("Ignoring echo for %s — bot sent message %ds ago",
+                                        recipient_id, int(_time.time() - last_bot_send))
+                            continue
                         logger.info("Human agent replied to %s via %s — pausing AI", recipient_id, obj_type)
                         conversations.set_agent_takeover(recipient_id)
                     continue
