@@ -260,7 +260,7 @@ def format_listings_for_prompt(listings: list) -> str:
         estado = p.get("estado", "")
         piso = p.get("piso", "")
         orientacion = p.get("orientacion", "")
-        expensas = p.get("expensas_usd") or p.get("expensas") or ""
+        expensas = p.get("expensas_usd") or p.get("expensas") or p.get("expensaS") or ""
         apto_credito = _bool_field(p.get("apto_credito"))
         fotos_url = str(p.get("fotos_url", "") or "").strip()
         direccion = str(p.get("direccion", "") or "").strip()
