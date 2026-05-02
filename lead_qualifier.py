@@ -89,6 +89,11 @@ def process(phone: str, ai_text: str, channel: str = "whatsapp") -> str:
             }
             if _name_lower in _INVALID_NAMES or len(_name_lower) < 2:
                 del update["name"]
+            else:
+                # Never overwrite an existing valid name with a new one from AI
+                existing = conversations.get_lead(phone)
+                if existing.get("name"):
+                    del update["name"]
         conversations.update_lead(phone, **update)
         logger.info("Lead updated for %s: %s", phone, update)
 
