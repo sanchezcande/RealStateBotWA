@@ -536,13 +536,14 @@ tr:hover td{background:var(--gold-light)}
   word-wrap:break-word;
 }
 .msg-user{
-  background:linear-gradient(180deg,#E8E1D5,var(--cream-2));
+  background:var(--white);
   margin-right:auto;
-  border:1px solid var(--line);
+  border:1px solid var(--line-light);
 }
 .msg-assistant{
-  background:var(--white);margin-left:auto;
-  border:1px solid var(--line-light);
+  background:linear-gradient(180deg,#E8E1D5,var(--cream-2));
+  margin-left:auto;
+  border:1px solid var(--line);
 }
 .msg-agent{
   background:var(--gold-light);
