@@ -234,7 +234,7 @@ def format_listings_for_prompt(listings: list) -> str:
         titulo = p.get("titulo", "")
         tipo_op = p.get("tipo_operacion", "")
         tipo_prop = p.get("tipo_propiedad", "")
-        precio = p.get("precio_usd", "Consultar")
+        precio = p.get("precio_usd") or p.get("precio") or "Consultar"
         barrio = p.get("barrio", "")
         ambientes = p.get("ambientes", "")
         dorm = p.get("dormitorios", "")
@@ -260,7 +260,7 @@ def format_listings_for_prompt(listings: list) -> str:
         estado = p.get("estado", "")
         piso = p.get("piso", "")
         orientacion = p.get("orientacion", "")
-        expensas = p.get("expensas_usd", "")
+        expensas = p.get("expensas_usd") or p.get("expensas") or ""
         apto_credito = _bool_field(p.get("apto_credito"))
         fotos_url = str(p.get("fotos_url", "") or "").strip()
         direccion = str(p.get("direccion", "") or "").strip()
