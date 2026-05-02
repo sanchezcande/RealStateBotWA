@@ -869,7 +869,14 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
 def _download_meta_image(sender_id: str, img_url: str):
     """Download image from Meta CDN and store for vision processing."""
     try:
-        resp = requests.get(img_url, timeout=15)
+        # Some IG CDN URLs require the page access token
+        headers = {}
+        if PAGE_ACCESS_TOKEN:
+            headers["Authorization"] = f"Bearer {PAGE_ACCESS_TOKEN}"
+        resp = requests.get(img_url, headers=headers, timeout=15)
+        if resp.status_code == 404 and PAGE_ACCESS_TOKEN:
+            # Retry without auth header (some FB CDN URLs don't need it)
+            resp = requests.get(img_url, timeout=15)
         resp.raise_for_status()
         _pending_images[sender_id] = {"data": resp.content, "mime": resp.headers.get("content-type", "image/jpeg")}
         logger.info("Image downloaded for vision: %s (%d bytes)", sender_id, len(resp.content))
@@ -953,15 +960,23 @@ def receive_meta_message():
                     if img_url:
                         _download_meta_image(sender_id, img_url)
                 if not message.get("text") and img_att:
-                    # Image-only message — enqueue placeholder so AI sees the image
                     mid_img = message.get("mid", "")
                     if mid_img:
                         ch = "facebook" if obj_type == "page" else "instagram"
                         if not analytics.mark_message_processed(mid_img, channel=ch):
                             continue
-                    logger.info("Meta (%s) image-only from %s", obj_type, sender_id)
                     channel = "facebook" if obj_type == "page" else "instagram"
-                    _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
+                    key = (channel, sender_id)
+                    # If text is already queued in the debouncer, skip placeholder —
+                    # the image is already stored in _pending_images and will be
+                    # attached when the debounced text flushes.
+                    with _pending_meta_lock:
+                        already_queued = key in _pending_meta
+                    if already_queued:
+                        logger.info("Meta (%s) image from %s — text already queued, skipping placeholder", obj_type, sender_id)
+                    else:
+                        logger.info("Meta (%s) image-only from %s — enqueuing placeholder", obj_type, sender_id)
+                        _enqueue_meta(sender_id, "[El cliente envió una imagen]", channel)
                     continue
                 if not message.get("text"):
                     continue
