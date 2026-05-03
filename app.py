@@ -1007,6 +1007,15 @@ def receive_meta_message():
                         logger.info("Duplicate Meta message ignored: %s", mid)
                         continue
                 text = message["text"].strip()
+                # Detect Instagram story replies — download story image for vision
+                reply_to = message.get("reply_to", {})
+                story = reply_to.get("story", {})
+                if story and text:
+                    story_url = story.get("url", "")
+                    if story_url and sender_id:
+                        logger.info("Meta (instagram) story reply from %s — downloading story image", sender_id)
+                        _download_meta_image(sender_id, story_url)
+                    text = f"[El cliente respondió a una historia de Instagram] {text}"
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
                     channel = "facebook" if obj_type == "page" else "instagram"
