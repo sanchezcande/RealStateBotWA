@@ -268,20 +268,29 @@ if (PROPS.values.length) {
   }
   const propsEl = document.getElementById("propsChart");
   if (propsEl) {
-    const addrPlugin = {
-      id: "propsAddr",
+    const labelsPlugin = {
+      id: "propsLabels",
       afterDraw(chart) {
         const yAxis = chart.scales.y;
         const ctx = chart.ctx;
-        propAddresses.forEach((addr, i) => {
-          if (!addr) return;
+        const x = yAxis.right - 10;
+        PROPS.labels.forEach((title, i) => {
           const y = yAxis.getPixelForTick(i);
           ctx.save();
-          ctx.font = "10px sans-serif";
-          ctx.fillStyle = "#999";
           ctx.textAlign = "right";
-          ctx.textBaseline = "top";
-          ctx.fillText(addr, yAxis.right - 13, y + 8);
+          /* Title */
+          ctx.font = "600 12px sans-serif";
+          ctx.fillStyle = "#333";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(title, x, y - 1);
+          /* Address */
+          const addr = propAddresses[i];
+          if (addr) {
+            ctx.font = "10px sans-serif";
+            ctx.fillStyle = "#999";
+            ctx.textBaseline = "top";
+            ctx.fillText(addr, x, y + 1);
+          }
           ctx.restore();
         });
       }
@@ -308,10 +317,10 @@ if (PROPS.values.length) {
         },
         scales: {
           x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-          y: { stacked: true, ticks: { font: { size: 12, weight: 600 }, padding: 10, crossAlign: "near" }, grid: { display: false } }
+          y: { stacked: true, ticks: { color: "transparent", font: { size: 12 }, padding: 10 }, grid: { display: false } }
         }
       },
-      plugins: [addrPlugin]
+      plugins: [labelsPlugin]
     });
   }
 }
