@@ -851,6 +851,13 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
     return False
 
 
+_NOT_PROFILE_NAMES = {"precio", "precios", "alquiler", "alquilar", "compra", "comprar",
+                      "venta", "vender", "depto", "departamento", "casa", "casas",
+                      "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
+                      "facebook", "instagram", "whatsapp", "contacto", "usuario",
+                      "page", "perfil", "cuenta", "negocio", "tienda", "local"}
+
+
 def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | None:
     """Fetch the user's name from Meta Graph API (FB & IG).
     Instagram only supports 'name' and 'username'; Facebook supports 'first_name' too."""
@@ -870,13 +877,17 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
             logger.info("Meta profile data for %s: %s", sender_id,
                         {k: v for k, v in data.items() if k != "id"})
             # Prefer first_name (FB only), fall back to first word of full name, then username
+            candidates = []
             if data.get("first_name"):
-                return data["first_name"]
+                candidates.append(data["first_name"])
             if data.get("name"):
-                return data["name"].split()[0]
+                candidates.append(data["name"].split()[0])
             if data.get("username"):
-                return data["username"]
-            logger.warning("Meta profile for %s returned no name fields", sender_id)
+                candidates.append(data["username"])
+            for name in candidates:
+                if name.lower() not in _NOT_PROFILE_NAMES and len(name) >= 2:
+                    return name
+            logger.warning("Meta profile for %s returned no usable name (candidates: %s)", sender_id, candidates)
         else:
             logger.warning("Meta profile lookup failed for %s: HTTP %s — %s",
                            sender_id, resp.status_code, resp.text[:200])
