@@ -776,12 +776,16 @@ def get_dashboard_data(days: int = 30) -> dict:
                     listings = sheets.get_listings()
                     _addr_map = {}
                     for p in listings:
-                        t = (p.get("titulo") or "").strip().lower()
                         a = str(p.get("direccion") or "").strip()
-                        if t and a and a != "Consultar":
-                            _addr_map[t] = a
+                        if not a or a == "Consultar":
+                            continue
+                        for key_field in ("titulo", "tipo_propiedad"):
+                            t = (p.get(key_field) or "").strip().lower()
+                            if t:
+                                _addr_map[t] = a
                     for it in missing:
-                        it["address"] = _addr_map.get(it["title"].strip().lower(), "")
+                        key = it["title"].strip().lower()
+                        it["address"] = _addr_map.get(key, "")
                 except Exception:
                     pass
             # Re-sort by count
