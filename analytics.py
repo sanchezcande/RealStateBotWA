@@ -14,6 +14,7 @@ from decimal import Decimal
 from typing import Optional
 
 from config import AR_TZ, ANALYTICS_DB_PATH
+import sheets
 
 logger = logging.getLogger(__name__)
 
