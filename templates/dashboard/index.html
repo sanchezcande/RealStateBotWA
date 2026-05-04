@@ -202,7 +202,7 @@
   <div class="card full-width">
     <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
     {% if top_properties["items"] %}
-    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 40, 120] | max }}px"></canvas>
+    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 56, 140] | max }}px"></canvas>
     {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
   </div>
 
@@ -266,28 +266,54 @@ if (PROPS.values.length) {
       borderRadius: 4, barThickness: 28
     });
   }
-  makeChart("propsChart", "bar", PROPS.labels, datasets, {
-    indexAxis: "y",
-    plugins: {
-      legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
-      tooltip: {
-        callbacks: {
-          title: function(ctx) { return ctx[0].label; },
-          afterTitle: function(ctx) {
-            const addr = propAddresses[ctx[0].dataIndex];
-            return addr ? addr : "";
-          },
-          label: function(ctx) {
-            return ctx.dataset.label + ": " + ctx.parsed.x;
-          }
-        }
+  const propsEl = document.getElementById("propsChart");
+  if (propsEl) {
+    const addrPlugin = {
+      id: "propsAddr",
+      afterDraw(chart) {
+        const yAxis = chart.scales.y;
+        const ctx = chart.ctx;
+        propAddresses.forEach((addr, i) => {
+          if (!addr) return;
+          const y = yAxis.getPixelForTick(i);
+          ctx.save();
+          ctx.font = "10px sans-serif";
+          ctx.fillStyle = "#999";
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.fillText(addr, yAxis.right - 8, y + 14);
+          ctx.restore();
+        });
       }
-    },
-    scales: {
-      x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-      y: { stacked: true, ticks: { font: { size: 12, weight: 600 } }, grid: { display: false } }
-    }
-  });
+    };
+    new Chart(propsEl, {
+      type: "bar",
+      data: { labels: PROPS.labels, datasets },
+      options: {
+        indexAxis: "y",
+        plugins: {
+          legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              title: function(ctx) { return ctx[0].label; },
+              afterTitle: function(ctx) {
+                const addr = propAddresses[ctx[0].dataIndex];
+                return addr ? addr : "";
+              },
+              label: function(ctx) {
+                return ctx.dataset.label + ": " + ctx.parsed.x;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
+          y: { stacked: true, ticks: { font: { size: 12, weight: 600 }, padding: 6 }, grid: { display: false } }
+        }
+      },
+      plugins: [addrPlugin]
+    });
+  }
 }
 
 /* 5. Resolucion de consultas — translate labels */
