@@ -464,17 +464,22 @@ def api_media_share():
 @_require_auth
 def api_fix_names():
     """Re-fetch profile names from Meta API for all FB/IG leads with missing or bad names."""
-    from app import _get_meta_profile_name, _NOT_PROFILE_NAMES, _extract_name
+    from app import _get_meta_profile_name, _extract_name
+    from analytics import _BAD_DISPLAY_NAMES
     import conversations as convos
+    import re
     import logging
     logger = logging.getLogger(__name__)
 
-    bad_names = _NOT_PROFILE_NAMES | {"instagram", "facebook", "contacto"}
-
+    # Find ALL FB/IG conversations (including those without lead entries)
     with analytics._db_lock:
         conn = analytics._get_conn()
-        rows = conn.execute(
-            "SELECT phone, name, channel FROM leads WHERE channel IN ('instagram', 'facebook')"
+        all_convos = conn.execute(
+            """SELECT DISTINCT cm.phone, MAX(cm.channel) as channel, MAX(l.name) as name
+               FROM chat_messages cm
+               LEFT JOIN leads l ON cm.phone = l.phone
+               WHERE cm.channel IN ('instagram', 'facebook')
+               GROUP BY cm.phone"""
         ).fetchall()
 
     fixed = 0
@@ -482,42 +487,51 @@ def api_fix_names():
     errors = 0
     details = []
 
-    for phone, current_name, channel in rows:
+    for phone, channel, current_name in all_convos:
         needs_fix = (
             not current_name
-            or current_name.lower() in bad_names
+            or current_name.lower().strip() in _BAD_DISPLAY_NAMES
         )
         if not needs_fix:
             skipped += 1
             continue
 
+        new_name = None
+
         # 1. Try Meta Graph API
         new_name = _get_meta_profile_name(phone, channel=channel)
 
-        # 2. Fallback: search chat messages for a name
+        # 2. Search bot responses for <!--lead:{"name":"..."}-->
         if not new_name:
             with analytics._db_lock:
                 conn = analytics._get_conn()
-                msgs = conn.execute(
-                    "SELECT content FROM chat_messages WHERE phone = ? AND role = 'user' ORDER BY id ASC LIMIT 10",
+                bot_msgs = conn.execute(
+                    "SELECT content FROM chat_messages WHERE phone = ? AND role = 'assistant' ORDER BY id ASC",
                     (phone,),
                 ).fetchall()
-            for (msg_content,) in msgs:
-                found = _extract_name(msg_content, asked_for_name=True)
+            for (content,) in bot_msgs:
+                m = re.search(r'<!--lead:\s*\{[^}]*"name"\s*:\s*"([^"]+)"', content)
+                if m and m.group(1).lower() != "null":
+                    new_name = m.group(1)
+                    break
+
+        # 3. Search user messages for name patterns
+        if not new_name:
+            with analytics._db_lock:
+                conn = analytics._get_conn()
+                user_msgs = conn.execute(
+                    "SELECT content FROM chat_messages WHERE phone = ? AND role = 'user' ORDER BY id ASC LIMIT 15",
+                    (phone,),
+                ).fetchall()
+            for (content,) in user_msgs:
+                found = _extract_name(content, asked_for_name=True)
                 if found:
                     new_name = found
                     break
 
-        # 3. If still bad name, at least clear it
-        if not new_name and current_name and current_name.lower() in bad_names:
-            convos.update_lead(phone, name="")
-            details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name, "new": "(cleared)"})
-            fixed += 1
-            continue
-
         if new_name and new_name != current_name:
-            convos.update_lead(phone, name=new_name)
-            details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name, "new": new_name})
+            convos.update_lead(phone, name=new_name, channel=channel)
+            details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name or "(vacío)", "new": new_name})
             fixed += 1
             logger.info("Fixed name for %s: %s -> %s", phone[:6] + "...", current_name, new_name)
         else:

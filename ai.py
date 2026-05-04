@@ -260,9 +260,9 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
     has_prior_exchange = any(m["role"] == "assistant" for m in messages)
     is_meta = lead and lead.get("channel") in ("facebook", "instagram")
 
-    # FB/IG: NEVER ask for name — this rule applies at ALL stages of the conversation
-    if is_meta:
-        system_prompt += "\n\nREGLA ABSOLUTA PARA FACEBOOK/INSTAGRAM: NUNCA preguntes el nombre del cliente. NUNCA digas 'con quién hablo?', 'me decís tu nombre?', 'tu nombre?', 'cómo te llamás?' ni NINGUNA variante que pida el nombre. Respondé directamente a lo que el cliente pregunta. Si el cliente dice su nombre por voluntad propia, usalo, pero JAMÁS lo pidas."
+    # FB/IG: only skip name question if we already have it
+    if is_meta and lead and lead.get("name"):
+        system_prompt += "\n\nREGLA ABSOLUTA PARA FACEBOOK/INSTAGRAM: NUNCA preguntes el nombre del cliente. NUNCA digas 'con quién hablo?', 'me decís tu nombre?', 'tu nombre?', 'cómo te llamás?' ni NINGUNA variante que pida el nombre. Ya sabés cómo se llama."
 
     if has_prior_exchange:
         system_prompt += "\n\nRECORDATORIO: conversación en curso. JAMÁS digas 'Hola! Soy Vera, con quién hablo?' ni ninguna variante. JAMÁS te presentes de nuevo. Respondé directamente al último mensaje del cliente."
