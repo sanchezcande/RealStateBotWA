@@ -69,7 +69,7 @@
         <div style="display:flex;flex-direction:column;height:100%">
           <div class="conv-detail-header">
             <div>
-              <h2 x-text="selectedName || selectedPhone"></h2>
+              <h2 style="cursor:pointer;display:inline" @click="editName()" x-text="selectedName || selectedPhone" :title="'Click para editar nombre'"></h2>
               <div class="soft-meta" x-text="selectedPhone"></div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
@@ -291,6 +291,23 @@ function convViewer() {
       this._pollTimer = setInterval(() => {
         this._loadMessages();
       }, 5000);
+    },
+
+    editName() {
+      const current = this.selectedName || '';
+      const newName = prompt('Nombre del contacto:', current);
+      if (newName === null || !newName.trim()) return;
+      dashFetch(`/api/dashboard/conversations/${this.selected}/name`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name: newName.trim()}),
+      }).then(data => {
+        if (data.ok) {
+          this.selectedName = data.name;
+          const item = this.items.find(i => i.phone_hash === this.selected);
+          if (item) item.name = data.name;
+        }
+      });
     },
 
     sendReply() {

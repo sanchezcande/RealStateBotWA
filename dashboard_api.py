@@ -93,6 +93,36 @@ def api_delete_conversation(phone_hash):
         return jsonify({"error": str(e)}), 500
 
 
+@api.route("/conversations/<phone_hash>/name", methods=["POST"])
+@_require_auth
+def api_set_name(phone_hash):
+    """Manually set the display name for a conversation."""
+    import conversations as convos
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "Nombre vacío"}), 400
+
+    phone = analytics.resolve_phone_by_hash(phone_hash)
+    if not phone:
+        return jsonify({"error": "Conversación no encontrada"}), 404
+
+    # Detect channel
+    try:
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            row = conn.execute(
+                "SELECT channel FROM chat_messages WHERE phone_hash = ? ORDER BY id DESC LIMIT 1",
+                (phone_hash,),
+            ).fetchone()
+        channel = row[0] if row else "whatsapp"
+    except Exception:
+        channel = "whatsapp"
+
+    convos.update_lead(phone, name=name, channel=channel)
+    return jsonify({"ok": True, "name": name})
+
+
 @api.route("/conversations/<phone_hash>/reply", methods=["POST"])
 @_require_auth
 def api_send_reply(phone_hash):
