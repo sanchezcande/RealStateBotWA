@@ -900,11 +900,23 @@ _NOT_PROFILE_NAMES = {
 
 def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | None:
     """Fetch the user's name from Meta Graph API (FB & IG).
-    Instagram only supports 'name' and 'username'; Facebook supports 'first_name' too."""
+    Tries User Profile API first, then Page Conversations API as fallback."""
     if not PAGE_ACCESS_TOKEN:
         logger.warning("No PAGE_ACCESS_TOKEN — cannot fetch profile name for %s", sender_id)
         return None
-    # Instagram doesn't support first_name field
+
+    def _validate_name(raw: str | None) -> str | None:
+        if not raw:
+            return None
+        first = raw.strip().split()[0]
+        if first.lower() not in _NOT_PROFILE_NAMES and len(first) >= 2:
+            return first
+        full = raw.strip()
+        if len(full) >= 2 and full.lower() not in _NOT_PROFILE_NAMES:
+            return full
+        return None
+
+    # --- Method 1: User Profile API ---
     fields = "name,username" if channel == "instagram" else "first_name,name,username"
     try:
         resp = requests.get(
@@ -916,28 +928,52 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
             data = resp.json()
             logger.info("Meta profile data for %s: %s", sender_id,
                         {k: v for k, v in data.items() if k != "id"})
-            # Prefer first_name (FB), then first word of full name, then username
             if data.get("first_name"):
-                fname = data["first_name"].strip()
-                if fname.lower() not in _NOT_PROFILE_NAMES and len(fname) >= 2:
-                    return fname
+                v = _validate_name(data["first_name"])
+                if v:
+                    return v
             if data.get("name"):
-                full = data["name"].strip()
-                first = full.split()[0]
-                if first.lower() not in _NOT_PROFILE_NAMES and len(first) >= 2:
-                    return first
-                # Full name might be usable even if first word is blocked
-                if len(full) >= 2 and full.lower() not in _NOT_PROFILE_NAMES:
-                    return full
+                v = _validate_name(data["name"])
+                if v:
+                    return v
             if data.get("username"):
                 return data["username"]
-            logger.warning("Meta profile for %s returned no usable name fields: %s",
+            logger.warning("Meta profile for %s returned no usable name: %s",
                            sender_id, {k: v for k, v in data.items() if k != "id"})
         else:
             logger.warning("Meta profile lookup failed for %s: HTTP %s — %s",
                            sender_id, resp.status_code, resp.text[:200])
     except Exception as e:
         logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
+
+    # --- Method 2: Page Conversations API (fallback for FB Messenger) ---
+    if channel == "facebook":
+        try:
+            # Find conversation with this user via the page's /conversations endpoint
+            resp = requests.get(
+                f"https://graph.facebook.com/v21.0/me/conversations",
+                params={
+                    "fields": "participants",
+                    "user_id": sender_id,
+                    "access_token": PAGE_ACCESS_TOKEN,
+                },
+                timeout=8,
+            )
+            if resp.ok:
+                convos = resp.json().get("data", [])
+                for convo in convos:
+                    for p in convo.get("participants", {}).get("data", []):
+                        if p.get("id") == sender_id:
+                            v = _validate_name(p.get("name"))
+                            if v:
+                                logger.info("Got name from Conversations API for %s: %s", sender_id, v)
+                                return v
+            else:
+                logger.warning("Conversations API failed for %s: %s — %s",
+                               sender_id, resp.status_code, resp.text[:200])
+        except Exception as e:
+            logger.warning("Conversations API error for %s: %s", sender_id, e)
+
     return None
 
 
