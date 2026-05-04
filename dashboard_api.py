@@ -464,10 +464,12 @@ def api_media_share():
 @_require_auth
 def api_fix_names():
     """Re-fetch profile names from Meta API for all FB/IG leads with missing or bad names."""
-    from app import _get_meta_profile_name, _NOT_PROFILE_NAMES
+    from app import _get_meta_profile_name, _NOT_PROFILE_NAMES, _extract_name
     import conversations as convos
     import logging
     logger = logging.getLogger(__name__)
+
+    bad_names = _NOT_PROFILE_NAMES | {"instagram", "facebook", "contacto"}
 
     with analytics._db_lock:
         conn = analytics._get_conn()
@@ -481,17 +483,38 @@ def api_fix_names():
     details = []
 
     for phone, current_name, channel in rows:
-        # Re-fetch if: no name, name is a blocked word, or name matches channel
         needs_fix = (
             not current_name
-            or current_name.lower() in _NOT_PROFILE_NAMES
-            or current_name.lower() in ("instagram", "facebook", "contacto")
+            or current_name.lower() in bad_names
         )
         if not needs_fix:
             skipped += 1
             continue
 
+        # 1. Try Meta Graph API
         new_name = _get_meta_profile_name(phone, channel=channel)
+
+        # 2. Fallback: search chat messages for a name
+        if not new_name:
+            with analytics._db_lock:
+                conn = analytics._get_conn()
+                msgs = conn.execute(
+                    "SELECT content FROM chat_messages WHERE phone = ? AND role = 'user' ORDER BY id ASC LIMIT 10",
+                    (phone,),
+                ).fetchall()
+            for (msg_content,) in msgs:
+                found = _extract_name(msg_content, asked_for_name=True)
+                if found:
+                    new_name = found
+                    break
+
+        # 3. If still bad name, at least clear it
+        if not new_name and current_name and current_name.lower() in bad_names:
+            convos.update_lead(phone, name="")
+            details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name, "new": "(cleared)"})
+            fixed += 1
+            continue
+
         if new_name and new_name != current_name:
             convos.update_lead(phone, name=new_name)
             details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name, "new": new_name})
