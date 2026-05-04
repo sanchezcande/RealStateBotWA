@@ -769,6 +769,21 @@ def get_dashboard_data(days: int = 30) -> dict:
                     top_property_items.append(
                         {"title": title, "address": "", "confirmed": cnt, "cancelled": 0, "count": cnt}
                     )
+            # Enrich missing addresses from current listings
+            missing = [it for it in top_property_items if not it["address"]]
+            if missing:
+                try:
+                    listings = sheets.get_listings()
+                    _addr_map = {}
+                    for p in listings:
+                        t = (p.get("titulo") or "").strip().lower()
+                        a = str(p.get("direccion") or "").strip()
+                        if t and a and a != "Consultar":
+                            _addr_map[t] = a
+                    for it in missing:
+                        it["address"] = _addr_map.get(it["title"].strip().lower(), "")
+                except Exception:
+                    pass
             # Re-sort by count
             top_property_items.sort(key=lambda x: x["count"], reverse=True)
             top_property_items = top_property_items[:10]
