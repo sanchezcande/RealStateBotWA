@@ -458,3 +458,46 @@ def api_media_share():
     if success:
         return jsonify({"ok": True, "message": "Enviado a tu WhatsApp"})
     return jsonify({"error": "Error enviando a WhatsApp"}), 502
+
+
+@api.route("/fix-names", methods=["POST"])
+@_require_auth
+def api_fix_names():
+    """Re-fetch profile names from Meta API for all FB/IG leads with missing or bad names."""
+    from app import _get_meta_profile_name, _NOT_PROFILE_NAMES
+    import conversations as convos
+    import logging
+    logger = logging.getLogger(__name__)
+
+    with analytics._db_lock:
+        conn = analytics._get_conn()
+        rows = conn.execute(
+            "SELECT phone, name, channel FROM leads WHERE channel IN ('instagram', 'facebook')"
+        ).fetchall()
+
+    fixed = 0
+    skipped = 0
+    errors = 0
+    details = []
+
+    for phone, current_name, channel in rows:
+        # Re-fetch if: no name, name is a blocked word, or name matches channel
+        needs_fix = (
+            not current_name
+            or current_name.lower() in _NOT_PROFILE_NAMES
+            or current_name.lower() in ("instagram", "facebook", "contacto")
+        )
+        if not needs_fix:
+            skipped += 1
+            continue
+
+        new_name = _get_meta_profile_name(phone, channel=channel)
+        if new_name and new_name != current_name:
+            convos.update_lead(phone, name=new_name)
+            details.append({"phone": phone[:4] + "****" + phone[-4:], "old": current_name, "new": new_name})
+            fixed += 1
+            logger.info("Fixed name for %s: %s -> %s", phone[:6] + "...", current_name, new_name)
+        else:
+            errors += 1
+
+    return jsonify({"fixed": fixed, "skipped": skipped, "errors": errors, "details": details})
