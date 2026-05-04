@@ -38,7 +38,7 @@
       <template x-for="c in items" :key="c.phone_hash">
         <div class="conv-item" :class="{ selected: selected === c.phone_hash }"
              @click="selectConv(c)">
-          <div class="conv-item-name" x-text="c.name || c.phone"></div>
+          <div class="conv-item-name" x-text="c.name || (c.channel === 'facebook' || c.channel === 'instagram' ? prettyChannel(c.channel) + ' · ' + c.phone.slice(-4) : c.phone)"></div>
           <div class="conv-item-preview" x-text="c.last_preview"></div>
           <div class="conv-item-meta">
             <span class="conv-item-time" x-text="timeAgo(c.last_message)"></span>
@@ -69,7 +69,7 @@
         <div style="display:flex;flex-direction:column;height:100%">
           <div class="conv-detail-header">
             <div>
-              <h2 style="cursor:pointer;display:inline" @click="editName()" x-text="selectedName || selectedPhone" :title="'Click para editar nombre'"></h2>
+              <h2 style="cursor:pointer;display:inline" @click="editName()" x-text="selectedName || ((selectedChannel === 'facebook' || selectedChannel === 'instagram') ? prettyChannel(selectedChannel) + ' · ' + selectedPhone.slice(-4) : selectedPhone)" :title="'Click para editar nombre'"></h2>
               <div class="soft-meta" x-text="selectedPhone"></div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
@@ -194,7 +194,7 @@ function convViewer() {
   return {
     items: [], total: 0, page: 1, perPage: 20,
     search: "", filterChannel: "", filterStatus: "",
-    selected: null, selectedName: "", selectedPhone: "", selectedLead: false,
+    selected: null, selectedName: "", selectedPhone: "", selectedChannel: "", selectedLead: false,
     messages: [], leadInfo: null, loading: false,
     replyText: "", sending: false, botPaused: false,
     showEmoji: false,
@@ -252,6 +252,7 @@ function convViewer() {
       this.selected = c.phone_hash;
       this.selectedName = c.name;
       this.selectedPhone = c.phone;
+      this.selectedChannel = c.channel;
       this.selectedLead = c.is_lead;
       this.messages = [];
       this.leadInfo = null;

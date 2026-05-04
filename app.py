@@ -42,6 +42,29 @@ analytics.init_db()
 import followup
 followup.start()
 
+
+def _startup_fix_meta_names():
+    """On startup, clean bad names and retry Meta API for nameless FB/IG conversations."""
+    time.sleep(5)  # Wait for app to fully initialize
+    try:
+        nameless = analytics.fix_bad_meta_names()
+        if not nameless:
+            logger.info("No nameless FB/IG conversations to fix.")
+            return
+        logger.info("Retrying Meta profile names for %d nameless FB/IG conversations", len(nameless))
+        for phone, channel in nameless:
+            name = _get_meta_profile_name(phone, channel=channel)
+            if name:
+                conversations.update_lead(phone, name=name, channel=channel)
+                logger.info("Fixed name for %s: %s", phone[:6], name)
+            time.sleep(1)  # Rate limit
+    except Exception as e:
+        logger.error("_startup_fix_meta_names error: %s", e)
+
+
+# Run in background thread so it doesn't block startup
+threading.Thread(target=_startup_fix_meta_names, daemon=True).start()
+
 # Graceful shutdown: checkpoint SQLite WAL so no data is lost on redeploy
 import signal
 import atexit

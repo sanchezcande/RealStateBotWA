@@ -1406,14 +1406,17 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                          AND event_type IN ('visit_scheduled', 'visit_request_notified')""",
                     (phone_hash,),
                 ).fetchone()[0]
+                channel = r[2]
+                raw_name = r[6] or ""
+                clean_name = _clean_display_name(raw_name, channel)
                 items.append({
                     "phone": phone[:4] + "****" + phone[-4:] if len(phone) > 8 else phone,
                     "phone_hash": phone_hash,
-                    "channel": r[2],
+                    "channel": channel,
                     "first_message": r[3],
                     "last_message": r[4],
                     "message_count": r[5],
-                    "name": r[6] or "",
+                    "name": clean_name,
                     "is_lead": bool(r[7]),
                     "visit_count": r[8],
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
@@ -1495,6 +1498,35 @@ def _lead_score(budget, visit_count, message_count, is_lead=True, has_visit_inte
     if is_lead or message_count >= 5:
         return "warm"
     return "cold"
+
+
+def fix_bad_meta_names() -> list[str]:
+    """Clean bad names from leads and return FB/IG phone IDs without a usable name (for retry)."""
+    nameless = []
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            # Clear names that are in the blocklist
+            bad_rows = conn.execute(
+                "SELECT phone, name FROM leads WHERE channel IN ('facebook', 'instagram') AND name IS NOT NULL AND name != ''"
+            ).fetchall()
+            for phone, name in bad_rows:
+                if name.lower().strip() in _BAD_DISPLAY_NAMES:
+                    conn.execute("UPDATE leads SET name = NULL, updated_at = ? WHERE phone = ?",
+                                 (datetime.now(AR_TZ).strftime("%Y-%m-%dT%H:%M:%S"), phone))
+                    logger.info("Cleaned bad name '%s' from lead %s", name, phone[:6])
+            # Find FB/IG conversations without a usable name
+            rows = conn.execute("""
+                SELECT DISTINCT cm.phone, cm.channel
+                FROM chat_messages cm
+                LEFT JOIN leads l ON cm.phone = l.phone
+                WHERE cm.channel IN ('facebook', 'instagram')
+                  AND (l.name IS NULL OR l.name = '')
+            """).fetchall()
+            nameless = [(r[0], r[1]) for r in rows]
+    except Exception as e:
+        logger.error("fix_bad_meta_names error: %s", e)
+    return nameless
 
 
 def get_leads_list(page: int = 1, per_page: int = 20, operation: str = "",
