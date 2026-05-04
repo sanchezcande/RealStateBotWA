@@ -266,54 +266,45 @@ if (PROPS.values.length) {
       borderRadius: 4, barThickness: 28
     });
   }
-  const propsEl = document.getElementById("propsChart");
-  if (propsEl) {
-    const addrPlugin = {
-      id: "propsAddr",
-      afterDraw(chart) {
-        const yAxis = chart.scales.y;
-        const ctx = chart.ctx;
-        propAddresses.forEach((addr, i) => {
-          if (!addr) return;
-          const y = yAxis.getPixelForTick(i);
-          ctx.save();
-          ctx.font = "10px sans-serif";
-          ctx.fillStyle = "#999";
-          ctx.textAlign = "right";
-          ctx.textBaseline = "middle";
-          ctx.fillText(addr, yAxis.right - 8, y + 14);
-          ctx.restore();
-        });
-      }
-    };
-    new Chart(propsEl, {
-      type: "bar",
-      data: { labels: PROPS.labels, datasets },
-      options: {
-        indexAxis: "y",
-        plugins: {
-          legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
-          tooltip: {
-            callbacks: {
-              title: function(ctx) { return ctx[0].label; },
-              afterTitle: function(ctx) {
-                const addr = propAddresses[ctx[0].dataIndex];
-                return addr ? addr : "";
-              },
-              label: function(ctx) {
-                return ctx.dataset.label + ": " + ctx.parsed.x;
-              }
-            }
+  const propsLabels = PROPS.items.map(it => {
+    if (it.address) return [it.title, it.address];
+    return it.title;
+  });
+  makeChart("propsChart", "bar", propsLabels, datasets, {
+    indexAxis: "y",
+    plugins: {
+      legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
+      tooltip: {
+        callbacks: {
+          title: function(ctx) {
+            const idx = ctx[0].dataIndex;
+            return PROPS.labels[idx];
+          },
+          afterTitle: function(ctx) {
+            const addr = propAddresses[ctx[0].dataIndex];
+            return addr ? addr : "";
+          },
+          label: function(ctx) {
+            return ctx.dataset.label + ": " + ctx.parsed.x;
           }
-        },
-        scales: {
-          x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-          y: { stacked: true, ticks: { font: { size: 12, weight: 600 }, padding: 6 }, grid: { display: false } }
         }
-      },
-      plugins: [addrPlugin]
-    });
-  }
+      }
+    },
+    scales: {
+      x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
+      y: { stacked: true, ticks: { font: { size: 11 },
+        color: function(ctx) {
+          /* Title lines (even) bold+dark, address lines (odd) lighter */
+          if (ctx.type === "tick") {
+            const label = propsLabels[ctx.index];
+            if (Array.isArray(label)) return ["#333", "#999"];
+            return "#333";
+          }
+          return "#333";
+        }
+      }, grid: { display: false } }
+    }
+  });
 }
 
 /* 5. Resolucion de consultas — translate labels */
