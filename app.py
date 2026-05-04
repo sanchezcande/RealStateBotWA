@@ -876,18 +876,23 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
             data = resp.json()
             logger.info("Meta profile data for %s: %s", sender_id,
                         {k: v for k, v in data.items() if k != "id"})
-            # Prefer first_name (FB only), fall back to first word of full name, then username
-            candidates = []
+            # Prefer first_name (FB), then first word of full name, then username
             if data.get("first_name"):
-                candidates.append(data["first_name"])
+                fname = data["first_name"].strip()
+                if fname.lower() not in _NOT_PROFILE_NAMES and len(fname) >= 2:
+                    return fname
             if data.get("name"):
-                candidates.append(data["name"].split()[0])
+                full = data["name"].strip()
+                first = full.split()[0]
+                if first.lower() not in _NOT_PROFILE_NAMES and len(first) >= 2:
+                    return first
+                # Full name might be usable even if first word is blocked
+                if len(full) >= 2 and full.lower() not in _NOT_PROFILE_NAMES:
+                    return full
             if data.get("username"):
-                candidates.append(data["username"])
-            for name in candidates:
-                if name.lower() not in _NOT_PROFILE_NAMES and len(name) >= 2:
-                    return name
-            logger.warning("Meta profile for %s returned no usable name (candidates: %s)", sender_id, candidates)
+                return data["username"]
+            logger.warning("Meta profile for %s returned no usable name fields: %s",
+                           sender_id, {k: v for k, v in data.items() if k != "id"})
         else:
             logger.warning("Meta profile lookup failed for %s: HTTP %s — %s",
                            sender_id, resp.status_code, resp.text[:200])
