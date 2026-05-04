@@ -303,14 +303,23 @@ if (PROPS.values.length) {
         plugins: {
           legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
           tooltip: {
+            backgroundColor: "rgba(62, 47, 33, 0.92)",
+            titleFont: { size: 13, weight: 600 },
+            bodyFont: { size: 12 },
+            padding: { top: 10, bottom: 10, left: 14, right: 14 },
+            cornerRadius: 8,
+            displayColors: false,
             callbacks: {
               title: function(ctx) { return PROPS.labels[ctx[0].dataIndex]; },
               afterTitle: function(ctx) {
                 const addr = propAddresses[ctx[0].dataIndex];
-                return addr ? addr : "";
+                return addr ? "📍 " + addr : "";
               },
               label: function(ctx) {
-                return ctx.dataset.label + ": " + ctx.parsed.x;
+                const n = ctx.parsed.x;
+                const isCancel = ctx.datasetIndex === 1;
+                const label = isCancel ? (t("cancelled_f") || "Canceladas") : (t("confirmed_f") || "Confirmadas");
+                return label + ": " + n;
               }
             }
           }
