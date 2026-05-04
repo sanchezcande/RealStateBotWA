@@ -1500,8 +1500,50 @@ def _lead_score(budget, visit_count, message_count, is_lead=True, has_visit_inte
     return "cold"
 
 
-def fix_bad_meta_names() -> list[str]:
-    """Clean bad names from leads and return FB/IG phone IDs without a usable name (for retry)."""
+def _extract_name_from_bot_messages(phone: str) -> str | None:
+    """Extract a person's name from the bot's own messages (e.g. 'Hola Romina', 'gracias Grecia')."""
+    import re
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            msgs = conn.execute(
+                "SELECT content FROM chat_messages WHERE phone = ? AND role = 'assistant' ORDER BY id ASC",
+                (phone,),
+            ).fetchall()
+        # Patterns where the bot addresses the user by name
+        _NAME = r'([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})'
+        patterns = [
+            # "Hola Romina", "Buenas Grecia"
+            rf'(?:Hola|Buenas|Buen día|Buenos días|Buenas tardes|Buenas noches)[,!]?\s+{_NAME}',
+            # "gracias Grecia", "Gracias Romina"
+            rf'(?:[Gg]racias)[,]?\s+{_NAME}',
+            # "Disculpá, Romina"
+            rf'(?:[Dd]isculpá|[Pp]erdón|[Pp]erdoná)[,]?\s+{_NAME}',
+            # "Dale Romina", "Perfecto Grecia,"
+            rf'(?:Dale|Listo|Perfecto|Genial|Buenísimo|Excelente|Bárbaro)[,]?\s+{_NAME}[.!,]',
+            # "Claro Romina,"
+            rf'(?:Claro|Sí|Si)[,]?\s+{_NAME}[.!,]',
+            # "Romina, te cuento..." — name at start of sentence followed by comma
+            rf'(?:^|[.!?]\s+){_NAME},\s+(?:te |no |mirá|fijate|ahí|acá)',
+            # "Mirá Romina", "Fijate Romina"
+            rf'(?:Mirá|Fijate|Decime|Contame|Esperá)[,]?\s+{_NAME}',
+            # lead JSON tag
+            r'<!--lead:\s*\{[^}]*"name"\s*:\s*"([^"]+)"',
+        ]
+        for (content,) in msgs:
+            for pat in patterns:
+                m = re.search(pat, content)
+                if m:
+                    name = m.group(1).strip()
+                    if name.lower() not in _BAD_DISPLAY_NAMES and len(name) >= 2:
+                        return name
+    except Exception as e:
+        logger.error("_extract_name_from_bot_messages error for %s: %s", phone[:6], e)
+    return None
+
+
+def fix_bad_meta_names() -> list[tuple[str, str]]:
+    """Clean bad names, extract names from bot messages, return remaining nameless for Meta API retry."""
     nameless = []
     try:
         with _db_lock:
@@ -1523,7 +1565,17 @@ def fix_bad_meta_names() -> list[str]:
                 WHERE cm.channel IN ('facebook', 'instagram')
                   AND (l.name IS NULL OR l.name = '')
             """).fetchall()
-            nameless = [(r[0], r[1]) for r in rows]
+
+        # Try to extract names from bot messages first
+        still_nameless = []
+        for phone, channel in rows:
+            extracted = _extract_name_from_bot_messages(phone)
+            if extracted:
+                upsert_lead(phone, channel=channel, name=extracted)
+                logger.info("Extracted name '%s' from bot messages for %s", extracted, phone[:6])
+            else:
+                still_nameless.append((phone, channel))
+        nameless = still_nameless
     except Exception as e:
         logger.error("fix_bad_meta_names error: %s", e)
     return nameless

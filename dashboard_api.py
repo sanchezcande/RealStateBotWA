@@ -528,22 +528,12 @@ def api_fix_names():
 
         new_name = None
 
-        # 1. Try Meta Graph API
-        new_name = _get_meta_profile_name(phone, channel=channel)
+        # 1. Extract name from bot messages (most reliable — bot already uses the name)
+        new_name = analytics._extract_name_from_bot_messages(phone)
 
-        # 2. Search bot responses for <!--lead:{"name":"..."}-->
+        # 2. Try Meta Graph API
         if not new_name:
-            with analytics._db_lock:
-                conn = analytics._get_conn()
-                bot_msgs = conn.execute(
-                    "SELECT content FROM chat_messages WHERE phone = ? AND role = 'assistant' ORDER BY id ASC",
-                    (phone,),
-                ).fetchall()
-            for (content,) in bot_msgs:
-                m = re.search(r'<!--lead:\s*\{[^}]*"name"\s*:\s*"([^"]+)"', content)
-                if m and m.group(1).lower() != "null":
-                    new_name = m.group(1)
-                    break
+            new_name = _get_meta_profile_name(phone, channel=channel)
 
         # 3. Search user messages for name patterns
         if not new_name:
