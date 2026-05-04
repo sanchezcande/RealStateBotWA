@@ -38,7 +38,7 @@
       <template x-for="c in items" :key="c.phone_hash">
         <div class="conv-item" :class="{ selected: selected === c.phone_hash }"
              @click="selectConv(c)">
-          <div class="conv-item-name" x-text="c.name || c.phone"></div>
+          <div class="conv-item-name" x-text="c.name || (c.channel === 'instagram' ? 'Usuario IG' : c.channel === 'facebook' ? 'Usuario FB' : c.phone)"></div>
           <div class="conv-item-preview" x-text="c.last_preview"></div>
           <div class="conv-item-meta">
             <span class="conv-item-time" x-text="timeAgo(c.last_message)"></span>

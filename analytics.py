@@ -1413,7 +1413,7 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                     "first_message": r[3],
                     "last_message": r[4],
                     "message_count": r[5],
-                    "name": r[6] or ("Contacto" if r[2] in ("instagram", "facebook") else ""),
+                    "name": _clean_display_name(r[6], r[2]),
                     "is_lead": bool(r[7]),
                     "visit_count": r[8],
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
@@ -1470,6 +1470,22 @@ def resolve_phone_by_hash(phone_hash: str) -> str | None:
     except Exception as e:
         logger.error("analytics.resolve_phone_by_hash error: %s", e)
         return None
+
+
+_BAD_DISPLAY_NAMES = {"precio", "precios", "alquiler", "alquilar", "compra", "comprar",
+                      "venta", "vender", "depto", "departamento", "casa", "casas",
+                      "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
+                      "facebook", "instagram", "whatsapp", "contacto", "usuario",
+                      "page", "perfil", "cuenta", "negocio", "tienda", "local"}
+
+
+def _clean_display_name(name: str | None, channel: str) -> str:
+    """Return a clean display name, filtering out bad/generic names."""
+    if not name:
+        return ""
+    if name.lower().strip() in _BAD_DISPLAY_NAMES:
+        return ""
+    return name
 
 
 def _lead_score(budget, visit_count, message_count, is_lead=True, has_visit_interest=False):
