@@ -879,11 +879,19 @@ def _send_meta_image(recipient_id: str, image_data: bytes, mime_type: str = "ima
     return False
 
 
-_NOT_PROFILE_NAMES = {"precio", "precios", "alquiler", "alquilar", "compra", "comprar",
-                      "venta", "vender", "depto", "departamento", "casa", "casas",
-                      "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
-                      "facebook", "instagram", "whatsapp", "contacto", "usuario",
-                      "page", "perfil", "cuenta", "negocio", "tienda", "local"}
+_NOT_PROFILE_NAMES = {
+    "precio", "precios", "alquiler", "alquilar", "compra", "comprar",
+    "venta", "vender", "depto", "departamento", "casa", "casas",
+    "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
+    "facebook", "instagram", "whatsapp", "contacto", "usuario",
+    "page", "perfil", "cuenta", "negocio", "tienda", "local",
+    "soy", "vera", "hola", "buenas", "buenos", "buen",
+    "gracias", "dale", "listo", "perfecto", "genial", "claro",
+    "bueno", "buenísimo", "excelente", "bárbaro",
+    "estudiante", "información",
+    "ok", "si", "no", "que", "por", "para", "con", "sin",
+    "del", "una", "uno", "hoy", "bien", "mas", "más",
+}
 
 
 def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | None:

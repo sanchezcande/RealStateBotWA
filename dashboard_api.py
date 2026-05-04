@@ -100,7 +100,7 @@ def api_set_name(phone_hash):
     import conversations as convos
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
-    if not name:
+    if not name and not data.get("clear"):
         return jsonify({"error": "Nombre vacío"}), 400
 
     phone = analytics.resolve_phone_by_hash(phone_hash)

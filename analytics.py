@@ -1475,11 +1475,23 @@ def resolve_phone_by_hash(phone_hash: str) -> str | None:
         return None
 
 
-_BAD_DISPLAY_NAMES = {"precio", "precios", "alquiler", "alquilar", "compra", "comprar",
-                      "venta", "vender", "depto", "departamento", "casa", "casas",
-                      "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
-                      "facebook", "instagram", "whatsapp", "contacto", "usuario",
-                      "page", "perfil", "cuenta", "negocio", "tienda", "local"}
+_BAD_DISPLAY_NAMES = {
+    # Real-estate words
+    "precio", "precios", "alquiler", "alquilar", "compra", "comprar",
+    "venta", "vender", "depto", "departamento", "casa", "casas",
+    "info", "consulta", "propiedad", "propiedades", "inmobiliaria",
+    # Platform names
+    "facebook", "instagram", "whatsapp", "contacto", "usuario",
+    "page", "perfil", "cuenta", "negocio", "tienda", "local",
+    # Bot self-intro / common Spanish words captured as false positives
+    "soy", "vera", "hola", "buenas", "buenos", "buen",
+    "gracias", "dale", "listo", "perfecto", "genial", "claro",
+    "bueno", "buenísimo", "excelente", "bárbaro",
+    "estudiante", "información",
+    # Short/common words
+    "ok", "si", "no", "que", "por", "para", "con", "sin",
+    "del", "una", "uno", "hoy", "bien", "mas", "más",
+}
 
 
 def _clean_display_name(name: str | None, channel: str) -> str:
@@ -1501,42 +1513,69 @@ def _lead_score(budget, visit_count, message_count, is_lead=True, has_visit_inte
 
 
 def _extract_name_from_bot_messages(phone: str) -> str | None:
-    """Extract a person's name from the bot's own messages (e.g. 'Hola Romina', 'gracias Grecia')."""
+    """Extract a person's name from conversation messages."""
     import re
+    _NAME = r'([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})'
     try:
         with _db_lock:
             conn = _get_conn()
-            msgs = conn.execute(
-                "SELECT content FROM chat_messages WHERE phone = ? AND role = 'assistant' ORDER BY id ASC",
+            all_msgs = conn.execute(
+                "SELECT role, content FROM chat_messages WHERE phone = ? ORDER BY id ASC",
                 (phone,),
             ).fetchall()
-        # Patterns where the bot addresses the user by name
-        _NAME = r'([A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})'
-        patterns = [
-            # "Hola Romina", "Buenas Grecia"
+
+        # 1. Check bot messages for name usage (most reliable)
+        bot_patterns = [
+            # "Hola Romina!", "Hola Fabián, buen día"
             rf'(?:Hola|Buenas|Buen día|Buenos días|Buenas tardes|Buenas noches)[,!]?\s+{_NAME}',
-            # "gracias Grecia", "Gracias Romina"
+            # "gracias Grecia."
             rf'(?:[Gg]racias)[,]?\s+{_NAME}',
-            # "Disculpá, Romina"
+            # "Disculpá, Romina,"
             rf'(?:[Dd]isculpá|[Pp]erdón|[Pp]erdoná)[,]?\s+{_NAME}',
-            # "Dale Romina", "Perfecto Grecia,"
-            rf'(?:Dale|Listo|Perfecto|Genial|Buenísimo|Excelente|Bárbaro)[,]?\s+{_NAME}[.!,]',
-            # "Claro Romina,"
-            rf'(?:Claro|Sí|Si)[,]?\s+{_NAME}[.!,]',
-            # "Romina, te cuento..." — name at start of sentence followed by comma
-            rf'(?:^|[.!?]\s+){_NAME},\s+(?:te |no |mirá|fijate|ahí|acá)',
-            # "Mirá Romina", "Fijate Romina"
+            # "Romina, buenas tardes!" / "Gaston, qué tal!"
+            rf'(?:^|[.!?]\s+){_NAME},\s+\w',
+            # "Dale Romina,", "Perfecto Grecia,"
+            rf'(?:Dale|Listo|Perfecto|Genial|Buenísimo|Excelente|Bárbaro|Claro)[,]?\s+{_NAME}[.!,]',
+            # "Mirá Romina,"
             rf'(?:Mirá|Fijate|Decime|Contame|Esperá)[,]?\s+{_NAME}',
             # lead JSON tag
             r'<!--lead:\s*\{[^}]*"name"\s*:\s*"([^"]+)"',
         ]
-        for (content,) in msgs:
-            for pat in patterns:
+        for role, content in all_msgs:
+            if role != "assistant":
+                continue
+            for pat in bot_patterns:
                 m = re.search(pat, content)
                 if m:
                     name = m.group(1).strip()
-                    if name.lower() not in _BAD_DISPLAY_NAMES and len(name) >= 2:
+                    if name.lower() not in _BAD_DISPLAY_NAMES and len(name) >= 3:
                         return name
+
+        # 2. Check user messages for self-identification
+        user_patterns = [
+            # "/ Romina" or "- Romina" at end of message
+            rf'[/\-]\s*{_NAME}\s*$',
+            # "mi nombre es Romina" / "me llamo Romina"
+            rf'(?:mi nombre(?:\s+es)?|me llamo)\s+{_NAME}',
+            # "[Name] mi nombre" / "[Name] es mi nombre"
+            rf'{_NAME}\s+(?:es\s+)?mi nombre',
+            # "con Ezequiel" / "soy Romina" (user introducing themselves)
+            rf'(?:^|\s)(?:[Cc]on|[Ss]oy)\s+{_NAME}(?:\s|$|[.,!])',
+            # "Buen día, Fabián" / "Buenas, Gaston"
+            rf'(?:Buen día|Buenas tardes|Buenas noches|Buenas)[,]?\s+{_NAME}\s*$',
+            # "Hola grecia" (short message = likely just a name)
+            rf'^[Hh]ola\s+{_NAME}\s*[.!]?\s*$',
+        ]
+        for role, content in all_msgs:
+            if role != "user":
+                continue
+            for pat in user_patterns:
+                m = re.search(pat, content.strip())
+                if m:
+                    name = m.group(1).strip()
+                    if name.lower() not in _BAD_DISPLAY_NAMES and len(name) >= 3:
+                        return name
+
     except Exception as e:
         logger.error("_extract_name_from_bot_messages error for %s: %s", phone[:6], e)
     return None
