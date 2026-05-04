@@ -1488,9 +1488,14 @@ _BAD_DISPLAY_NAMES = {
     "gracias", "dale", "listo", "perfecto", "genial", "claro",
     "bueno", "buenísimo", "excelente", "bárbaro",
     "estudiante", "información",
+    # Imperative verbs / sentence starters (commonly capitalized)
+    "mirá", "fijate", "decime", "contame", "esperá", "escuchá",
+    "avisame", "pasame", "mandame", "disculpá", "perdón", "perdoná",
+    "también", "además", "después", "ahora", "antes", "entonces",
+    "igual", "mientras", "tranquilo", "tranquila", "seguramente",
     # Short/common words
     "ok", "si", "no", "que", "por", "para", "con", "sin",
-    "del", "una", "uno", "hoy", "bien", "mas", "más",
+    "del", "una", "uno", "hoy", "bien", "mas", "más", "todo",
 }
 
 

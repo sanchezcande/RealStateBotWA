@@ -889,8 +889,12 @@ _NOT_PROFILE_NAMES = {
     "gracias", "dale", "listo", "perfecto", "genial", "claro",
     "bueno", "buenísimo", "excelente", "bárbaro",
     "estudiante", "información",
+    "mirá", "fijate", "decime", "contame", "esperá", "escuchá",
+    "avisame", "pasame", "mandame", "disculpá", "perdón", "perdoná",
+    "también", "además", "después", "ahora", "antes", "entonces",
+    "igual", "mientras", "tranquilo", "tranquila", "seguramente",
     "ok", "si", "no", "que", "por", "para", "con", "sin",
-    "del", "una", "uno", "hoy", "bien", "mas", "más",
+    "del", "una", "uno", "hoy", "bien", "mas", "más", "todo",
 }
 
 
