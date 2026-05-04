@@ -68,7 +68,7 @@ def landing():
 def privacy():
     return render_template("privacy.html")
 
-@app.route("/banners")
+@app.route("/banner")
 def banners():
     from flask import send_file
     return send_file("banner-propbot.html")
