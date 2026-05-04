@@ -202,7 +202,7 @@
   <div class="card full-width">
     <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
     {% if top_properties["items"] %}
-    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 56, 140] | max }}px"></canvas>
+    <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 70, 160] | max }}px"></canvas>
     {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
   </div>
 
@@ -281,7 +281,7 @@ if (PROPS.values.length) {
           ctx.fillStyle = "#999";
           ctx.textAlign = "right";
           ctx.textBaseline = "top";
-          ctx.fillText(addr, yAxis.right - 10, y + 3);
+          ctx.fillText(addr, yAxis.right - 10, y + 8);
           ctx.restore();
         });
       }
@@ -308,7 +308,7 @@ if (PROPS.values.length) {
         },
         scales: {
           x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-          y: { stacked: true, ticks: { font: { size: 12, weight: 600 }, padding: 14 }, grid: { display: false } }
+          y: { stacked: true, ticks: { font: { size: 12, weight: 600 }, padding: 20 }, grid: { display: false } }
         }
       },
       plugins: [addrPlugin]
