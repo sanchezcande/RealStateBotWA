@@ -273,6 +273,10 @@ if (PROPS.values.length) {
       afterDraw(chart) {
         const yAxis = chart.scales.y;
         const ctx = chart.ctx;
+        /* Align address to same right edge as Chart.js tick labels */
+        const labelX = (yAxis._labelItems && yAxis._labelItems.length)
+          ? yAxis._labelItems[0].translation[0]
+          : yAxis.right - 10;
         propAddresses.forEach((addr, i) => {
           if (!addr) return;
           const y = yAxis.getPixelForTick(i);
@@ -281,7 +285,7 @@ if (PROPS.values.length) {
           ctx.fillStyle = "#999";
           ctx.textAlign = "right";
           ctx.textBaseline = "top";
-          ctx.fillText(addr, yAxis.right - 10, y + 8);
+          ctx.fillText(addr, labelX, y + 8);
           ctx.restore();
         });
       }
