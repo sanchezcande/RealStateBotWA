@@ -269,6 +269,7 @@ def init_db():
         # Migrations — add columns that may not exist yet
         _migrations = [
             ("conversations", "agent_takeover_until", "TEXT"),
+            ("visits", "property_id", "TEXT"),
         ]
         for tbl, col, col_type in _migrations:
             try:
@@ -557,6 +558,42 @@ def _seed_mock_data(conn):
     logger.info("Mock data seeded: 25 conversations, leads, visits, and messages")
 
 
+def _match_listing(visit_title: str, listings: list) -> dict | None:
+    """Find the best matching listing for a visit's property_title.
+
+    Tries: exact titulo match, tipo_propiedad match, then word-overlap.
+    """
+    vt = visit_title.strip().lower()
+    # 1. Exact match on titulo
+    for p in listings:
+        if (p.get("titulo") or "").strip().lower() == vt:
+            return p
+    # 2. Exact match on tipo_propiedad
+    for p in listings:
+        if (p.get("tipo_propiedad") or "").strip().lower() == vt:
+            return p
+    # 3. Word overlap — pick best match above threshold
+    import re
+    vt_words = set(re.split(r'[\s/,.\-]+', vt)) - {"", "en", "de", "la", "el", "los", "las", "con", "y", "a"}
+    if not vt_words:
+        return None
+    best, best_score = None, 0.0
+    for p in listings:
+        for field in ("titulo", "tipo_propiedad"):
+            val = (p.get(field) or "").strip().lower()
+            if not val:
+                continue
+            p_words = set(re.split(r'[\s/,.\-]+', val)) - {"", "en", "de", "la", "el", "los", "las", "con", "y", "a"}
+            if not p_words:
+                continue
+            overlap = len(vt_words & p_words)
+            score = overlap / max(len(vt_words), len(p_words))
+            if score > best_score:
+                best_score = score
+                best = p
+    return best if best_score >= 0.4 else None
+
+
 def _hash_phone(phone: str) -> str:
     return hashlib.sha256(phone.encode()).hexdigest()[:16]
 
@@ -724,7 +761,8 @@ def get_dashboard_data(days: int = 30) -> dict:
                 """SELECT property_title, COALESCE(MAX(NULLIF(address, '')), ''),
                           SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed,
                           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-                          COUNT(*) as total
+                          COUNT(*) as total,
+                          MAX(property_id) as pid
                    FROM visits
                    WHERE created_at >= ?
                    GROUP BY property_title
@@ -739,6 +777,7 @@ def get_dashboard_data(days: int = 30) -> dict:
                     "confirmed": r[2],
                     "cancelled": r[3],
                     "count": r[4],
+                    "property_id": r[5] if len(r) > 5 else None,
                 }
                 for r in rows
             ]
@@ -769,25 +808,31 @@ def get_dashboard_data(days: int = 30) -> dict:
                     top_property_items.append(
                         {"title": title, "address": "", "confirmed": cnt, "cancelled": 0, "count": cnt}
                     )
-            # Enrich missing addresses from current listings
-            missing = [it for it in top_property_items if not it["address"]]
-            if missing:
-                try:
-                    listings = sheets.get_listings()
-                    _addr_map = {}
-                    for p in listings:
-                        a = str(p.get("direccion") or "").strip()
-                        if not a or a == "Consultar":
-                            continue
-                        for key_field in ("titulo", "tipo_propiedad"):
-                            t = (p.get(key_field) or "").strip().lower()
-                            if t:
-                                _addr_map[t] = a
-                    for it in missing:
-                        key = it["title"].strip().lower()
-                        it["address"] = _addr_map.get(key, "")
-                except Exception:
-                    pass
+            # Enrich titles and addresses from current listings
+            try:
+                listings = sheets.get_listings()
+                # Build id→listing map for quick lookup
+                _id_map = {}
+                for p in listings:
+                    pid = str(p.get("id") or "").strip()
+                    if pid:
+                        _id_map[pid] = p
+                for it in top_property_items:
+                    # Try by property_id first, then fuzzy match
+                    match = None
+                    if it.get("property_id") and it["property_id"] in _id_map:
+                        match = _id_map[it["property_id"]]
+                    else:
+                        match = _match_listing(it["title"], listings)
+                    if match:
+                        cur_title = (match.get("titulo") or "").strip()
+                        cur_addr = str(match.get("direccion") or "").strip()
+                        if cur_title:
+                            it["title"] = cur_title
+                        if cur_addr and cur_addr != "Consultar":
+                            it["address"] = cur_addr
+            except Exception:
+                pass
             # Re-sort by count
             top_property_items.sort(key=lambda x: x["count"], reverse=True)
             top_property_items = top_property_items[:10]
@@ -1125,7 +1170,7 @@ def load_agent_takeover(phone_hash: str) -> float | None:
 
 def save_visit(phone: str, property_title: str, address: str, client_name: str,
                date_str: str, time_str: str, event_id: str | None = None,
-               channel: str = "whatsapp"):
+               channel: str = "whatsapp", property_id: str | None = None):
     """Insert a visit record."""
     try:
         with _db_lock:
@@ -1142,11 +1187,11 @@ def save_visit(phone: str, property_title: str, address: str, client_name: str,
             conn.execute(
                 """INSERT INTO visits (phone, phone_hash, client_name, property_title,
                    address, visit_date, visit_time, calendar_event_id, status, channel,
-                   created_at, updated_at)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   property_id, created_at, updated_at)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (phone, _hash_phone(phone), client_name or None, property_title,
                  address or None, date_str, time_str, event_id, "confirmed",
-                 channel, now, now),
+                 channel, property_id, now, now),
             )
     except Exception as e:
         logger.error("analytics.save_visit error: %s", e)

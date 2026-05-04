@@ -63,14 +63,22 @@ def clean_response(ai_text: str) -> str:
     return text.strip()
 
 
-def _find_address(property_title: str) -> str:
-    """Look up the address of a property by title from the current listings."""
+def _find_listing(property_title: str) -> dict | None:
+    """Look up a listing by title. Returns the listing dict or None."""
     listings = sheets.get_listings()
     title_lower = property_title.lower()
     for p in listings:
         if p.get("titulo", "").lower() == title_lower:
-            addr = str(p.get("direccion", "") or "").strip()
-            return addr if addr and addr != "Consultar" else ""
+            return p
+    return None
+
+
+def _find_address(property_title: str) -> str:
+    """Look up the address of a property by title from the current listings."""
+    p = _find_listing(property_title)
+    if p:
+        addr = str(p.get("direccion", "") or "").strip()
+        return addr if addr and addr != "Consultar" else ""
     return ""
 
 
@@ -276,7 +284,13 @@ def process(phone: str, ai_text: str) -> str:
                 continue
             logger.info("Visit exists without calendar_event_id for %s — attempting to create event", phone)
 
-        address = _find_address(property_title)
+        listing = _find_listing(property_title)
+        address = ""
+        property_id = None
+        if listing:
+            addr = str(listing.get("direccion", "") or "").strip()
+            address = addr if addr and addr != "Consultar" else ""
+            property_id = str(listing.get("id", "") or "").strip() or None
         event_id = calendar_client.create_visit_event(
             property_title=property_title,
             date_str=date_str,
@@ -304,7 +318,8 @@ def process(phone: str, ai_text: str) -> str:
         analytics.log_event("visit_scheduled", phone, property=property_title,
                              operation=lead.get("operation"))
         analytics.save_visit(phone, property_title, address, client_name,
-                             date_str, time_str, event_id=event_id)
+                             date_str, time_str, event_id=event_id,
+                             property_id=property_id)
         analytics.update_visit_event_id(phone, property_title, date_str, time_str, event_id)
         crm_webhook.on_visit_scheduled(
             phone_hash=analytics._hash_phone(phone),
