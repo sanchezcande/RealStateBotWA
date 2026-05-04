@@ -68,6 +68,11 @@ def landing():
 def privacy():
     return render_template("privacy.html")
 
+@app.route("/banners")
+def banners():
+    from flask import send_file
+    return send_file("banner-propbot.html")
+
 # Serve uploaded media files
 from config import MEDIA_UPLOAD_DIR
 @app.route("/uploads/<path:filename>")
