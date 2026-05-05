@@ -1493,6 +1493,8 @@ _BAD_DISPLAY_NAMES = {
     "avisame", "pasame", "mandame", "disculpá", "perdón", "perdoná",
     "también", "además", "después", "ahora", "antes", "entonces",
     "igual", "mientras", "tranquilo", "tranquila", "seguramente",
+    "entiendo", "exacto", "correcto", "lamentablemente", "justamente",
+    "básicamente", "obviamente", "necesito", "quiero", "tengo",
     # Short/common words
     "ok", "si", "no", "que", "por", "para", "con", "sin",
     "del", "una", "uno", "hoy", "bien", "mas", "más", "todo",
