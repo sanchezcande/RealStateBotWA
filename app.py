@@ -1471,6 +1471,7 @@ def followup_diag():
     from config import FOLLOWUP_DAYS, FOLLOWUP_ENABLED
     result = {"enabled": FOLLOWUP_ENABLED, "followup_days": FOLLOWUP_DAYS}
     try:
+        from datetime import datetime as _dt, timedelta as _td
         with analytics._db_lock:
             conn = analytics._get_conn()
             # Count followup events ever sent
@@ -1484,8 +1485,8 @@ def followup_diag():
             ).fetchall()
             result["recent_followups"] = [{"phone_hash": r[0], "sent_at": r[1]} for r in recent]
             # Leads eligible for followup (inactive 3+ days, became_lead, >2 msgs)
-            cutoff = (datetime.now(AR_TZ) - timedelta(days=FOLLOWUP_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
-            recent_limit = (datetime.now(AR_TZ) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
+            cutoff = (_dt.now(AR_TZ) - _td(days=FOLLOWUP_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
+            recent_limit = (_dt.now(AR_TZ) - _td(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
             eligible = conn.execute(
                 """SELECT cm.phone, l.name, c.last_seen_at, c.channel
                    FROM leads l
