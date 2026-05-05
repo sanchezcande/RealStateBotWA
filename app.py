@@ -87,6 +87,30 @@ app.register_blueprint(payments_bp)
 def landing():
     return render_template("landing.html")
 
+@app.route("/api/contact", methods=["POST"])
+def api_contact():
+    from flask import request, jsonify
+    import whatsapp
+    from config import NOTIFY_NUMBER
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip()
+    phone = (data.get("phone") or "").strip()
+    company = (data.get("company") or "").strip()
+    message = (data.get("message") or "").strip()
+    if not name or not email:
+        return jsonify({"error": "name and email required"}), 400
+    msg = (
+        f"Nuevo contacto desde propbot.cc\n\n"
+        f"Nombre: {name}\n"
+        f"Email: {email}\n"
+        f"Tel: {phone or 'No dejó'}\n"
+        f"Inmobiliaria: {company or 'No especificó'}\n"
+        f"Mensaje: {message or 'Sin mensaje'}"
+    )
+    whatsapp.send_message(NOTIFY_NUMBER, msg)
+    return jsonify({"ok": True})
+
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
@@ -1489,13 +1513,13 @@ def followup_diag():
             cutoff = (_dt.now(_arz) - _td(days=FOLLOWUP_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
             recent_limit = (_dt.now(_arz) - _td(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
             eligible = conn.execute(
-                """SELECT cm.phone, l.name, c.last_seen_at, c.channel
-                   FROM leads l
-                   INNER JOIN conversations c ON l.phone_hash = c.phone_hash
+                """SELECT DISTINCT cm.phone, l.name, c.last_seen_at, c.channel
+                   FROM conversations c
                    INNER JOIN (SELECT phone, phone_hash FROM chat_messages GROUP BY phone, phone_hash) cm
-                       ON cm.phone_hash = l.phone_hash
+                       ON cm.phone_hash = c.phone_hash
+                   LEFT JOIN leads l ON cm.phone_hash = l.phone_hash
                    WHERE c.last_seen_at < ? AND c.last_seen_at >= ?
-                     AND c.became_lead = 1 AND c.message_count > 2""",
+                     AND c.message_count >= 3""",
                 (cutoff, recent_limit),
             ).fetchall()
             result["eligible_leads"] = [

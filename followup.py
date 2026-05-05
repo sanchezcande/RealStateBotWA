@@ -1,16 +1,19 @@
 """
-Automatic follow-up for leads that haven't responded in 3+ days.
+Automatic follow-up for conversations inactive for 3+ days.
 Uses APScheduler to periodically check and send follow-up messages.
+Supports WhatsApp, Facebook Messenger, and Instagram Direct.
 """
 import logging
+import time as _time
 from datetime import datetime, timedelta
 
+import requests
 from apscheduler.schedulers.background import BackgroundScheduler
 
 import analytics
 import conversations
 import whatsapp
-from config import AR_TZ, NOTIFY_NUMBER, FOLLOWUP_DAYS, FOLLOWUP_ENABLED
+from config import AR_TZ, NOTIFY_NUMBER, FOLLOWUP_DAYS, FOLLOWUP_ENABLED, PAGE_ACCESS_TOKEN
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +24,10 @@ _scheduler = BackgroundScheduler(
 
 # Track which phones have already received a follow-up (to avoid spamming)
 _followed_up: set = set()
+
+# Minimum messages to be eligible for followup
+_MIN_MESSAGES = 3
+
 
 def _build_followup_message(name: str = "", operation: str = "") -> str:
     """Build a personalized follow-up message based on lead data."""
@@ -38,8 +45,40 @@ def _build_followup_message(name: str = "", operation: str = "") -> str:
     )
 
 
+def _send_meta_message(recipient_id: str, text: str) -> bool:
+    """Send a message via Meta Graph API (Facebook Messenger / Instagram Direct)."""
+    if not PAGE_ACCESS_TOKEN:
+        logger.warning("PAGE_ACCESS_TOKEN not set — cannot send Meta followup.")
+        return False
+    try:
+        resp = requests.post(
+            "https://graph.facebook.com/v19.0/me/messages",
+            params={"access_token": PAGE_ACCESS_TOKEN},
+            json={
+                "recipient": {"id": recipient_id},
+                "message": {"text": text},
+                "messaging_type": "UPDATE",
+            },
+            timeout=10,
+        )
+        if not resp.ok:
+            logger.error("Meta followup send error %s: %s", resp.status_code, resp.text[:200])
+            return False
+        return True
+    except Exception as e:
+        logger.error("Failed to send Meta followup: %s", e)
+        return False
+
+
+def _send_followup(phone: str, channel: str, msg: str) -> bool:
+    """Send followup via the appropriate channel."""
+    if channel in ("facebook", "instagram"):
+        return _send_meta_message(phone, msg)
+    return whatsapp.send_message(phone, msg)
+
+
 def _check_inactive_leads():
-    """Check for leads that haven't had contact in FOLLOWUP_DAYS days and send follow-up."""
+    """Check for conversations inactive for FOLLOWUP_DAYS+ days and send follow-up."""
     try:
         if not analytics.acquire_lock("followup", ttl_seconds=60 * 60):
             logger.info("Follow-up lock not acquired; skipping this run")
@@ -49,22 +88,24 @@ def _check_inactive_leads():
 
         with analytics._db_lock:
             conn = analytics._get_conn()
+            # Find ALL conversations with 3+ messages, inactive for FOLLOWUP_DAYS+
+            # No longer requires became_lead = 1
             rows = conn.execute(
-                """SELECT cm.phone, l.name, c.last_seen_at, l.operation
-                   FROM leads l
-                   INNER JOIN conversations c ON l.phone_hash = c.phone_hash
+                """SELECT DISTINCT cm.phone, l.name, c.last_seen_at, l.operation, c.channel
+                   FROM conversations c
                    INNER JOIN (
                        SELECT phone, phone_hash FROM chat_messages GROUP BY phone, phone_hash
-                   ) cm ON cm.phone_hash = l.phone_hash
+                   ) cm ON cm.phone_hash = c.phone_hash
+                   LEFT JOIN leads l ON cm.phone_hash = l.phone_hash
                    WHERE c.last_seen_at < ?
                      AND c.last_seen_at >= ?
-                     AND c.became_lead = 1
-                     AND c.message_count > 2""",
-                (cutoff, recent),
+                     AND c.message_count >= ?""",
+                (cutoff, recent, _MIN_MESSAGES),
             ).fetchall()
 
         sent_count = 0
-        for phone, name, last_seen, operation in rows:
+        channels_sent = {"whatsapp": 0, "facebook": 0, "instagram": 0}
+        for phone, name, last_seen, operation, channel in rows:
             if phone in _followed_up:
                 continue
             if analytics.has_recent_event(phone, "followup_sent", days=30):
@@ -75,23 +116,28 @@ def _check_inactive_leads():
                 continue
 
             msg = _build_followup_message(name or "", operation or "")
-            success = whatsapp.send_message(phone, msg)
+            success = _send_followup(phone, channel or "whatsapp", msg)
             if success:
                 _followed_up.add(phone)
                 conversations.add_message(phone, "assistant", msg)
-                analytics.log_event("followup_sent", phone)
+                analytics.log_event("followup_sent", phone, channel=channel or "whatsapp")
                 sent_count += 1
-                logger.info("Follow-up sent to %s (%s)", phone, name or "unnamed")
+                channels_sent[channel or "whatsapp"] = channels_sent.get(channel or "whatsapp", 0) + 1
+                logger.info("Follow-up sent to %s (%s) via %s", phone[:8], name or "unnamed", channel)
             else:
-                logger.warning("Failed to send follow-up to %s", phone)
+                logger.warning("Failed to send follow-up to %s via %s", phone[:8], channel)
+
+            _time.sleep(2)  # Rate limit between sends
 
         if sent_count > 0:
-            # Notify the agent about the follow-ups sent
+            detail = ", ".join(f"{ch}: {n}" for ch, n in channels_sent.items() if n > 0)
             whatsapp.send_message(
                 NOTIFY_NUMBER,
-                f"Se enviaron {sent_count} mensajes de seguimiento automatico a leads inactivos ({FOLLOWUP_DAYS}+ dias sin contacto)."
+                f"Se enviaron {sent_count} mensajes de seguimiento automatico "
+                f"a conversaciones inactivas ({FOLLOWUP_DAYS}+ dias sin contacto). "
+                f"Canales: {detail}"
             )
-            logger.info("Follow-up batch complete: %d messages sent", sent_count)
+            logger.info("Follow-up batch complete: %d messages sent (%s)", sent_count, detail)
 
     except Exception as e:
         logger.error("Follow-up check error: %s", e, exc_info=True)
@@ -110,4 +156,7 @@ def start():
         replace_existing=True,
     )
     _scheduler.start()
-    logger.info("Follow-up scheduler started (checking every 6 hours, threshold: %d days)", FOLLOWUP_DAYS)
+    logger.info(
+        "Follow-up scheduler started (every 6h, threshold: %d days, min msgs: %d)",
+        FOLLOWUP_DAYS, _MIN_MESSAGES,
+    )
