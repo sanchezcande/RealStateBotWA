@@ -1464,6 +1464,57 @@ def db_verify():
     return jsonify(result), 200
 
 
+@app.get("/health/followup-diag")
+@_health_auth_required
+def followup_diag():
+    """Diagnose follow-up system: events sent, pending leads, scheduler status."""
+    from config import FOLLOWUP_DAYS, FOLLOWUP_ENABLED
+    result = {"enabled": FOLLOWUP_ENABLED, "followup_days": FOLLOWUP_DAYS}
+    try:
+        with analytics._db_lock:
+            conn = analytics._get_conn()
+            # Count followup events ever sent
+            sent = conn.execute(
+                "SELECT COUNT(*) FROM events WHERE event_type = 'followup_sent'"
+            ).fetchone()[0]
+            result["total_followups_sent"] = sent
+            # Recent followup events
+            recent = conn.execute(
+                "SELECT phone_hash, created_at FROM events WHERE event_type = 'followup_sent' ORDER BY created_at DESC LIMIT 10"
+            ).fetchall()
+            result["recent_followups"] = [{"phone_hash": r[0], "sent_at": r[1]} for r in recent]
+            # Leads eligible for followup (inactive 3+ days, became_lead, >2 msgs)
+            cutoff = (datetime.now(AR_TZ) - timedelta(days=FOLLOWUP_DAYS)).strftime("%Y-%m-%dT%H:%M:%S")
+            recent_limit = (datetime.now(AR_TZ) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%S")
+            eligible = conn.execute(
+                """SELECT cm.phone, l.name, c.last_seen_at, c.channel
+                   FROM leads l
+                   INNER JOIN conversations c ON l.phone_hash = c.phone_hash
+                   INNER JOIN (SELECT phone, phone_hash FROM chat_messages GROUP BY phone, phone_hash) cm
+                       ON cm.phone_hash = l.phone_hash
+                   WHERE c.last_seen_at < ? AND c.last_seen_at >= ?
+                     AND c.became_lead = 1 AND c.message_count > 2""",
+                (cutoff, recent_limit),
+            ).fetchall()
+            result["eligible_leads"] = [
+                {"phone": r[0][:4] + "****" + r[0][-4:], "name": r[1], "last_seen": r[2], "channel": r[3]}
+                for r in eligible
+            ]
+            result["eligible_count"] = len(eligible)
+    except Exception as e:
+        result["error"] = str(e)
+    # Scheduler status
+    try:
+        import followup as fu
+        result["scheduler_running"] = fu._scheduler.running
+        jobs = fu._scheduler.get_jobs()
+        result["scheduled_jobs"] = [{"id": j.id, "next_run": str(j.next_run_time)} for j in jobs]
+        result["already_followed_up_count"] = len(fu._followed_up)
+    except Exception as e:
+        result["scheduler_error"] = str(e)
+    return jsonify(result), 200
+
+
 @app.get("/health/startup-diag")
 @_health_auth_required
 def startup_diag():
