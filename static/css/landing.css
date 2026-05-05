@@ -1698,6 +1698,15 @@ section{padding:clamp(72px,10vw,130px) 0}
   margin-right:4px;
   font-family:var(--serif);
 }
+.pb-testimonial-quote::after{
+  content:"\201D";
+  font-size:3rem;
+  color:var(--gold);
+  line-height:0;
+  vertical-align:-.5em;
+  margin-left:4px;
+  font-family:var(--serif);
+}
 .pb-testimonial-result{
   font-family:var(--mono);
   font-size:10px;
