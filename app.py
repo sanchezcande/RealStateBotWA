@@ -90,8 +90,8 @@ def landing():
 @app.route("/api/contact", methods=["POST"])
 def api_contact():
     from flask import request, jsonify
-    import whatsapp
-    from config import NOTIFY_NUMBER
+    import os, smtplib, logging
+    from email.mime.text import MIMEText
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
     email = (data.get("email") or "").strip()
@@ -100,15 +100,35 @@ def api_contact():
     message = (data.get("message") or "").strip()
     if not name or not email:
         return jsonify({"error": "name and email required"}), 400
-    msg = (
+    body = (
         f"Nuevo contacto desde propbot.cc\n\n"
         f"Nombre: {name}\n"
         f"Email: {email}\n"
         f"Tel: {phone or 'No dejó'}\n"
-        f"Inmobiliaria: {company or 'No especificó'}\n"
-        f"Mensaje: {message or 'Sin mensaje'}"
+        f"Inmobiliaria: {company or 'No especificó'}\n\n"
+        f"Mensaje:\n{message or 'Sin mensaje'}"
     )
-    whatsapp.send_message(NOTIFY_NUMBER, msg)
+    try:
+        to_email = os.environ.get("CONTACT_EMAIL", "candelaria@propbot.cc")
+        smtp_host = os.environ.get("SMTP_HOST", "")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_user = os.environ.get("SMTP_USER", "")
+        smtp_pass = os.environ.get("SMTP_PASS", "")
+        if smtp_host and smtp_user:
+            msg = MIMEText(body)
+            msg["Subject"] = f"Nuevo contacto PropBot — {name} ({company or 'sin inmobiliaria'})"
+            msg["From"] = smtp_user
+            msg["To"] = to_email
+            msg["Reply-To"] = email
+            with smtplib.SMTP(smtp_host, smtp_port) as server:
+                server.starttls()
+                server.login(smtp_user, smtp_pass)
+                server.send_message(msg)
+            logging.getLogger(__name__).info("Contact form email sent to %s", to_email)
+        else:
+            logging.getLogger(__name__).warning("SMTP not configured, contact form data: %s", body)
+    except Exception as e:
+        logging.getLogger(__name__).error("Failed to send contact email: %s", e)
     return jsonify({"ok": True})
 
 @app.route("/privacy")

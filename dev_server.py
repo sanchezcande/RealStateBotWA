@@ -121,5 +121,11 @@ def api_visits_calendar():
         days[d].append({"time": v["visit_time"], "property": v["property_title"], "client": v["client_name"], "status": v["status"]})
     return jsonify({"days": days})
 
+@app.route("/api/contact", methods=["POST"])
+def api_contact():
+    data = request.get_json(silent=True) or {}
+    print(f"[CONTACT FORM] {data}")
+    return jsonify({"ok": True})
+
 if __name__ == "__main__":
     app.run(debug=True, port=5050)

@@ -1734,6 +1734,67 @@ section{padding:clamp(72px,10vw,130px) 0}
 }
 @media(max-width:900px){.pb-testimonials-grid{grid-template-columns:1fr;gap:50px}}
 
+/* ═══ CTA BAND ═══ */
+.pb-cta-band{
+  padding:3.5rem var(--gutter);
+  text-align:center;
+  border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line);
+}
+.pb-cta-band h3{
+  font-family:var(--serif);font-size:1.6rem;font-weight:400;
+  color:var(--ink);max-width:700px;margin:0 auto .6rem;line-height:1.25;
+}
+.pb-cta-band h3 em{color:var(--gold);font-style:italic}
+.pb-cta-band p{
+  color:var(--ink-3);font-size:.95rem;max-width:540px;margin:0 auto 1.5rem;
+}
+.pb-cta-band .pb-cta-row{
+  display:flex;gap:1rem;justify-content:center;align-items:center;flex-wrap:wrap;
+}
+.pb-cta-band .btn-primary{font-size:.95rem;padding:14px 36px}
+
+/* ═══ CONTACT FORM ═══ */
+.pb-contact-form{
+  background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:2rem;
+  height:100%;display:flex;flex-direction:column;
+}
+.pb-contact-form form{
+  flex:1;display:flex;flex-direction:column;
+}
+.pb-contact-form form textarea{flex:1}
+.pb-contact-form h4{
+  font-family:var(--serif);font-size:1.15rem;font-weight:600;color:var(--ink);margin-bottom:1.2rem;
+}
+.pb-contact-form label{
+  display:block;font-size:.82rem;font-weight:600;color:var(--ink-3);
+  text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;
+}
+.pb-contact-form input,.pb-contact-form textarea,.pb-contact-form select{
+  width:100%;padding:.7rem .85rem;border:1px solid var(--line);border-radius:8px;
+  font-size:.9rem;font-family:var(--sans);color:var(--ink);background:#fff;
+  margin-bottom:1rem;outline:none;transition:border-color .2s;
+}
+.pb-contact-form input:focus,.pb-contact-form textarea:focus,.pb-contact-form select:focus{
+  border-color:var(--gold);
+}
+.pb-contact-form textarea{resize:vertical;min-height:100px}
+.pb-contact-form .pb-form-submit{
+  width:100%;padding:14px;border:none;border-radius:8px;
+  background:var(--gold);color:#fff;font-size:.95rem;font-weight:700;
+  cursor:pointer;font-family:var(--sans);transition:background .2s;
+}
+.pb-contact-form .pb-form-submit:hover{background:#7d5525}
+.pb-contact-form .pb-form-note{
+  font-size:.8rem;color:var(--ink-3);text-align:center;margin-top:.75rem;
+}
+.pb-form-success{
+  display:none;text-align:center;padding:2rem;
+}
+.pb-form-success.show{display:block}
+.pb-form-success h4{color:var(--gold);font-family:var(--serif);font-size:1.3rem;margin-bottom:.5rem}
+.pb-form-success p{color:var(--ink-3);font-size:.95rem}
+
 /* ═════════════════════════════════════════════════════════════════
    COMPARE — editorial table
    ═════════════════════════════════════════════════════════════════*/
@@ -2360,7 +2421,7 @@ section{padding:clamp(72px,10vw,130px) 0}
   display:grid;
   grid-template-columns:1fr 1.3fr;
   gap:60px;
-  align-items:start;
+  align-items:stretch;
 }
 .pb-contact-side h4{
   font-family:var(--mono);
@@ -2395,16 +2456,19 @@ section{padding:clamp(72px,10vw,130px) 0}
   line-height:1.55;
 }
 .pb-calendly-wrap{
-  background:var(--cream);
+  background:#fff;
   overflow:hidden;
-  min-height:640px;
+  min-height:750px;
   box-shadow:0 30px 80px -20px rgba(0,0,0,.5);
+  display:flex;flex-direction:column;
+  border-radius:18px;
 }
+.pb-calendly-wrap .calendly-inline-widget{flex:1;min-height:700px}
 .pb-calendly-loader{
-  height:640px;
+  height:100%;min-height:700px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
-  gap:16px;background:var(--cream);
+  gap:16px;background:#fff;
 }
 .pb-calendly-spinner{
   width:32px;height:32px;

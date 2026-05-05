@@ -358,7 +358,7 @@ document.addEventListener("DOMContentLoaded", function () {
         parentElement: calendlyContainer,
       });
       calendlyContainer.style.minWidth = "100%";
-      calendlyContainer.style.height = "630px";
+      calendlyContainer.style.height = "100%";
       // Remove loader
       const loader = document.getElementById("calendly-loader");
       if (loader) loader.style.display = "none";

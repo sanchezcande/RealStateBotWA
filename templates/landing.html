@@ -265,6 +265,17 @@
   </div>
 </section>
 
+<!-- CTA Band -->
+<div class="pb-cta-band">
+  <h3>No pierdas más clientes por <em>no responder a tiempo</em></h3>
+  <p>En 15 minutos te mostramos cómo PropBot atiende por vos. Sin compromiso.</p>
+  <div class="pb-cta-row">
+    <a href="#contacto" class="btn-primary">Velo en acción <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+    <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
+  </div>
+</div>
+
 <!-- ═══ II — DEMO CONVERSACIONES ════════════════════════════════════ -->
 <section class="pb-demo">
   <div class="section-header">
@@ -341,6 +352,15 @@
     </div>
   </div>
 </section>
+
+<!-- CTA Band -->
+<div class="pb-cta-band">
+  <h3>3 pasos. 48 horas. <em>Tu bot está listo.</em></h3>
+  <p>Conectás tu planilla, elegís el tono y listo. Nosotros hacemos el resto.</p>
+  <div class="pb-cta-row">
+    <a href="#contacto" class="btn-primary">Empezar ahora <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+  </div>
+</div>
 
 <!-- ═══ EDITORIAL SPREAD — product screenshot + pull quote ══════════ -->
 <section class="pb-spread">
@@ -563,6 +583,17 @@
   </div>
 </section>
 
+<!-- CTA Band -->
+<div class="pb-cta-band">
+  <h3>Todo esto funcionando <em>en 48 horas</em></h3>
+  <p>Agendá una demo y mirá el bot respondiendo con tus propiedades reales.</p>
+  <div class="pb-cta-row">
+    <a href="#contacto" class="btn-primary">Agendar demo <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20una%20demo%20de%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
+    <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
+  </div>
+</div>
+
 <!-- ═══ VI — MOTOR DE BÚSQUEDA ══════════════════════════════════════ -->
 <section class="pb-search">
   <div class="section-header">
@@ -708,6 +739,14 @@
     </article>
   </div>
 </section>
+
+<!-- CTA Band -->
+<div class="pb-cta-band">
+  <h3>Si ya funciona para inmobiliarias reales, <em>imaginate en la tuya</em></h3>
+  <div class="pb-cta-row">
+    <a href="#contacto" class="btn-primary">Quiero verlo en acción <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+  </div>
+</div>
 
 <!-- ═══ IX — COMPARACIÓN ════════════════════════════════════════════ -->
 <section class="pb-compare">
@@ -971,36 +1010,39 @@
   </div>
 
   <div class="pb-contact-grid">
+    <!-- Contact form -->
     <aside class="pb-contact-side anim-card">
-      <h4>En 15 minutos vas a ver</h4>
-      <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">1</span>
-        <span class="pb-contact-bullet-text">El bot respondiendo consultas en vivo con propiedades reales</span>
-      </div>
-      <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">2</span>
-        <span class="pb-contact-bullet-text">Cómo se integra con tu Google Sheet o la plantilla que te damos</span>
-      </div>
-      <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">3</span>
-        <span class="pb-contact-bullet-text">El proceso de setup de 48hs explicado paso a paso</span>
-      </div>
-      <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">4</span>
-        <span class="pb-contact-bullet-text">Precio final según tu cantidad de canales y propiedades</span>
-      </div>
-      <div class="pb-contact-bullet">
-        <span class="pb-contact-bullet-num">5</span>
-        <span class="pb-contact-bullet-text">Garantía 30 días — si no te convence, te devolvemos el dinero</span>
+      <div class="pb-contact-form" id="contact-form-wrap">
+        <h4>Dejanos tus datos</h4>
+        <form id="pb-contact-form" onsubmit="return handleContactForm(event)">
+          <label for="cf-name">Nombre</label>
+          <input type="text" id="cf-name" name="name" placeholder="Tu nombre" required>
+          <label for="cf-email">Email</label>
+          <input type="email" id="cf-email" name="email" placeholder="tu@email.com" required>
+          <label for="cf-phone">Teléfono (opcional)</label>
+          <input type="tel" id="cf-phone" name="phone" placeholder="+54 9 11 1234-5678">
+          <label for="cf-company">Inmobiliaria</label>
+          <input type="text" id="cf-company" name="company" placeholder="Nombre de tu inmobiliaria">
+          <label for="cf-message">Mensaje</label>
+          <textarea id="cf-message" name="message" placeholder="Contanos qué necesitás o preguntanos lo que quieras"></textarea>
+          <div id="contact-captcha" style="margin-bottom:1rem"></div>
+          <button type="submit" class="pb-form-submit">Enviar mensaje</button>
+          <p class="pb-form-note">Te respondemos en menos de 24hs.</p>
+        </form>
+        <div class="pb-form-success" id="form-success">
+          <h4>Mensaje enviado!</h4>
+          <p>Te respondemos a la brevedad. Mientras tanto, podés agendar una demo en el calendario.</p>
+        </div>
       </div>
     </aside>
 
+    <!-- Calendly -->
     <div class="pb-calendly-wrap anim-card">
       <div class="pb-calendly-loader" id="calendly-loader">
         <div class="pb-calendly-spinner"></div>
         <span>Cargando calendario…</span>
       </div>
-      <div id="calendly-widget" class="calendly-inline-widget" data-url="https://calendly.com/sanchezgcandelaria/15min?hide_event_type_details=1&hide_gdpr_banner=1&text_color=1A1814&primary_color=9A6B2F" style="min-width:100%;height:640px"></div>
+      <div id="calendly-widget" class="calendly-inline-widget" data-url="https://calendly.com/sanchezgcandelaria/15min?hide_event_type_details=1&hide_gdpr_banner=1&text_color=1A1814&primary_color=9A6B2F" style="min-width:100%;height:100%"></div>
     </div>
   </div>
 </section>
@@ -1010,6 +1052,10 @@
   <div class="pb-footer-logo">
     <div class="pb-logo-icon" style="width:32px;height:32px;border-radius:7px"><img src="/static/img/propbot-logo-transparent.png" alt="PropBot"></div>
     <span class="pb-footer-text">Prop<span class="y">Bot</span></span>
+  </div>
+  <div class="pb-footer-contact" style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;justify-content:center;margin:.8rem 0">
+    <a href="mailto:candelaria@propbot.cc" style="color:var(--gold);text-decoration:none;font-size:.9rem"><i class="fa-solid fa-envelope" style="margin-right:6px"></i>candelaria@propbot.cc</a>
+    <a href="https://wa.me/5491123485638" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;font-size:.9rem"><i class="fa-brands fa-whatsapp" style="margin-right:6px"></i>WhatsApp</a>
   </div>
   <p>© 2026 PropBot · Todos los derechos reservados</p>
   <a href="https://opengatehub.com" target="_blank" rel="noopener">
@@ -1044,6 +1090,48 @@
 
 <!-- ═══ SCRIPTS ═════════════════════════════════════════════════════ -->
 <script src="https://assets.calendly.com/assets/external/widget.js" async onload="if(window.onCalendlyLoad)window.onCalendlyLoad()"></script>
+<script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
 <script src="/static/js/landing.js?v={{ v }}"></script>
+<script>
+var contactCaptchaToken=null;
+function onRecaptchaLoad(){
+  var isLocal=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  var el=document.getElementById('contact-captcha');
+  if(el&&!isLocal){
+    grecaptcha.render('contact-captcha',{
+      sitekey:'6Lcdg6cqAAAAANwnQdyMzXcCUUTe3GzdeexkbU_-',
+      callback:function(t){contactCaptchaToken=t},
+      'expired-callback':function(){contactCaptchaToken=null}
+    });
+  }else if(el){el.style.display='none'}
+}
+function handleContactForm(e){
+  e.preventDefault();
+  var f=e.target,btn=f.querySelector('.pb-form-submit');
+  var isLocal=location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  if(!isLocal&&!contactCaptchaToken){
+    alert('Completá el captcha antes de enviar.');
+    return false;
+  }
+  btn.disabled=true;btn.textContent='Enviando...';
+  fetch('/api/contact',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      name:f.name.value,email:f.email.value,
+      phone:f.phone.value,company:f.company.value,
+      message:f.message.value,
+      captcha:contactCaptchaToken
+    })
+  }).then(function(r){
+    if(!r.ok)throw new Error('fail');
+    f.style.display='none';
+    document.getElementById('form-success').classList.add('show');
+  }).catch(function(){
+    btn.disabled=false;btn.textContent='Enviar mensaje';
+    alert('Error al enviar. Intentá de nuevo o escribinos por WhatsApp.');
+  });
+  return false;
+}
+</script>
 </body>
 </html>
