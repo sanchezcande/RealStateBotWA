@@ -294,8 +294,21 @@ def _process_payload(data: dict):
     for entry in entry_list:
         for change in entry.get("changes", []):
             value = change.get("value", {})
+            # Extract WhatsApp profile names from contacts array
+            wa_names: dict[str, str] = {}
+            for contact in value.get("contacts", []):
+                wa_id = contact.get("wa_id")
+                profile_name = (contact.get("profile") or {}).get("name", "").strip()
+                if wa_id and profile_name:
+                    wa_names[wa_id] = profile_name
             messages = value.get("messages", [])
             for msg in messages:
+                phone = msg.get("from")
+                if phone and phone in wa_names:
+                    lead = conversations.get_lead(phone)
+                    if not lead.get("name"):
+                        conversations.update_lead(phone, name=wa_names[phone])
+                        logger.info("WhatsApp profile name saved for %s: %s", phone, wa_names[phone])
                 _handle_message(msg)
 
 
@@ -537,8 +550,10 @@ def _extract_operation(text: str):
     t = text.lower()
     if any(w in t for w in ("alquil", "alquilar", "alquiler", "rentar", "renta", "rent")):
         return "alquilar"
-    if any(w in t for w in ("comprar", "compra", "venta", "compro", "comprando", "buy")):
+    if any(w in t for w in ("comprar", "compra", "compro", "comprando", "buy")):
         return "comprar"
+    if any(w in t for w in ("vender", "vendo", "venta", "sell")):
+        return "vender"
     return None
 
 
@@ -623,7 +638,7 @@ def _extract_name(text: str, asked_for_name: bool = False):
 
 
 def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
-                    send_image_fn=None):
+                    send_image_fn=None, skip_ai_response=False):
     """Shared AI pipeline for all channels (WhatsApp, Facebook, Instagram)."""
     is_new = len(conversations.get_messages(identifier)) == 0
     analytics.log_event("message_in", identifier, channel=channel)
@@ -654,6 +669,12 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         for m in history_so_far
     )
     name = _extract_name(user_text, asked_for_name=_asked_name)
+    # If debounce combined messages ("Cande / Alquilar"), try each segment
+    if not name and " / " in user_text:
+        for segment in user_text.split(" / "):
+            name = _extract_name(segment.strip(), asked_for_name=_asked_name)
+            if name:
+                break
     if name:
         current = conversations.get_lead(identifier)
         if not current.get("name"):
@@ -663,6 +684,10 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # If human agent has taken over, don't auto-reply but lead info is already extracted above
     if conversations.is_agent_takeover(identifier):
         logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
+        return
+
+    # Skip AI response when an interactive question (buttons/list) will be sent instead
+    if skip_ai_response:
         return
 
     if is_new:
@@ -874,16 +899,18 @@ def _send_wa_interactive_followup(phone: str):
     if not lead.get("operation") and "operation" not in sent:
         time.sleep(0.5)
         if en:
-            body = "Are you looking to buy or rent?"
+            body = "Are you looking to buy, rent, or sell?"
             buttons = [
                 {"id": "op_comprar", "title": "Buy"},
                 {"id": "op_alquilar", "title": "Rent"},
+                {"id": "op_vender", "title": "Sell"},
             ]
         else:
-            body = "Estas interesado en comprar o alquilar?"
+            body = "Estas interesado en comprar, alquilar o vender?"
             buttons = [
                 {"id": "op_comprar", "title": "Comprar"},
                 {"id": "op_alquilar", "title": "Alquilar"},
+                {"id": "op_vender", "title": "Vender"},
             ]
         ok = whatsapp.send_buttons(phone, body, buttons)
         if ok:
@@ -925,8 +952,16 @@ def _send_wa_interactive_followup(phone: str):
 
 
 def _reply(phone: str, user_text: str):
+    # If operation is known but property_type is missing, skip AI response
+    # and let only the interactive list ask the next question (one at a time).
+    lead = conversations.get_lead(phone)
+    sent = _wa_interactive_sent.get(phone, set())
+    op = lead.get("operation") or _extract_operation(user_text)
+    pt = lead.get("property_type") or _extract_property_type(user_text)
+    skip = bool(op and not pt and "property_type" not in sent)
+
     _process_reply(phone, user_text, "whatsapp", whatsapp.send_message,
-                   send_image_fn=whatsapp.send_image)
+                   send_image_fn=whatsapp.send_image, skip_ai_response=skip)
     _send_wa_interactive_followup(phone)
 
 
