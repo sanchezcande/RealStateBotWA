@@ -1070,10 +1070,28 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
     except Exception as e:
         logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
 
-    # --- Method 2: Page Conversations API (fallback for FB Messenger) ---
+    # --- Method 2: Instagram — retry with just username field ---
+    if channel == "instagram":
+        try:
+            resp = requests.get(
+                f"https://graph.facebook.com/v21.0/{sender_id}",
+                params={"fields": "username", "access_token": PAGE_ACCESS_TOKEN},
+                timeout=5,
+            )
+            if resp.ok:
+                data = resp.json()
+                if data.get("username"):
+                    logger.info("Got IG username for %s: %s", sender_id, data["username"])
+                    return data["username"]
+            else:
+                logger.warning("IG username retry failed for %s: HTTP %s — %s",
+                               sender_id, resp.status_code, resp.text[:200])
+        except Exception as e:
+            logger.warning("IG username retry error for %s: %s", sender_id, e)
+
+    # --- Method 3: Page Conversations API (fallback for FB Messenger) ---
     if channel == "facebook":
         try:
-            # Find conversation with this user via the page's /conversations endpoint
             resp = requests.get(
                 f"https://graph.facebook.com/v21.0/me/conversations",
                 params={
