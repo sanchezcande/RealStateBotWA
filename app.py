@@ -535,9 +535,9 @@ def _flush(phone: str, gen: int):
 def _extract_operation(text: str):
     """Detect buying/renting intent directly from user message text."""
     t = text.lower()
-    if any(w in t for w in ("alquil", "alquilar", "alquiler", "rentar", "renta")):
+    if any(w in t for w in ("alquil", "alquilar", "alquiler", "rentar", "renta", "rent")):
         return "alquilar"
-    if any(w in t for w in ("comprar", "compra", "venta", "compro", "comprando")):
+    if any(w in t for w in ("comprar", "compra", "venta", "compro", "comprando", "buy")):
         return "comprar"
     return None
 
@@ -545,20 +545,20 @@ def _extract_operation(text: str):
 def _extract_property_type(text: str):
     """Detect property type mentioned by the user."""
     t = text.lower()
-    if any(w in t for w in ("monoambiente", "mono")):
+    if any(w in t for w in ("monoambiente", "mono", "studio")):
         return "monoambiente"
-    if any(w in t for w in ("departamento", "depto", "dpto", "dept")):
+    if any(w in t for w in ("departamento", "depto", "dpto", "dept", "apartment")):
         return "departamento"
     # "2 ambientes", "tres ambientes", etc. → departamento (common Argentine expression)
     if re.search(r'\b(?:un|dos|tres|cuatro|cinco|\d)\s*ambientes?\b', t):
         return "departamento"
-    if any(w in t for w in ("casa", "chalet")):
+    if any(w in t for w in ("casa", "chalet", "house")):
         return "casa"
     if re.search(r'\bph\b', t) or "p.h" in t:
         return "PH"
-    if any(w in t for w in ("local", "comercial")):
+    if any(w in t for w in ("local", "comercial", "commercial")):
         return "local"
-    if any(w in t for w in ("oficina",)):
+    if any(w in t for w in ("oficina", "office")):
         return "oficina"
     return None
 
@@ -847,9 +847,87 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
             conversations.add_message(identifier, "assistant", "\n".join(sent_markers), channel=channel)
 
 
+_wa_interactive_sent: dict[str, set] = {}  # phone -> set of sent interactive types
+
+_EN_WORDS = re.compile(
+    r'\b(?:hello|hi|hey|looking|want|need|buy|rent|apartment|house|property|interested|please|thanks|thank you|good morning|good afternoon)\b',
+    re.IGNORECASE,
+)
+
+
+def _is_english_conv(phone: str) -> bool:
+    """Check if the conversation appears to be in English."""
+    msgs = conversations.get_messages(phone)
+    user_msgs = [m["content"] for m in msgs if m["role"] == "user"]
+    if not user_msgs:
+        return False
+    recent = " ".join(user_msgs[-3:])
+    return bool(_EN_WORDS.search(recent))
+
+
+def _send_wa_interactive_followup(phone: str):
+    """Send interactive buttons/lists for qualification on WhatsApp."""
+    lead = conversations.get_lead(phone)
+    sent = _wa_interactive_sent.get(phone, set())
+    en = _is_english_conv(phone)
+
+    if not lead.get("operation") and "operation" not in sent:
+        time.sleep(0.5)
+        if en:
+            body = "Are you looking to buy or rent?"
+            buttons = [
+                {"id": "op_comprar", "title": "Buy"},
+                {"id": "op_alquilar", "title": "Rent"},
+            ]
+        else:
+            body = "Estas interesado en comprar o alquilar?"
+            buttons = [
+                {"id": "op_comprar", "title": "Comprar"},
+                {"id": "op_alquilar", "title": "Alquilar"},
+            ]
+        ok = whatsapp.send_buttons(phone, body, buttons)
+        if ok:
+            _wa_interactive_sent.setdefault(phone, set()).add("operation")
+        return
+
+    if lead.get("operation") and not lead.get("property_type") and "property_type" not in sent:
+        time.sleep(0.5)
+        if en:
+            body = "What type of property are you looking for?"
+            btn_text = "See options"
+            section_title = "Property type"
+            rows = [
+                {"id": "pt_depto", "title": "Apartment"},
+                {"id": "pt_casa", "title": "House"},
+                {"id": "pt_ph", "title": "PH"},
+                {"id": "pt_mono", "title": "Studio"},
+                {"id": "pt_local", "title": "Commercial space"},
+                {"id": "pt_oficina", "title": "Office"},
+            ]
+        else:
+            body = "Que tipo de propiedad estas buscando?"
+            btn_text = "Ver opciones"
+            section_title = "Tipo de propiedad"
+            rows = [
+                {"id": "pt_depto", "title": "Departamento"},
+                {"id": "pt_casa", "title": "Casa"},
+                {"id": "pt_ph", "title": "PH"},
+                {"id": "pt_mono", "title": "Monoambiente"},
+                {"id": "pt_local", "title": "Local comercial"},
+                {"id": "pt_oficina", "title": "Oficina"},
+            ]
+        ok = whatsapp.send_list(
+            phone, body, btn_text,
+            [{"title": section_title, "rows": rows}],
+        )
+        if ok:
+            _wa_interactive_sent.setdefault(phone, set()).add("property_type")
+
+
 def _reply(phone: str, user_text: str):
     _process_reply(phone, user_text, "whatsapp", whatsapp.send_message,
                    send_image_fn=whatsapp.send_image)
+    _send_wa_interactive_followup(phone)
 
 
 # ---------------------------------------------------------------------------

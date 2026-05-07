@@ -85,6 +85,90 @@ def send_message(to: str, text: str) -> bool:
         return False
 
 
+def send_buttons(to: str, body: str, buttons: list[dict]) -> bool:
+    """Send a reply-button interactive message (max 3 buttons).
+    buttons: [{"id": "...", "title": "..."}, ...]
+    """
+    if _is_demo_number(to):
+        return False
+    to = _normalize_ar_number(to)
+    token = _get_token()
+    if not token:
+        logger.error("WHATSAPP_TOKEN is empty — cannot send buttons to %s", to)
+        return False
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "interactive",
+        "interactive": {
+            "type": "button",
+            "body": {"text": body},
+            "action": {
+                "buttons": [
+                    {"type": "reply", "reply": {"id": b["id"], "title": b["title"]}}
+                    for b in buttons[:3]
+                ]
+            },
+        },
+    }
+    resp = None
+    try:
+        resp = requests.post(API_URL, headers=headers, json=payload, timeout=10)
+        resp.raise_for_status()
+        logger.info("Buttons sent to %s", to)
+        return True
+    except Exception as e:
+        body_text = resp.text if resp is not None else "(no response)"
+        logger.error("WhatsApp buttons error to %s: %s — %s", to, e, body_text)
+        return False
+
+
+def send_list(to: str, body: str, button_text: str, sections: list[dict]) -> bool:
+    """Send a list interactive message.
+    sections: [{"title": "...", "rows": [{"id": "...", "title": "...", "description": "..."}]}]
+    """
+    if _is_demo_number(to):
+        return False
+    to = _normalize_ar_number(to)
+    token = _get_token()
+    if not token:
+        logger.error("WHATSAPP_TOKEN is empty — cannot send list to %s", to)
+        return False
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": to,
+        "type": "interactive",
+        "interactive": {
+            "type": "list",
+            "body": {"text": body},
+            "action": {
+                "button": button_text,
+                "sections": sections,
+            },
+        },
+    }
+    resp = None
+    try:
+        resp = requests.post(API_URL, headers=headers, json=payload, timeout=10)
+        resp.raise_for_status()
+        logger.info("List sent to %s", to)
+        return True
+    except Exception as e:
+        body_text = resp.text if resp is not None else "(no response)"
+        logger.error("WhatsApp list error to %s: %s — %s", to, e, body_text)
+        return False
+
+
 def send_image(to: str, image_data: bytes, mime_type: str = "image/jpeg", caption: str = None) -> bool:
     """Upload an image to Meta and send it as a WhatsApp image message."""
     if _is_demo_number(to):
