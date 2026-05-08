@@ -183,6 +183,9 @@ em{font-style:italic;color:var(--gold-deep)}
   border:1px solid var(--ink);
 }
 .pb-header-cta:hover{background:var(--gold);border-color:var(--gold);color:var(--cream)}
+#landingLangToggle:hover{background:rgba(247,243,236,.12);border-color:var(--gold);color:var(--gold)}
+.pb-header.is-dark #landingLangToggle{border-color:rgba(247,243,236,.25);color:var(--cream)}
+.pb-header.is-dark #landingLangToggle:hover{border-color:var(--gold);color:var(--gold)}
 
 /* ═════════════════════════════════════════════════════════════════
    HERO — magazine cover

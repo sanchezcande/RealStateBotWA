@@ -25,6 +25,7 @@ Guia paso a paso para dar de alta un cliente nuevo con Vera en WhatsApp, Faceboo
 - Numero personal del agente (para notificaciones)
 - Google Sheet con propiedades (o lo creas vos)
 - Email de contacto
+- Horario de atencion de la inmobiliaria (ej: "lunes a viernes de 9 a 18")
 - Pagina de Facebook del negocio (si quiere FB/IG)
 - Cuenta de Instagram del negocio conectada a la pagina de FB (si quiere IG)
 
@@ -279,6 +280,7 @@ DASHBOARD_TOKEN=token_para_acceder_al_dashboard
 DASHBOARD_ADMIN_PASSWORD=password_del_dashboard
 DASHBOARD_SECRET_KEY=una_clave_secreta_random
 VISIT_MODE=notify
+OFFICE_HOURS=lunes a viernes de 9 a 18
 BASE_URL=https://TU_DOMINIO
 ```
 
@@ -445,5 +447,6 @@ Variable: `DASHBOARD_PLAN=starter` / `pro` / `premium`
 - [ ] (Si pro/premium) Test de Facebook Messenger exitoso
 - [ ] (Si pro/premium) Test de Instagram Direct exitoso
 - [ ] Google Sheet conectada con propiedades cargadas
+- [ ] `OFFICE_HOURS` configurado con el horario real de la inmobiliaria
 - [ ] Follow-up habilitado y configurado
 - [ ] SEED_DEMO_DATA NO esta en las variables

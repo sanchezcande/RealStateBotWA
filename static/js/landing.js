@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", function () {
   })();
 
   /* ── Chat demo ─────────────────────────────────────────────────── */
-  const conversations = {
+  const conversations_es = {
     whatsapp: [
       { type: "user", text: "Hola! Busco un departamento en alquiler en el centro, 2 ambientes, con balcón." },
       { type: "bot", text: "Hola! Con quién hablo? Encontré 3 propiedades que coinciden con lo que buscás en Centro. Te paso la primera:" },
@@ -64,18 +64,27 @@ document.addEventListener("DOMContentLoaded", function () {
     ],
   };
 
+  function getConversations() {
+    if (typeof getLandingLang === "function" && getLandingLang() === "en" && typeof LANDING_CONVERSATIONS_EN !== "undefined") {
+      return LANDING_CONVERSATIONS_EN;
+    }
+    return conversations_es;
+  }
+
   const platformColors = {
     whatsapp: { color: "#25D366", dark: "#128C7E" },
     messenger: { color: "#0084FF", dark: "#0068CC" },
     instagram: { color: "#E1306C", dark: "#C13584" },
   };
 
+  window._chatActiveTab = "whatsapp";
   let activeTab = "whatsapp";
   let chatStep = 0;
   let chatTimer = null;
 
   function getTimeStr() {
-    return new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+    var loc = (typeof getLandingLang === "function" && getLandingLang() === "en") ? "en-US" : "es-AR";
+    return new Date().toLocaleTimeString(loc, { hour: "2-digit", minute: "2-digit" });
   }
 
   function renderPropertyCard(msg) {
@@ -114,7 +123,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function advanceChat() {
-    const conv = conversations[activeTab];
+    const conv = getConversations()[activeTab];
     const container = document.getElementById("chat-messages");
     if (!container) return;
 
@@ -141,8 +150,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function switchTab(tab) {
+  window.switchTab = function switchTab(tab) {
     activeTab = tab;
+    window._chatActiveTab = tab;
     chatStep = 0;
     clearTimeout(chatTimer);
 
@@ -162,7 +172,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const container = document.getElementById("chat-messages");
     if (container) container.innerHTML = "";
     chatTimer = setTimeout(advanceChat, 500);
-  }
+  };
 
   // Init tabs
   document.querySelectorAll(".pb-tab").forEach((btn) => {
@@ -249,9 +259,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const progressWrap = document.getElementById("video-progress");
   const playBtn = document.getElementById("video-play-btn");
 
+  function getSlideLabels(idx) {
+    if (typeof getLandingLang === "function" && getLandingLang() === "en" && typeof LANDING_SLIDES_EN !== "undefined") {
+      return LANDING_SLIDES_EN[idx] || SLIDES[idx];
+    }
+    return SLIDES[idx];
+  }
+
   function renderVideoSlide() {
     if (!phoneEl) return;
     const s = SLIDES[currentSlide];
+    const labels = getSlideLabels(currentSlide);
     const kb = s.kb;
     phoneEl.innerHTML = `
       <div class="pb-video-notch"></div>
@@ -261,9 +279,9 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="pb-video-watermark">PropBot</div>
       <div class="text-overlay" style="position:absolute;bottom:0;left:0;right:0;padding:1.2rem 1rem 1.5rem;z-index:15">
         <div style="font-size:.72rem;color:rgba(255,255,255,.7);margin-bottom:3px;text-transform:uppercase;letter-spacing:.08em">${currentSlide + 1} / ${SLIDES.length}</div>
-        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:2px">${s.label}</div>
-        <div style="font-size:.8rem;color:rgba(255,255,255,.8)">${s.detail}</div>
-        ${currentSlide === 0 ? '<div style="margin-top:8px;font-size:1.1rem;font-weight:900;color:#D97706">Casa con pileta — USD 220.000</div>' : ""}
+        <div style="font-size:1rem;font-weight:800;color:#fff;margin-bottom:2px">${labels.label}</div>
+        <div style="font-size:.8rem;color:rgba(255,255,255,.8)">${labels.detail}</div>
+        ${currentSlide === 0 ? '<div style="margin-top:8px;font-size:1.1rem;font-weight:900;color:#D97706">' + (typeof getLandingLang==='function'&&getLandingLang()==='en'?'House with pool — USD 220,000':'Casa con pileta — USD 220.000') + '</div>' : ""}
       </div>`;
   }
 
@@ -273,9 +291,9 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="pb-video-notch"></div>
       <div style="position:absolute;inset:0;background:rgba(24,21,18,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:10px;font-family:'Inter',sans-serif">
         <div style="font-family:'Fraunces',serif;font-style:italic;font-size:2.2rem;color:#9A6B2F;font-weight:300">✓</div>
-        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1rem">Video listo</div>
-        <div style="color:rgba(247,243,236,.55);font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">Listo para publicar</div>
-        <button onclick="resetVideo()" style="margin-top:10px;background:transparent;color:#F7F3EC;border:1px solid #9A6B2F;padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;cursor:pointer">Ver de nuevo</button>
+        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1rem">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Video ready':'Video listo'}</div>
+        <div style="color:rgba(247,243,236,.55);font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Ready to publish':'Listo para publicar'}</div>
+        <button onclick="resetVideo()" style="margin-top:10px;background:transparent;color:#F7F3EC;border:1px solid #9A6B2F;padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;cursor:pointer">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Watch again':'Ver de nuevo'}</button>
       </div>`;
   }
 
@@ -286,8 +304,8 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="pb-video-notch"></div>
       <div style="position:absolute;inset:0;background:#181512;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:'Inter',sans-serif;padding:2rem 1rem">
         <div style="font-family:'Fraunces',serif;font-style:italic;font-size:2.8rem;color:#9A6B2F;font-weight:300">iv</div>
-        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1.05rem;text-align:center;line-height:1.3">Casa con pileta<br>y quincho</div>
-        <div style="color:rgba(247,243,236,.45);font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">5 fotos · Generando...</div>
+        <div style="color:#F7F3EC;font-family:'Fraunces',serif;font-weight:500;font-size:1.05rem;text-align:center;line-height:1.3">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'House with pool<br>& BBQ area':'Casa con pileta<br>y quincho'}</div>
+        <div style="color:rgba(247,243,236,.45);font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'5 photos · Generating...':'5 fotos · Generando...'}</div>
         <div style="display:flex;gap:4px;margin-top:4px">${thumbs}</div>
       </div>`;
   }

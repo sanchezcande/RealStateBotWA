@@ -28,21 +28,24 @@
     <span class="pb-logo-text"><span class="w">Prop</span><span class="y">Bot</span></span>
   </div>
   <nav class="pb-header-nav">
-    <a href="#como-funciona">Cómo funciona</a>
-    <a href="#testimonios">Resultados</a>
-    <a href="#precios">Paquetes</a>
-    <a href="#faq">FAQ</a>
+    <a href="#como-funciona" data-i18n-l="nav_how" data-i18n-mode="html">Cómo funciona</a>
+    <a href="#testimonios" data-i18n-l="nav_results" data-i18n-mode="html">Resultados</a>
+    <a href="#precios" data-i18n-l="nav_pricing" data-i18n-mode="html">Paquetes</a>
+    <a href="#faq" data-i18n-l="nav_faq" data-i18n-mode="html">FAQ</a>
   </nav>
-  <a href="#contacto" class="pb-header-cta">
-    Activar mi bot <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
-  </a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button id="landingLangToggle" onclick="setLandingLang(getLandingLang()==='es'?'en':'es')" style="background:transparent;border:1px solid rgba(247,243,236,.25);color:var(--cream);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;cursor:pointer;border-radius:4px">EN</button>
+    <a href="#contacto" class="pb-header-cta">
+      <span data-i18n-l="nav_cta">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+    </a>
+  </div>
 </header>
 
 <!-- ═══ HERO — MAGAZINE COVER ═══════════════════════════════════════ -->
 <section class="pb-hero">
   <div class="pb-hero-top">
     <div class="pb-hero-issue">
-      <strong>PropBot Nº 01</strong> &nbsp;·&nbsp; The new way to sell real estate
+      <strong>PropBot Nº 01</strong> &nbsp;·&nbsp; <span data-i18n-l="hero_issue">The new way to sell real estate</span>
     </div>
     <div class="pb-hero-issue">
       <span class="italic-accent">2026 Edition</span>
@@ -51,34 +54,34 @@
 
   <div class="pb-hero-main">
     <div class="pb-hero-text anim-card">
-      <span class="eyebrow">Inteligencia artificial · Inmobiliario</span>
-      <h1 style="margin-top:1.5rem">
+      <span class="eyebrow" data-i18n-l="hero_eyebrow">Inteligencia artificial · Inmobiliario</span>
+      <h1 style="margin-top:1.5rem" data-i18n-l="hero_h1" data-i18n-mode="html">
         Cada consulta sin responder es <em>una venta<br>que se pierde</em>.
       </h1>
-      <p class="pb-hero-lede">
+      <p class="pb-hero-lede" data-i18n-l="hero_lede" data-i18n-mode="html">
         PropBot responde en <strong>menos de 5 segundos</strong>, filtra propiedades, agenda visitas y califica leads por vos — las 24 horas, sin que tu equipo mueva un dedo.
       </p>
       <div class="pb-hero-meta">
         <div class="pb-hero-meta-item">
-          <span class="pb-hero-meta-label">Primera respuesta</span>
+          <span class="pb-hero-meta-label" data-i18n-l="hero_meta_label_1">Primera respuesta</span>
           <span class="pb-hero-meta-val"><em>&lt; 5s</em></span>
         </div>
         <div class="pb-hero-meta-item">
-          <span class="pb-hero-meta-label">Setup</span>
+          <span class="pb-hero-meta-label" data-i18n-l="hero_meta_label_2">Setup</span>
           <span class="pb-hero-meta-val"><em>48hs</em></span>
         </div>
         <div class="pb-hero-meta-item">
-          <span class="pb-hero-meta-label">Cobertura</span>
+          <span class="pb-hero-meta-label" data-i18n-l="hero_meta_label_3">Cobertura</span>
           <span class="pb-hero-meta-val"><em>24/7 · 365</em></span>
         </div>
         <div class="pb-hero-meta-item">
-          <span class="pb-hero-meta-label">Tiempo recuperado</span>
-          <span class="pb-hero-meta-val"><em>+3 hs/día</em></span>
+          <span class="pb-hero-meta-label" data-i18n-l="hero_meta_label_4">Tiempo recuperado</span>
+          <span class="pb-hero-meta-val" data-i18n-l="hero_meta_val_4" data-i18n-mode="html"><em>+3 hs/día</em></span>
         </div>
       </div>
       <div class="pb-hero-ctas">
         <a href="#contacto" class="btn-primary">
-          Activar mi bot <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+          <span data-i18n-l="hero_cta_1">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
         </a>
         <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot%20para%20mi%20inmobiliaria" target="_blank" rel="noopener noreferrer" class="btn-secondary">
           <i class="fa-brands fa-whatsapp"></i> WhatsApp
@@ -95,33 +98,33 @@
             <span class="pb-mockup-avatar">V</span>
             <div>
               <div class="pb-mockup-name">Vera · PropBot</div>
-              <div class="pb-mockup-status"><span></span> en línea · responde al instante</div>
+              <div class="pb-mockup-status"><span></span> <span data-i18n-l="mock_status">en línea · responde al instante</span></div>
             </div>
           </div>
           <i class="fa-brands fa-whatsapp"></i>
         </div>
         <div class="pb-mockup-chat-body">
-          <div class="pb-mockup-time">hoy · 23:47</div>
-          <div class="pb-mockup-msg user">hola, busco depto 2 amb con balcón en alquiler en el centro hasta 600 usd</div>
-          <div class="pb-mockup-reply-time">Vera · respondió en 4s</div>
-          <div class="pb-mockup-msg bot">
+          <div class="pb-mockup-time" data-i18n-l="mock_time">hoy · 23:47</div>
+          <div class="pb-mockup-msg user" data-i18n-l="mock_user">hola, busco depto 2 amb con balcón en alquiler en el centro hasta 600 usd</div>
+          <div class="pb-mockup-reply-time" data-i18n-l="mock_reply_time">Vera · respondió en 4s</div>
+          <div class="pb-mockup-msg bot" data-i18n-l="mock_bot_1">
             ¡Hola! Tengo 3 opciones que cumplen lo que buscás 👇
           </div>
           <div class="pb-mockup-prop">
             <div class="pb-mockup-prop-img"></div>
             <div class="pb-mockup-prop-body">
-              <div class="pb-mockup-prop-price">USD 550<span>/mes</span></div>
-              <div class="pb-mockup-prop-title">Depto 2 amb · Downtown</div>
+              <div class="pb-mockup-prop-price">USD 550<span data-i18n-l="mock_prop_price_unit">/mes</span></div>
+              <div class="pb-mockup-prop-title" data-i18n-l="mock_prop_title">Depto 2 amb · Downtown</div>
               <div class="pb-mockup-prop-tags">
-                <span>✓ balcón</span><span>✓ 45m²</span><span>✓ luminoso</span>
+                <span data-i18n-l="mock_prop_tag_1">✓ balcón</span><span data-i18n-l="mock_prop_tag_2">✓ 45m²</span><span data-i18n-l="mock_prop_tag_3">✓ luminoso</span>
               </div>
             </div>
           </div>
-          <div class="pb-mockup-msg bot">¿Te armo una visita para esta semana? Tengo lunes 18hs y miércoles 11hs disponibles.</div>
+          <div class="pb-mockup-msg bot" data-i18n-l="mock_bot_2">¿Te armo una visita para esta semana? Tengo lunes 18hs y miércoles 11hs disponibles.</div>
           <div class="pb-mockup-typing"><span></span><span></span><span></span></div>
         </div>
       </div>
-      <div class="pb-hero-cover-tag">Captura — conversación real del bot</div>
+      <div class="pb-hero-cover-tag" data-i18n-l="hero_cover_tag">Captura — conversación real del bot</div>
     </div>
   </div>
 </section>
@@ -129,52 +132,52 @@
 <!-- ═══ FULL-BLEED STATS SPREAD ═════════════════════════════════════ -->
 <section class="pb-bigstats">
   <div class="pb-bigstats-head">
-    <span class="eyebrow">El problema en tres números</span>
-    <h2>Mientras tu equipo duerme, tu <em>competencia factura</em>.</h2>
+    <span class="eyebrow" data-i18n-l="bigstats_eyebrow">El problema en tres números</span>
+    <h2 data-i18n-l="bigstats_h2" data-i18n-mode="html">Mientras tu equipo duerme, tu <em>competencia factura</em>.</h2>
   </div>
   <div class="pb-bigstats-grid">
     <figure class="pb-bigstat anim-card">
       <div class="pb-bigstat-num">78<sup>%</sup></div>
       <div class="pb-bigstat-line"></div>
       <figcaption>
-        <strong>Eligen a quien responde primero</strong>
-        <span>De los leads que llegan por chat, casi 8 de 10 cierran con la inmobiliaria que contestó antes.</span>
+        <strong data-i18n-l="bigstat_1_caption_strong">Eligen a quien responde primero</strong>
+        <span data-i18n-l="bigstat_1_caption_span">De los leads que llegan por chat, casi 8 de 10 cierran con la inmobiliaria que contestó antes.</span>
       </figcaption>
     </figure>
     <figure class="pb-bigstat anim-card">
       <div class="pb-bigstat-num">&lt;5<sup>s</sup></div>
       <div class="pb-bigstat-line"></div>
       <figcaption>
-        <strong>Tiempo de primera respuesta</strong>
-        <span>Lo que tarda PropBot en contestar cualquier consulta, a cualquier hora, en cualquier canal.</span>
+        <strong data-i18n-l="bigstat_2_caption_strong">Tiempo de primera respuesta</strong>
+        <span data-i18n-l="bigstat_2_caption_span">Lo que tarda PropBot en contestar cualquier consulta, a cualquier hora, en cualquier canal.</span>
       </figcaption>
     </figure>
     <figure class="pb-bigstat anim-card">
       <div class="pb-bigstat-num">3<sup>hs</sup></div>
       <div class="pb-bigstat-line"></div>
       <figcaption>
-        <strong>Que tu equipo recupera por día</strong>
-        <span>Ya no contestan "cuántos ambientes" ni "cuál es el precio". Se dedican a cerrar.</span>
+        <strong data-i18n-l="bigstat_3_caption_strong">Que tu equipo recupera por día</strong>
+        <span data-i18n-l="bigstat_3_caption_span">Ya no contestan "cuántos ambientes" ni "cuál es el precio". Se dedican a cerrar.</span>
       </figcaption>
     </figure>
   </div>
   <div class="pb-bigstats-cta">
-    <a href="#contacto" class="btn-primary">Quiero estos números en mi inmobiliaria <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="bigstats_cta">Quiero estos números en mi inmobiliaria</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
   </div>
 </section>
 
 <!-- ═══ TRUST BAR ═══════════════════════════════════════════════════ -->
 <div class="pb-trust">
-  <div class="pb-trust-item"><span>✦</span> Sin contratos</div>
-  <div class="pb-trust-item"><span>✦</span> Cancelás cuando querés</div>
-  <div class="pb-trust-item"><span>✦</span> Setup 48hs</div>
-  <div class="pb-trust-item"><span>✦</span> Garantía 30 días</div>
-  <div class="pb-trust-item"><span>✦</span> Hecho para inmobiliarias</div>
+  <div class="pb-trust-item"><span>✦</span> <span data-i18n-l="trust_1">Sin contratos</span></div>
+  <div class="pb-trust-item"><span>✦</span> <span data-i18n-l="trust_2">Cancelás cuando querés</span></div>
+  <div class="pb-trust-item"><span>✦</span> <span data-i18n-l="trust_3">Setup 48hs</span></div>
+  <div class="pb-trust-item"><span>✦</span> <span data-i18n-l="trust_4">Garantía 30 días</span></div>
+  <div class="pb-trust-item"><span>✦</span> <span data-i18n-l="trust_5">Hecho para inmobiliarias</span></div>
 </div>
 
 <!-- ═══ INTEGRATIONS BAR — authority signals ═══════════════════════ -->
 <div class="pb-integ">
-  <div class="pb-integ-label">Construido sobre la stack que ya usás</div>
+  <div class="pb-integ-label" data-i18n-l="integ_label">Construido sobre la stack que ya usás</div>
   <div class="pb-integ-row">
     <div class="pb-integ-item"><i class="fa-brands fa-whatsapp"></i><span>WhatsApp<br><em>Business API · Meta</em></span></div>
     <div class="pb-integ-item"><i class="fa-brands fa-instagram"></i><span>Instagram<br><em>Direct</em></span></div>
@@ -188,8 +191,8 @@
 <!-- ═══ PHOTO STRIP — editorial showcase ═══════════════════════════ -->
 <section class="pb-photostrip">
   <div class="pb-photostrip-label">
-    <span class="eyebrow">Cualquier propiedad, cualquier canal</span>
-    <p>Departamentos en el centro, casas de campo, locales comerciales — PropBot responde <em>por todas</em>.</p>
+    <span class="eyebrow" data-i18n-l="photostrip_eyebrow">Cualquier propiedad, cualquier canal</span>
+    <p data-i18n-l="photostrip_desc" data-i18n-mode="html">Departamentos en el centro, casas de campo, locales comerciales — PropBot responde <em>por todas</em>.</p>
   </div>
   <div class="pb-photostrip-grid">
     <figure class="pb-photostrip-item anim-card">
@@ -224,42 +227,42 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">I · El diagnóstico</span>
-        <h2 style="margin-top:1rem">Cada hora de silencio le cuesta <em>ventas</em> a tu inmobiliaria.</h2>
-        <p class="section-sub">Los clientes no esperan. Si no respondés en minutos, ya están hablando con la competencia.</p>
+        <span class="section-num" data-i18n-l="cost_section_num">I · El diagnóstico</span>
+        <h2 style="margin-top:1rem" data-i18n-l="cost_h2" data-i18n-mode="html">Cada hora de silencio le cuesta <em>ventas</em> a tu inmobiliaria.</h2>
+        <p class="section-sub" data-i18n-l="cost_sub">Los clientes no esperan. Si no respondés en minutos, ya están hablando con la competencia.</p>
       </div>
     </div>
   </div>
 
   <div class="pb-cost-grid">
     <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label">Tasa de elección</div>
+      <div class="pb-cost-label" data-i18n-l="cost_card1_label">Tasa de elección</div>
       <div class="pb-cost-stat">78<span style="font-size:.5em;vertical-align:top">%</span></div>
-      <h3 class="pb-cost-head">Eligen a quien responde primero</h3>
-      <p class="pb-cost-body">De los compradores y locatarios que contactan por chat, casi 8 de 10 terminan eligiendo la inmobiliaria que respondió más rápido.</p>
+      <h3 class="pb-cost-head" data-i18n-l="cost_card1_head">Eligen a quien responde primero</h3>
+      <p class="pb-cost-body" data-i18n-l="cost_card1_body">De los compradores y locatarios que contactan por chat, casi 8 de 10 terminan eligiendo la inmobiliaria que respondió más rápido.</p>
     </div>
     <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label">Paciencia promedio</div>
+      <div class="pb-cost-label" data-i18n-l="cost_card2_label">Paciencia promedio</div>
       <div class="pb-cost-stat">8<span style="font-size:.4em;margin-left:.1em">min</span></div>
-      <h3 class="pb-cost-head">Es lo que esperan antes de irse</h3>
-      <p class="pb-cost-body">Después de 8 minutos sin respuesta, la mayoría abandona la conversación y busca otra opción. Para siempre.</p>
+      <h3 class="pb-cost-head" data-i18n-l="cost_card2_head">Es lo que esperan antes de irse</h3>
+      <p class="pb-cost-body" data-i18n-l="cost_card2_body">Después de 8 minutos sin respuesta, la mayoría abandona la conversación y busca otra opción. Para siempre.</p>
     </div>
     <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label">Tiempo perdido</div>
+      <div class="pb-cost-label" data-i18n-l="cost_card3_label">Tiempo perdido</div>
       <div class="pb-cost-stat">3<span style="font-size:.4em;margin-left:.1em">hs</span></div>
-      <h3 class="pb-cost-head">Por día en respuestas repetidas</h3>
-      <p class="pb-cost-body">Tu equipo pasa horas respondiendo "tiene cochera", "cuántos ambientes", "cuál es el precio". PropBot lo hace en 5 segundos.</p>
+      <h3 class="pb-cost-head" data-i18n-l="cost_card3_head">Por día en respuestas repetidas</h3>
+      <p class="pb-cost-body" data-i18n-l="cost_card3_body">Tu equipo pasa horas respondiendo "tiene cochera", "cuántos ambientes", "cuál es el precio". PropBot lo hace en 5 segundos.</p>
     </div>
   </div>
 
   <div class="pb-cost-banner">
     <div class="pb-cost-banner-inner anim-card">
       <div>
-        <h3>PropBot responde en <em>menos de 5 segundos</em>. Siempre.</h3>
-        <p>A las 3 AM del domingo, en feriados, mientras tu equipo está en una visita.</p>
+        <h3 data-i18n-l="cost_banner_h3" data-i18n-mode="html">PropBot responde en <em>menos de 5 segundos</em>. Siempre.</h3>
+        <p data-i18n-l="cost_banner_p">A las 3 AM del domingo, en feriados, mientras tu equipo está en una visita.</p>
       </div>
       <a href="#contacto" class="btn-primary" style="background:var(--gold);border-color:var(--gold)">
-        Quiero el bot <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+        <span data-i18n-l="cost_banner_cta">Quiero el bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
       </a>
     </div>
   </div>
@@ -267,10 +270,10 @@
 
 <!-- CTA Band -->
 <div class="pb-cta-band">
-  <h3>No pierdas más clientes por <em>no responder a tiempo</em></h3>
-  <p>En 15 minutos te mostramos cómo PropBot atiende por vos. Sin compromiso.</p>
+  <h3 data-i18n-l="cta1_h3" data-i18n-mode="html">No pierdas más clientes por <em>no responder a tiempo</em></h3>
+  <p data-i18n-l="cta1_p">En 15 minutos te mostramos cómo PropBot atiende por vos. Sin compromiso.</p>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary">Velo en acción <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta1_btn">Velo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
     <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
     <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
   </div>
@@ -281,9 +284,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">II · Demostración</span>
-        <h2 style="margin-top:1rem">Así responde el bot a <em>tus clientes</em></h2>
-        <p class="section-sub">Seleccioná la plataforma y mirá cómo se ve una conversación real.</p>
+        <span class="section-num" data-i18n-l="demo_section_num">II · Demostración</span>
+        <h2 style="margin-top:1rem" data-i18n-l="demo_h2" data-i18n-mode="html">Así responde el bot a <em>tus clientes</em></h2>
+        <p class="section-sub" data-i18n-l="demo_sub">Seleccioná la plataforma y mirá cómo se ve una conversación real.</p>
       </div>
     </div>
   </div>
@@ -306,7 +309,7 @@
       <div>
         <div style="font-family:var(--serif);font-weight:500;font-size:1rem;color:var(--cream)">Vera · PropBot</div>
         <div style="font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:rgba(247,243,236,.6);display:flex;align-items:center;gap:6px;margin-top:2px">
-          <span class="pb-chat-status"></span> En línea · Responde al instante
+          <span class="pb-chat-status"></span> <span data-i18n-l="demo_status">En línea · Responde al instante</span>
         </div>
       </div>
       <div style="margin-left:auto;font-size:1.2rem;opacity:.8;color:var(--cream)">
@@ -322,9 +325,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">III · El proceso</span>
-        <h2 style="margin-top:1rem">De tu planilla a tus clientes <em>en 4 pasos</em></h2>
-        <p class="section-sub">Sin código, sin complicaciones. Solo conectás y el bot empieza a trabajar.</p>
+        <span class="section-num" data-i18n-l="steps_section_num">III · El proceso</span>
+        <h2 style="margin-top:1rem" data-i18n-l="steps_h2" data-i18n-mode="html">De tu planilla a tus clientes <em>en 4 pasos</em></h2>
+        <p class="section-sub" data-i18n-l="steps_sub">Sin código, sin complicaciones. Solo conectás y el bot empieza a trabajar.</p>
       </div>
     </div>
   </div>
@@ -332,33 +335,33 @@
   <div class="pb-steps-grid">
     <div class="pb-step-card anim-card">
       <div class="pb-step-num">1</div>
-      <h3>Completás nuestra plantilla</h3>
-      <p>Te mandamos nuestra plantilla de Google Sheets ya armada. La completás con tus propiedades e incluís el link a la carpeta de Drive con las fotos de cada una.</p>
+      <h3 data-i18n-l="step1_h3">Completás nuestra plantilla</h3>
+      <p data-i18n-l="step1_p">Te mandamos nuestra plantilla de Google Sheets ya armada. La completás con tus propiedades e incluís el link a la carpeta de Drive con las fotos de cada una.</p>
     </div>
     <div class="pb-step-card anim-card">
       <div class="pb-step-num">2</div>
-      <h3>Configuramos el bot</h3>
-      <p>Conectamos el bot a tu WhatsApp Business, página de Facebook e Instagram. Lo personalizamos con el tono de tu inmobiliaria.</p>
+      <h3 data-i18n-l="step2_h3">Configuramos el bot</h3>
+      <p data-i18n-l="step2_p">Conectamos el bot a tu WhatsApp Business, página de Facebook e Instagram. Lo personalizamos con el tono de tu inmobiliaria.</p>
     </div>
     <div class="pb-step-card anim-card">
       <div class="pb-step-num">3</div>
-      <h3>Live en 48 hs</h3>
-      <p>En 48 horas el bot está activo recibiendo y respondiendo consultas. Hacemos pruebas con vos antes de activar para asegurarnos que todo funcione perfecto.</p>
+      <h3 data-i18n-l="step3_h3">Live en 48 hs</h3>
+      <p data-i18n-l="step3_p">En 48 horas el bot está activo recibiendo y respondiendo consultas. Hacemos pruebas con vos antes de activar para asegurarnos que todo funcione perfecto.</p>
     </div>
     <div class="pb-step-card anim-card">
       <div class="pb-step-num">4</div>
-      <h3>Medís resultados</h3>
-      <p>Dashboard con métricas de consultas recibidas, propiedades más buscadas, horarios pico y tasa de conversión a visitas.</p>
+      <h3 data-i18n-l="step4_h3">Medís resultados</h3>
+      <p data-i18n-l="step4_p">Dashboard con métricas de consultas recibidas, propiedades más buscadas, horarios pico y tasa de conversión a visitas.</p>
     </div>
   </div>
 </section>
 
 <!-- CTA Band -->
 <div class="pb-cta-band">
-  <h3>3 pasos. 48 horas. <em>Tu bot está listo.</em></h3>
-  <p>Conectás tu planilla, elegís el tono y listo. Nosotros hacemos el resto.</p>
+  <h3 data-i18n-l="cta2_h3" data-i18n-mode="html">3 pasos. 48 horas. <em>Tu bot está listo.</em></h3>
+  <p data-i18n-l="cta2_p">Conectás tu planilla, elegís el tono y listo. Nosotros hacemos el resto.</p>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary">Empezar ahora <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta2_btn">Empezar ahora</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
   </div>
 </div>
 
@@ -375,15 +378,15 @@
         <div class="pb-dash-mock-body">
           <div class="pb-dash-mock-sidebar">
             <div class="pb-dash-mock-logo">PropBot</div>
-            <div class="pb-dash-mock-nav active"><i class="fa-solid fa-chart-simple"></i> Métricas</div>
-            <div class="pb-dash-mock-nav"><i class="fa-regular fa-comments"></i> Chats</div>
-            <div class="pb-dash-mock-nav"><i class="fa-regular fa-user"></i> Leads</div>
-            <div class="pb-dash-mock-nav"><i class="fa-regular fa-calendar"></i> Visitas</div>
+            <div class="pb-dash-mock-nav active"><i class="fa-solid fa-chart-simple"></i> <span data-i18n-l="dash_mock_nav1">Métricas</span></div>
+            <div class="pb-dash-mock-nav"><i class="fa-regular fa-comments"></i> <span data-i18n-l="dash_mock_nav2">Chats</span></div>
+            <div class="pb-dash-mock-nav"><i class="fa-regular fa-user"></i> <span data-i18n-l="dash_mock_nav3">Leads</span></div>
+            <div class="pb-dash-mock-nav"><i class="fa-regular fa-calendar"></i> <span data-i18n-l="dash_mock_nav4">Visitas</span></div>
           </div>
           <div class="pb-dash-mock-main">
-            <div class="pb-dash-mock-label">Consultas · últimos 7 días</div>
+            <div class="pb-dash-mock-label" data-i18n-l="dash_mock_label">Consultas · últimos 7 días</div>
             <div class="pb-dash-mock-big">1.247</div>
-            <div class="pb-dash-mock-delta">▲ +34% vs semana anterior</div>
+            <div class="pb-dash-mock-delta" data-i18n-l="dash_mock_delta">▲ +34% vs semana anterior</div>
             <svg class="pb-dash-mock-chart" viewBox="0 0 300 90" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
@@ -395,24 +398,24 @@
               <path d="M0,70 L30,62 L60,68 L90,48 L120,52 L150,38 L180,42 L210,28 L240,32 L270,18 L300,12" fill="none" stroke="#9A6B2F" stroke-width="1.5"/>
             </svg>
             <div class="pb-dash-mock-row">
-              <div class="pb-dash-mock-mini"><span>Leads calificados</span><strong>89</strong></div>
-              <div class="pb-dash-mock-mini"><span>Visitas agendadas</span><strong>23</strong></div>
-              <div class="pb-dash-mock-mini"><span>Tasa respuesta</span><strong>100%</strong></div>
+              <div class="pb-dash-mock-mini"><span data-i18n-l="dash_mock_mini1">Leads calificados</span><strong>89</strong></div>
+              <div class="pb-dash-mock-mini"><span data-i18n-l="dash_mock_mini2">Visitas agendadas</span><strong>23</strong></div>
+              <div class="pb-dash-mock-mini"><span data-i18n-l="dash_mock_mini3">Tasa respuesta</span><strong>100%</strong></div>
             </div>
           </div>
         </div>
       </div>
-      <figcaption>↳ Dashboard PropBot — <span class="italic-accent">todo lo que pasa en tu inmobiliaria, en un solo lugar</span></figcaption>
+      <figcaption data-i18n-l="spread_caption" data-i18n-mode="html">↳ Dashboard PropBot — <span class="italic-accent">todo lo que pasa en tu inmobiliaria, en un solo lugar</span></figcaption>
     </figure>
     <blockquote class="pb-spread-quote anim-card">
-      <span class="eyebrow">Nota del editor</span>
-      <p>"No importa cuántas propiedades tengas en la planilla. Lo único que importa es que cuando <em>alguien pregunta</em>, alguien responda. Ya."</p>
+      <span class="eyebrow" data-i18n-l="spread_eyebrow">Nota del editor</span>
+      <p data-i18n-l="spread_quote" data-i18n-mode="html">"No importa cuántas propiedades tengas en la planilla. Lo único que importa es que cuando <em>alguien pregunta</em>, alguien responda. Ya."</p>
       <footer>
-        <strong>Candelaria Sanchez</strong>
-        <span>Fundadora · PropBot</span>
+        <strong data-i18n-l="spread_author">Candelaria Sanchez</strong>
+        <span data-i18n-l="spread_role">Fundadora · PropBot</span>
       </footer>
       <a href="#contacto" class="btn-primary" style="margin-top:1.6rem;align-self:flex-start">
-        Agendar demo de 15 min <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+        <span data-i18n-l="spread_cta">Agendar demo de 15 min</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
       </a>
     </blockquote>
   </div>
@@ -423,9 +426,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">IV · El archivo</span>
-        <h2 style="margin-top:1rem">Tu plantilla, <em>lista para completar</em></h2>
-        <p class="section-sub">Te damos la plantilla con todas las columnas armadas. Solo la completás con tus propiedades y agregás el link de Drive con las fotos de cada una.</p>
+        <span class="section-num" data-i18n-l="sheet_section_num">IV · El archivo</span>
+        <h2 style="margin-top:1rem" data-i18n-l="sheet_h2" data-i18n-mode="html">Tu plantilla, <em>lista para completar</em></h2>
+        <p class="section-sub" data-i18n-l="sheet_sub">Te damos la plantilla con todas las columnas armadas. Solo la completás con tus propiedades y agregás el link de Drive con las fotos de cada una.</p>
       </div>
     </div>
   </div>
@@ -434,33 +437,33 @@
     <div class="pb-sheet-frame anim-card">
       <div class="pb-sheet-header">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="#9A6B2F"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/></svg>
-        <span>Propiedades_inmobiliaria.xlsx — Hoja 1</span>
+        <span data-i18n-l="sheet_header">Propiedades_inmobiliaria.xlsx — Hoja 1</span>
       </div>
       <div style="overflow-x:auto">
         <table>
           <thead>
             <tr>
-              <th>Columna</th>
-              <th>Ejemplo</th>
-              <th>Qué hace el bot con esto</th>
+              <th data-i18n-l="sheet_th1">Columna</th>
+              <th data-i18n-l="sheet_th2">Ejemplo</th>
+              <th data-i18n-l="sheet_th3">Qué hace el bot con esto</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td><code>titulo</code></td><td style="white-space:nowrap">Casa familiar con jardín</td><td>Título descriptivo de la propiedad</td></tr>
-            <tr><td><code>precio_usd</code></td><td style="white-space:nowrap">120000 / 500</td><td>Precio en USD (venta) o mensual (alquiler)</td></tr>
-            <tr><td><code>tipo_operacion</code></td><td style="white-space:nowrap">venta / alquiler</td><td>El bot filtra por esta columna</td></tr>
-            <tr><td><code>tipo_propiedad</code></td><td style="white-space:nowrap">casa / departamento / chalet…</td><td>Tipo de inmueble</td></tr>
-            <tr><td><code>barrio</code></td><td style="white-space:nowrap">Centro / Downtown</td><td>Zona de búsqueda del cliente</td></tr>
-            <tr><td><code>ambientes / dormitorios / banos</code></td><td style="white-space:nowrap">3 / 2 / 1</td><td>Filtros numéricos automáticos</td></tr>
-            <tr><td><code>cochera / pileta / balcon…</code></td><td style="white-space:nowrap">sí / no</td><td>+15 características reconocidas</td></tr>
-            <tr><td><code>fotos_drive</code></td><td style="white-space:nowrap">drive.google.com/carpeta/…</td><td>Link de carpeta de Drive con las fotos. El bot las envía al cliente automáticamente.</td></tr>
-            <tr><td><code>horarios_visita</code></td><td style="white-space:nowrap">Lunes 9-12, Sáb 10-13</td><td>Incluidos en la respuesta del bot</td></tr>
+            <tr><td><code>titulo</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r1_ex">Casa familiar con jardín</td><td data-i18n-l="sheet_r1_desc">Título descriptivo de la propiedad</td></tr>
+            <tr><td><code>precio_usd</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r2_ex">120000 / 500</td><td data-i18n-l="sheet_r2_desc">Precio en USD (venta) o mensual (alquiler)</td></tr>
+            <tr><td><code>tipo_operacion</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r3_ex">venta / alquiler</td><td data-i18n-l="sheet_r3_desc">El bot filtra por esta columna</td></tr>
+            <tr><td><code>tipo_propiedad</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r4_ex">casa / departamento / chalet…</td><td data-i18n-l="sheet_r4_desc">Tipo de inmueble</td></tr>
+            <tr><td><code>barrio</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r5_ex">Centro / Downtown</td><td data-i18n-l="sheet_r5_desc">Zona de búsqueda del cliente</td></tr>
+            <tr><td><code>ambientes / dormitorios / banos</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r6_ex">3 / 2 / 1</td><td data-i18n-l="sheet_r6_desc">Filtros numéricos automáticos</td></tr>
+            <tr><td><code>cochera / pileta / balcon…</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r7_ex">sí / no</td><td data-i18n-l="sheet_r7_desc">+15 características reconocidas</td></tr>
+            <tr><td><code>fotos_drive</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r8_ex">drive.google.com/carpeta/…</td><td data-i18n-l="sheet_r8_desc">Link de carpeta de Drive con las fotos. El bot las envía al cliente automáticamente.</td></tr>
+            <tr><td><code>horarios_visita</code></td><td style="white-space:nowrap" data-i18n-l="sheet_r9_ex">Lunes 9-12, Sáb 10-13</td><td data-i18n-l="sheet_r9_desc">Incluidos en la respuesta del bot</td></tr>
           </tbody>
         </table>
       </div>
     </div>
     <p style="text-align:center;margin-top:2rem;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(247,243,236,.5)">
-      <a href="#contacto" style="color:var(--gold);border-bottom:1px solid var(--gold);padding-bottom:2px">Pedí la plantilla</a> &nbsp;y la recibís lista para completar
+      <a href="#contacto" style="color:var(--gold);border-bottom:1px solid var(--gold);padding-bottom:2px" data-i18n-l="sheet_bottom_link">Pedí la plantilla</a> &nbsp;<span data-i18n-l="sheet_bottom_text">y la recibís lista para completar</span>
     </p>
   </div>
 </section>
@@ -470,9 +473,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">V · Funcionalidades</span>
-        <h2 style="margin-top:1rem">Todo lo que el bot <em>hace por vos</em></h2>
-        <p class="section-sub">Diseñado específicamente para el negocio inmobiliario.</p>
+        <span class="section-num" data-i18n-l="feat_section_num">V · Funcionalidades</span>
+        <h2 style="margin-top:1rem" data-i18n-l="feat_h2" data-i18n-mode="html">Todo lo que el bot <em>hace por vos</em></h2>
+        <p class="section-sub" data-i18n-l="feat_sub">Diseñado específicamente para el negocio inmobiliario.</p>
       </div>
     </div>
   </div>
@@ -480,34 +483,34 @@
   <div class="pb-features-grid">
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">1</span>
-      <h3>Agenda visitas con Google Calendar</h3>
-      <p>El bot propone horarios disponibles, crea el evento en Google Calendar y manda recordatorio al asesor 1 hora antes. Si el cliente cancela, borra el evento solo.</p>
+      <h3 data-i18n-l="feat1_h3">Agenda visitas con Google Calendar</h3>
+      <p data-i18n-l="feat1_p">El bot propone horarios disponibles, crea el evento en Google Calendar y manda recordatorio al asesor 1 hora antes. Si el cliente cancela, borra el evento solo.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">2</span>
-      <h3>Filtros inteligentes por consulta</h3>
-      <p>Si el cliente dice "busco depto 2 amb con balcón en alquiler en el centro", el bot filtra tipo_operacion, tipo_propiedad, ambientes, balcon y barrio en tiempo real.</p>
+      <h3 data-i18n-l="feat2_h3">Filtros inteligentes por consulta</h3>
+      <p data-i18n-l="feat2_p">Si el cliente dice "busco depto 2 amb con balcón en alquiler en el centro", el bot filtra tipo_operacion, tipo_propiedad, ambientes, balcon y barrio en tiempo real.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">3</span>
-      <h3>Actualización en tiempo real</h3>
-      <p>Modificás la planilla y el bot ya tiene los datos nuevos. Agregás una propiedad a la mañana y al mediodía ya aparece en las respuestas. Sin reinicios.</p>
+      <h3 data-i18n-l="feat3_h3">Actualización en tiempo real</h3>
+      <p data-i18n-l="feat3_p">Modificás la planilla y el bot ya tiene los datos nuevos. Agregás una propiedad a la mañana y al mediodía ya aparece en las respuestas. Sin reinicios.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">4</span>
-      <h3>Tres canales, un solo bot</h3>
-      <p>El mismo bot atiende WhatsApp Business, Facebook Messenger e Instagram DMs simultáneamente. Un solo setup, tres canales activos.</p>
+      <h3 data-i18n-l="feat4_h3">Tres canales, un solo bot</h3>
+      <p data-i18n-l="feat4_p">El mismo bot atiende WhatsApp Business, Facebook Messenger e Instagram DMs simultáneamente. Un solo setup, tres canales activos.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">5</span>
-      <h3>Atención 24/7 sin descanso</h3>
-      <p>Consultas a las 2 AM del domingo? El bot responde igual. Con los horarios de visita de cada propiedad incluidos en la respuesta automáticamente.</p>
+      <h3 data-i18n-l="feat5_h3">Atención 24/7 sin descanso</h3>
+      <p data-i18n-l="feat5_p">Consultas a las 2 AM del domingo? El bot responde igual. Con los horarios de visita de cada propiedad incluidos en la respuesta automáticamente.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">6</span>
-      <h3>Seguimiento automático de leads</h3>
-      <p>Si un lead calificado no responde en 3 días, el bot le manda un mensaje personalizado con su nombre y lo que estaba buscando. Recuperá clientes que se enfriaron sin que tu equipo haga nada.</p>
-      <div class="pb-fx">
+      <h3 data-i18n-l="feat6_h3">Seguimiento automático de leads</h3>
+      <p data-i18n-l="feat6_p">Si un lead calificado no responde en 3 días, el bot le manda un mensaje personalizado con su nombre y lo que estaba buscando. Recuperá clientes que se enfriaron sin que tu equipo haga nada.</p>
+      <div class="pb-fx" data-i18n-l="feat6_fx">
         "Hola Martín! Soy Vera. Te escribo porque hace unos días estuvimos viendo opciones de alquiler y quería saber cómo seguís con la búsqueda. Si necesitás que te muestre nuevas opciones, escribime."
       </div>
     </div>
@@ -516,79 +519,79 @@
   <div class="pb-features-grid pb-features-hidden" id="features-extra">
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">7</span>
-      <h3>Integración nativa con Tokko CRM</h3>
-      <p>Los leads calificados y visitas agendadas se sincronizan automáticamente con Tokko Broker. Sin exportar, sin copiar y pegar. Tu CRM siempre actualizado.</p>
+      <h3 data-i18n-l="feat7_h3">Integración nativa con Tokko CRM</h3>
+      <p data-i18n-l="feat7_p">Los leads calificados y visitas agendadas se sincronizan automáticamente con Tokko Broker. Sin exportar, sin copiar y pegar. Tu CRM siempre actualizado.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">8</span>
-      <h3>Escala a humano cuando hace falta</h3>
-      <p>Cuando el cliente quiere cerrar trato, el bot transfiere la conversación al asesor disponible con todo el contexto de la consulta ya registrado.</p>
+      <h3 data-i18n-l="feat8_h3">Escala a humano cuando hace falta</h3>
+      <p data-i18n-l="feat8_p">Cuando el cliente quiere cerrar trato, el bot transfiere la conversación al asesor disponible con todo el contexto de la consulta ya registrado.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">9</span>
-      <h3>Lead calificado → alerta al asesor</h3>
-      <p>Cuando el bot detecta presupuesto, operación y timeline, manda un WhatsApp al asesor con el resumen completo del lead. Sin que nadie revise nada.</p>
+      <h3 data-i18n-l="feat9_h3">Lead calificado → alerta al asesor</h3>
+      <p data-i18n-l="feat9_p">Cuando el bot detecta presupuesto, operación y timeline, manda un WhatsApp al asesor con el resumen completo del lead. Sin que nadie revise nada.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">10</span>
-      <h3>Respondé vos desde el panel</h3>
-      <p>Desde el dashboard podés leer la conversación completa y responder directamente. El bot se pausa 30 minutos para que el asesor cierre la venta.</p>
+      <h3 data-i18n-l="feat10_h3">Respondé vos desde el panel</h3>
+      <p data-i18n-l="feat10_p">Desde el dashboard podés leer la conversación completa y responder directamente. El bot se pausa 30 minutos para que el asesor cierre la venta.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">11</span>
-      <h3>Español e inglés automático</h3>
-      <p>Si el cliente escribe en inglés, el bot responde en inglés. Ideal para turistas, inversores extranjeros y expats.</p>
+      <h3 data-i18n-l="feat11_h3">Español e inglés automático</h3>
+      <p data-i18n-l="feat11_p">Si el cliente escribe en inglés, el bot responde en inglés. Ideal para turistas, inversores extranjeros y expats.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">12</span>
-      <h3>Webhook CRM universal</h3>
-      <p>Si no usás Tokko, conectá cualquier CRM vía webhook. Cada lead calificado y visita agendada dispara un evento a tu sistema.</p>
+      <h3 data-i18n-l="feat12_h3">Webhook CRM universal</h3>
+      <p data-i18n-l="feat12_p">Si no usás Tokko, conectá cualquier CRM vía webhook. Cada lead calificado y visita agendada dispara un evento a tu sistema.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">13</span>
-      <h3>Transcripción de audios</h3>
-      <p>El cliente manda un audio de WhatsApp y el bot lo transcribe con IA, entiende qué busca y responde como si fuera texto. No se pierde ni un lead por mandar un audio en vez de escribir.</p>
+      <h3 data-i18n-l="feat13_h3">Transcripción de audios</h3>
+      <p data-i18n-l="feat13_p">El cliente manda un audio de WhatsApp y el bot lo transcribe con IA, entiende qué busca y responde como si fuera texto. No se pierde ni un lead por mandar un audio en vez de escribir.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">14</span>
-      <h3>Lead scoring automático</h3>
-      <p>Cada lead recibe un puntaje según presupuesto definido, cantidad de mensajes, visitas agendadas y nivel de avance. Priorizá los que están más cerca de cerrar.</p>
+      <h3 data-i18n-l="feat14_h3">Lead scoring automático</h3>
+      <p data-i18n-l="feat14_p">Cada lead recibe un puntaje según presupuesto definido, cantidad de mensajes, visitas agendadas y nivel de avance. Priorizá los que están más cerca de cerrar.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">15</span>
-      <h3>Modo flexible de visitas</h3>
-      <p>Dos modos: el bot agenda directo en Google Calendar, o te notifica por WhatsApp para que vos confirmes. Elegís el nivel de control que querés.</p>
+      <h3 data-i18n-l="feat15_h3">Modo flexible de visitas</h3>
+      <p data-i18n-l="feat15_p">Dos modos: el bot agenda directo en Google Calendar, o te notifica por WhatsApp para que vos confirmes. Elegís el nivel de control que querés.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">16</span>
-      <h3>Horarios de visita por propiedad</h3>
-      <p>Cada propiedad tiene sus propios horarios de visita en la planilla. El bot solo ofrece turnos dentro de esas franjas. No propone horarios imposibles.</p>
+      <h3 data-i18n-l="feat16_h3">Horarios de visita por propiedad</h3>
+      <p data-i18n-l="feat16_p">Cada propiedad tiene sus propios horarios de visita en la planilla. El bot solo ofrece turnos dentro de esas franjas. No propone horarios imposibles.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">17</span>
-      <h3>Control anti-duplicados</h3>
-      <p>Si un cliente ya agendó una visita a una propiedad, el bot no le ofrece agendar de nuevo. Evita confusiones y visitas repetidas.</p>
+      <h3 data-i18n-l="feat17_h3">Control anti-duplicados</h3>
+      <p data-i18n-l="feat17_p">Si un cliente ya agendó una visita a una propiedad, el bot no le ofrece agendar de nuevo. Evita confusiones y visitas repetidas.</p>
     </div>
     <div class="pb-feature-card anim-card">
       <span class="pb-feature-icon">18</span>
-      <h3>Videos con IA generativa (Veo)</h3>
-      <p>El Media Studio usa Veo de Google para generar videos profesionales desde las fotos de cada propiedad. Ken Burns, textos, voiceover y música — todo generado por IA.</p>
+      <h3 data-i18n-l="feat18_h3">Videos con IA generativa (Veo)</h3>
+      <p data-i18n-l="feat18_p">El Media Studio usa Veo de Google para generar videos profesionales desde las fotos de cada propiedad. Ken Burns, textos, voiceover y música — todo generado por IA.</p>
     </div>
   </div>
 
   <div class="pb-features-toggle-wrap">
-    <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');this.querySelector('span').textContent=document.getElementById('features-extra').classList.contains('show')?'Ver menos':'Ver las 18 funcionalidades'">
-      <span>Ver las 18 funcionalidades</span>
+    <button class="pb-features-toggle" id="features-toggle-btn" onclick="document.getElementById('features-extra').classList.toggle('show');var isShow=document.getElementById('features-extra').classList.contains('show');var lang=typeof getLandingLang==='function'?getLandingLang():'es';this.querySelector('span').textContent=isShow?(lang==='en'?'See less':'Ver menos'):(lang==='en'?'See all 18 features':'Ver las 18 funcionalidades')">
+      <span data-i18n-l="feat_toggle_show">Ver las 18 funcionalidades</span>
     </button>
   </div>
 </section>
 
 <!-- CTA Band -->
 <div class="pb-cta-band">
-  <h3>Todo esto funcionando <em>en 48 horas</em></h3>
-  <p>Agendá una demo y mirá el bot respondiendo con tus propiedades reales.</p>
+  <h3 data-i18n-l="cta3_h3" data-i18n-mode="html">Todo esto funcionando <em>en 48 horas</em></h3>
+  <p data-i18n-l="cta3_p">Agendá una demo y mirá el bot respondiendo con tus propiedades reales.</p>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary">Agendar demo <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta3_btn">Agendar demo</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
     <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20una%20demo%20de%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
     <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
   </div>
@@ -599,9 +602,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">VI · Lenguaje natural</span>
-        <h2 style="margin-top:1rem">El bot entiende <em>cómo habla la gente</em></h2>
-        <p class="section-sub">No necesita comandos exactos. Interpreta intenciones, filtros, presupuesto y ubicación en tiempo real.</p>
+        <span class="section-num" data-i18n-l="search_section_num">VI · Lenguaje natural</span>
+        <h2 style="margin-top:1rem" data-i18n-l="search_h2" data-i18n-mode="html">El bot entiende <em>cómo habla la gente</em></h2>
+        <p class="section-sub" data-i18n-l="search_sub">No necesita comandos exactos. Interpreta intenciones, filtros, presupuesto y ubicación en tiempo real.</p>
       </div>
     </div>
   </div>
@@ -609,7 +612,7 @@
   <div class="pb-search-grid">
     <div class="pb-search-card anim-card">
       <div class="pb-search-query">busco depto 2 amb con balcón en alquiler en el centro</div>
-      <div class="pb-search-label">Filtros aplicados automáticamente</div>
+      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
       <div class="pb-search-filters">
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: alquiler</span>
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: departamento</span>
@@ -620,7 +623,7 @@
     </div>
     <div class="pb-search-card anim-card">
       <div class="pb-search-query">quiero comprar casa con pileta, máximo 200 mil dólares</div>
-      <div class="pb-search-label">Filtros aplicados automáticamente</div>
+      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
       <div class="pb-search-filters">
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: venta</span>
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: casa</span>
@@ -630,7 +633,7 @@
     </div>
     <div class="pb-search-card anim-card">
       <div class="pb-search-query">local comercial en zona business para alquilar</div>
-      <div class="pb-search-label">Filtros aplicados automáticamente</div>
+      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
       <div class="pb-search-filters">
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: alquiler</span>
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: local</span>
@@ -639,7 +642,7 @@
     </div>
     <div class="pb-search-card anim-card">
       <div class="pb-search-query">3 dormitorios, suite, cochera, apto crédito</div>
-      <div class="pb-search-label">Filtros aplicados automáticamente</div>
+      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
       <div class="pb-search-filters">
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> dormitorios: 3</span>
         <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> suite: sí</span>
@@ -655,9 +658,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">VII · Panel de control</span>
-        <h2 style="margin-top:1rem">Todo lo que pasa con tus leads, <em>en un solo lugar</em></h2>
-        <p class="section-sub">No es solo un bot. Es un sistema completo para que tu equipo sepa qué está pasando sin preguntar.</p>
+        <span class="section-num" data-i18n-l="dashboard_section_num">VII · Panel de control</span>
+        <h2 style="margin-top:1rem" data-i18n-l="dashboard_h2" data-i18n-mode="html">Todo lo que pasa con tus leads, <em>en un solo lugar</em></h2>
+        <p class="section-sub" data-i18n-l="dashboard_sub">No es solo un bot. Es un sistema completo para que tu equipo sepa qué está pasando sin preguntar.</p>
       </div>
     </div>
   </div>
@@ -665,49 +668,49 @@
   <div class="pb-dashboard-grid">
     <div class="pb-dashboard-card anim-card">
       <div class="num">1</div>
-      <h3>Métricas en tiempo real</h3>
-      <p>Consultas por día, horarios pico, propiedades más buscadas, conversión consulta → visita.</p>
+      <h3 data-i18n-l="dash1_h3">Métricas en tiempo real</h3>
+      <p data-i18n-l="dash1_p">Consultas por día, horarios pico, propiedades más buscadas, conversión consulta → visita.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">2</div>
-      <h3>Historial de conversaciones</h3>
-      <p>Leé cada conversación completa, filtrá por canal o estado. Respondé directo desde el panel.</p>
+      <h3 data-i18n-l="dash2_h3">Historial de conversaciones</h3>
+      <p data-i18n-l="dash2_p">Leé cada conversación completa, filtrá por canal o estado. Respondé directo desde el panel.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">3</div>
-      <h3>Base de leads calificados</h3>
-      <p>Nombre, presupuesto, operación, timeline, canal. Ordenable, filtrable, exportable a CSV.</p>
+      <h3 data-i18n-l="dash3_h3">Base de leads calificados</h3>
+      <p data-i18n-l="dash3_p">Nombre, presupuesto, operación, timeline, canal. Ordenable, filtrable, exportable a CSV.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">4</div>
-      <h3>Calendario de visitas</h3>
-      <p>Vista con todas las visitas programadas. Sincronizado con Google Calendar.</p>
+      <h3 data-i18n-l="dash4_h3">Calendario de visitas</h3>
+      <p data-i18n-l="dash4_p">Vista con todas las visitas programadas. Sincronizado con Google Calendar.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">5</div>
-      <h3>Media Studio con IA</h3>
-      <p>Generá videos tour e imágenes de marketing para tus propiedades directamente desde el panel.</p>
+      <h3 data-i18n-l="dash5_h3">Media Studio con IA</h3>
+      <p data-i18n-l="dash5_p">Generá videos tour e imágenes de marketing para tus propiedades directamente desde el panel.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">6</div>
-      <h3>Reportes exportables</h3>
-      <p>Exportá leads y métricas en CSV. Imprimí reportes en PDF para reuniones de equipo.</p>
+      <h3 data-i18n-l="dash6_h3">Reportes exportables</h3>
+      <p data-i18n-l="dash6_p">Exportá leads y métricas en CSV. Imprimí reportes en PDF para reuniones de equipo.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">7</div>
-      <h3>Follow-up automático</h3>
-      <p>Si un lead no responde en 3 días, el bot le escribe automáticamente con un mensaje personalizado.</p>
+      <h3 data-i18n-l="dash7_h3">Follow-up automático</h3>
+      <p data-i18n-l="dash7_p">Si un lead no responde en 3 días, el bot le escribe automáticamente con un mensaje personalizado.</p>
     </div>
     <div class="pb-dashboard-card anim-card">
       <div class="num">8</div>
-      <h3>CRM Tokko integrado</h3>
-      <p>Leads y visitas se sincronizan automáticamente con Tokko. También soporta webhook para otros CRMs.</p>
+      <h3 data-i18n-l="dash8_h3">CRM Tokko integrado</h3>
+      <p data-i18n-l="dash8_p">Leads y visitas se sincronizan automáticamente con Tokko. También soporta webhook para otros CRMs.</p>
     </div>
   </div>
 
   <div class="pb-dashboard-cta anim-card">
     <a href="#contacto" class="btn-primary">
-      Quiero verlo en acción <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+      <span data-i18n-l="dashboard_cta">Quiero verlo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
     </a>
   </div>
 </section>
@@ -717,9 +720,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">VIII · Testimonios</span>
-        <h2 style="margin-top:1rem">Inmobiliarias que ya venden más <em>con PropBot</em></h2>
-        <p class="section-sub">No te lo contamos nosotros. Te lo cuentan ellos.</p>
+        <span class="section-num" data-i18n-l="test_section_num">VIII · Testimonios</span>
+        <h2 style="margin-top:1rem" data-i18n-l="test_h2" data-i18n-mode="html">Inmobiliarias que ya venden más <em>con PropBot</em></h2>
+        <p class="section-sub" data-i18n-l="test_sub">No te lo contamos nosotros. Te lo cuentan ellos.</p>
       </div>
     </div>
   </div>
@@ -729,12 +732,12 @@
       <div class="pb-testimonial-portrait">
         <img src="/static/img/esquel-propiedades-owner.jpg" alt="Esquel Propiedades">
       </div>
-      <p class="pb-testimonial-quote">No dábamos abasto con las consultas, sobre todo fuera de horario. Desde que pusimos PropBot nos atiende el WhatsApp a cualquier hora, manda las fotos, agenda las visitas… y nosotros nos enteramos cuando el cliente ya viene en camino. Nos cambió la dinámica de laburo, literal. Los fines de semana ahora descansamos tranquilos.</p>
-      <div class="pb-testimonial-result">92% de consultas resueltas sin intervención</div>
+      <p class="pb-testimonial-quote" data-i18n-l="test_quote">No dábamos abasto con las consultas, sobre todo fuera de horario. Desde que pusimos PropBot nos atiende el WhatsApp a cualquier hora, manda las fotos, agenda las visitas… y nosotros nos enteramos cuando el cliente ya viene en camino. Nos cambió la dinámica de laburo, literal. Los fines de semana ahora descansamos tranquilos.</p>
+      <div class="pb-testimonial-result" data-i18n-l="test_result">92% de consultas resueltas sin intervención</div>
       <div class="pb-testimonial-author">
         <img src="/static/img/esquel-propiedades-logo.png" alt="Esquel Propiedades" style="height:36px;width:auto;margin-right:12px;border-radius:6px">
         <span class="pb-testimonial-name">Esquel Propiedades</span>
-        <span class="pb-testimonial-role">Inmobiliaria, Esquel — Chubut</span>
+        <span class="pb-testimonial-role" data-i18n-l="test_role">Inmobiliaria, Esquel — Chubut</span>
       </div>
     </article>
 
@@ -743,9 +746,9 @@
 
 <!-- CTA Band -->
 <div class="pb-cta-band">
-  <h3>Si ya funciona para inmobiliarias reales, <em>imaginate en la tuya</em></h3>
+  <h3 data-i18n-l="cta4_h3" data-i18n-mode="html">Si ya funciona para inmobiliarias reales, <em>imaginate en la tuya</em></h3>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary">Quiero verlo en acción <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta4_btn">Quiero verlo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
   </div>
 </div>
 
@@ -754,9 +757,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">IX · La comparación</span>
-        <h2 style="margin-top:1rem">PropBot vs. contratar <em>a alguien para redes</em></h2>
-        <p class="section-sub">Mirá la diferencia real antes de decidir.</p>
+        <span class="section-num" data-i18n-l="compare_section_num">IX · La comparación</span>
+        <h2 style="margin-top:1rem" data-i18n-l="compare_h2" data-i18n-mode="html">PropBot vs. contratar <em>a alguien para redes</em></h2>
+        <p class="section-sub" data-i18n-l="compare_sub">Mirá la diferencia real antes de decidir.</p>
       </div>
     </div>
   </div>
@@ -764,24 +767,24 @@
   <div class="pb-compare-wrap">
     <div class="pb-compare-table anim-card">
       <div class="pb-compare-row head">
-        <div>Característica</div>
-        <div class="off">Sin bot · Asesor redes</div>
-        <div>PropBot · Automatizado</div>
+        <div data-i18n-l="compare_col1">Característica</div>
+        <div class="off" data-i18n-l="compare_col2">Sin bot · Asesor redes</div>
+        <div data-i18n-l="compare_col3">PropBot · Automatizado</div>
       </div>
-      <div class="pb-compare-row"><div>Horario de atención</div><div class="bad" data-label="Sin bot">8hs × 5 días</div><div class="good" data-label="PropBot">24/7 · 365 días</div></div>
-      <div class="pb-compare-row"><div>Tiempo de 1ª respuesta</div><div class="bad" data-label="Sin bot">15–60 minutos</div><div class="good" data-label="PropBot">&lt; 5 segundos</div></div>
-      <div class="pb-compare-row"><div>Canales cubiertos</div><div class="bad" data-label="Sin bot">1 (difícil cubrir 3)</div><div class="good" data-label="PropBot">WhatsApp + IG + FB</div></div>
-      <div class="pb-compare-row"><div>Tiempo libre del equipo</div><div class="bad" data-label="Sin bot">0 — todos al chat</div><div class="good" data-label="PropBot">3+ horas/día recuperadas</div></div>
-      <div class="pb-compare-row"><div>Feriados y fines de semana</div><div class="bad" data-label="Sin bot">Sin cobertura</div><div class="good" data-label="PropBot">Funciona igual</div></div>
-      <div class="pb-compare-row"><div>Escala a humano</div><div class="bad" data-label="Sin bot">Siempre manual</div><div class="good" data-label="PropBot">Automático con contexto</div></div>
-      <div class="pb-compare-row"><div>Vacaciones / bajas</div><div class="bad" data-label="Sin bot">Para todo</div><div class="good" data-label="PropBot">No aplica</div></div>
-      <div class="pb-compare-row"><div>Agendado de visitas</div><div class="bad" data-label="Sin bot">Manual, ida y vuelta</div><div class="good" data-label="PropBot">Auto + Calendar + recordatorio</div></div>
-      <div class="pb-compare-row"><div>Leads calificados</div><div class="bad" data-label="Sin bot">Depende de quién atienda</div><div class="good" data-label="PropBot">Auto + alerta WhatsApp</div></div>
-      <div class="pb-compare-row"><div>Follow-up a leads fríos</div><div class="bad" data-label="Sin bot">Nadie se acuerda</div><div class="good" data-label="PropBot">Auto a los 3 días, personalizado</div></div>
-      <div class="pb-compare-row"><div>CRM actualizado</div><div class="bad" data-label="Sin bot">Si alguien lo carga</div><div class="good" data-label="PropBot">Sync automático con Tokko</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r1">Horario de atención</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r1_bad">8hs × 5 días</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r1_good">24/7 · 365 días</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r2">Tiempo de 1ª respuesta</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r2_bad">15–60 minutos</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r2_good">&lt; 5 segundos</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r3">Canales cubiertos</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r3_bad">1 (difícil cubrir 3)</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r3_good">WhatsApp + IG + FB</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r4">Tiempo libre del equipo</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r4_bad">0 — todos al chat</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r4_good">3+ horas/día recuperadas</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r5">Feriados y fines de semana</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r5_bad">Sin cobertura</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r5_good">Funciona igual</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r6">Escala a humano</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r6_bad">Siempre manual</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r6_good">Automático con contexto</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r7">Vacaciones / bajas</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r7_bad">Para todo</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r7_good">No aplica</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r8">Agendado de visitas</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r8_bad">Manual, ida y vuelta</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r8_good">Auto + Calendar + recordatorio</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r9">Leads calificados</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r9_bad">Depende de quién atienda</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r9_good">Auto + alerta WhatsApp</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r10">Follow-up a leads fríos</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r10_bad">Nadie se acuerda</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r10_good">Auto a los 3 días, personalizado</div></div>
+      <div class="pb-compare-row"><div data-i18n-l="cmp_r11">CRM actualizado</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r11_bad">Si alguien lo carga</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r11_good">Sync automático con Tokko</div></div>
     </div>
     <p style="text-align:center;margin-top:1.5rem;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)">
-      PropBot no tiene sueldo, aportes, vacaciones ni días libres
+      <span data-i18n-l="compare_footnote">PropBot no tiene sueldo, aportes, vacaciones ni días libres</span>
     </p>
   </div>
 </section>
@@ -793,12 +796,12 @@
 
 <!-- ═══ SCARCITY BAR ════════════════════════════════════════════════ -->
 <section class="pb-scarcity-bar">
-  <h3>Mientras leés esto, tu competencia ya respondió <em>3 consultas</em></h3>
-  <p>Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar.</p>
+  <h3 data-i18n-l="scarcity_h3" data-i18n-mode="html">Mientras leés esto, tu competencia ya respondió <em>3 consultas</em></h3>
+  <p data-i18n-l="scarcity_p">Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar.</p>
   <div class="pb-scarcity-bar-row">
-    <span class="pb-scarcity-pill"><span class="pb-scarcity-dot"></span> Solo 5 inmobiliarias nuevas por semana</span>
+    <span class="pb-scarcity-pill"><span class="pb-scarcity-dot"></span> <span data-i18n-l="scarcity_pill">Solo 5 inmobiliarias nuevas por semana</span></span>
     <a href="#contacto" class="btn-primary" style="background:var(--gold);border-color:var(--gold)">
-      Reservar mi lugar <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+      <span data-i18n-l="scarcity_cta">Reservar mi lugar</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
     </a>
   </div>
 </section>
@@ -808,73 +811,73 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">X · Paquetes</span>
-        <h2 style="margin-top:1rem">Elegí tu plan y empezá <em>en 48hs</em></h2>
-        <p class="section-sub">Precios transparentes. Sin setup fee. Sin contratos. Cancelás cuando querés.</p>
+        <span class="section-num" data-i18n-l="pricing_section_num">X · Paquetes</span>
+        <h2 style="margin-top:1rem" data-i18n-l="pricing_h2" data-i18n-mode="html">Elegí tu plan y empezá <em>en 48hs</em></h2>
+        <p class="section-sub" data-i18n-l="pricing_sub">Precios transparentes. Sin setup fee. Sin contratos. Cancelás cuando querés.</p>
       </div>
     </div>
   </div>
 
   <div class="pb-pricing-guarantees">
-    <div class="pb-guarantee"><span>✦</span> Garantía 30 días</div>
-    <div class="pb-guarantee"><span>✦</span> Setup 48hs</div>
-    <div class="pb-guarantee"><span>✦</span> Sin contratos</div>
+    <div class="pb-guarantee"><span>✦</span> <span data-i18n-l="pricing_g1">Garantía 30 días</span></div>
+    <div class="pb-guarantee"><span>✦</span> <span data-i18n-l="pricing_g2">Setup 48hs</span></div>
+    <div class="pb-guarantee"><span>✦</span> <span data-i18n-l="pricing_g3">Sin contratos</span></div>
   </div>
 
   <div class="pb-plans">
     <!-- Growth -->
     <div class="pb-plan anim-card">
-      <div class="pb-plan-tag">WhatsApp + Instagram</div>
+      <div class="pb-plan-tag" data-i18n-l="plan_growth_tag">WhatsApp + Instagram</div>
       <h3>Growth</h3>
       <div class="pb-plan-price">$199<sub>/mes USD</sub></div>
-      <p>Hasta 100 propiedades. Bot + calificación de leads + follow-up automático.</p>
+      <p data-i18n-l="plan_growth_desc">Hasta 100 propiedades. Bot + calificación de leads + follow-up automático.</p>
       <div class="pb-plan-features">
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Bot 24/7 por WhatsApp + Instagram</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Responde consultas y filtra propiedades</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Calificación automática de leads</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Follow-up automático a leads fríos</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Escala a humano con contexto completo</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Plantilla de Google Sheets incluida</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Setup completo en 48hs</div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f1">Bot 24/7 por WhatsApp + Instagram</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f2">Responde consultas y filtra propiedades</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f3">Calificación automática de leads</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f4">Follow-up automático a leads fríos</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f5">Escala a humano con contexto completo</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f6">Plantilla de Google Sheets incluida</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_growth_f7">Setup completo en 48hs</span></div>
       </div>
-      <a href="#contacto" class="pb-plan-cta">Empezar con Growth</a>
+      <a href="#contacto" class="pb-plan-cta" data-i18n-l="plan_growth_cta">Empezar con Growth</a>
     </div>
 
     <!-- Scale (featured) -->
     <div class="pb-plan featured anim-card">
-      <div class="pb-plan-badge">Más elegido</div>
-      <div class="pb-plan-tag">Multi-canal + CRM + Calendar</div>
+      <div class="pb-plan-badge" data-i18n-l="plan_scale_badge">Más elegido</div>
+      <div class="pb-plan-tag" data-i18n-l="plan_scale_tag">Multi-canal + CRM + Calendar</div>
       <h3>Scale</h3>
       <div class="pb-plan-price">$399<sub>/mes USD</sub></div>
-      <p>Hasta 500 propiedades. Todo Growth + visitas con Calendar, CRM Tokko, analytics y dashboard.</p>
+      <p data-i18n-l="plan_scale_desc">Hasta 500 propiedades. Todo Growth + visitas con Calendar, CRM Tokko, analytics y dashboard.</p>
       <div class="pb-plan-features">
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Todo lo del plan Growth</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Facebook Messenger integrado</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Agendado de visitas + Google Calendar</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Integración nativa con Tokko Broker</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Dashboard completo con analytics</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Webhook CRM universal</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Soporte prioritario</div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f1">Todo lo del plan Growth</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f2">Facebook Messenger integrado</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f3">Agendado de visitas + Google Calendar</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f4">Integración nativa con Tokko Broker</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f5">Dashboard completo con analytics</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f6">Webhook CRM universal</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_scale_f7">Soporte prioritario</span></div>
       </div>
-      <a href="#contacto" class="pb-plan-cta">Quiero Scale</a>
+      <a href="#contacto" class="pb-plan-cta" data-i18n-l="plan_scale_cta">Quiero Scale</a>
     </div>
 
     <!-- Enterprise -->
     <div class="pb-plan anim-card">
-      <div class="pb-plan-tag">Multi-sucursal + API + Video IA</div>
+      <div class="pb-plan-tag" data-i18n-l="plan_enterprise_tag">Multi-sucursal + API + Video IA</div>
       <h3>Enterprise</h3>
       <div class="pb-plan-price">$799<sub>/mes USD</sub></div>
-      <p>Propiedades ilimitadas. Para desarrolladoras y redes de sucursales.</p>
+      <p data-i18n-l="plan_enterprise_desc">Propiedades ilimitadas. Para desarrolladoras y redes de sucursales.</p>
       <div class="pb-plan-features">
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Todo lo del plan Scale</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Propiedades ilimitadas</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Múltiples sucursales / planillas</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Analytics avanzadas + export PDF/CSV</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> 4 videos de propiedades/mes con IA</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> API de integración personalizada</div>
-        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> Account manager dedicado</div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f1">Todo lo del plan Scale</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f2">Propiedades ilimitadas</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f3">Múltiples sucursales / planillas</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f4">Analytics avanzadas + export PDF/CSV</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f5">4 videos de propiedades/mes con IA</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f6">API de integración personalizada</span></div>
+        <div class="pb-plan-feature"><i class="fa-solid fa-circle-check"></i> <span data-i18n-l="plan_enterprise_f7">Account manager dedicado</span></div>
       </div>
-      <a href="#contacto" class="pb-plan-cta">Quiero Enterprise</a>
+      <a href="#contacto" class="pb-plan-cta" data-i18n-l="plan_enterprise_cta">Quiero Enterprise</a>
     </div>
   </div>
 
@@ -882,8 +885,8 @@
     <div class="pb-roi-inner anim-card">
       <div class="pb-roi-num">10×</div>
       <div class="pb-roi-text">
-        <h3>Una operación extra al mes paga PropBot por <em>10 meses</em></h3>
-        <p>La comisión promedio de una venta o alquiler es de $3.000 a $8.000 USD. Si PropBot te genera una sola operación más al mes, el retorno es de <strong>7 a 20 veces</strong> lo que pagás.</p>
+        <h3 data-i18n-l="roi_h3" data-i18n-mode="html">Una operación extra al mes paga PropBot por <em>10 meses</em></h3>
+        <p data-i18n-l="roi_p" data-i18n-mode="html">La comisión promedio de una venta o alquiler es de $3.000 a $8.000 USD. Si PropBot te genera una sola operación más al mes, el retorno es de <strong>7 a 20 veces</strong> lo que pagás.</p>
       </div>
     </div>
   </div>
@@ -894,9 +897,9 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">XI · Premium · Video IA</span>
-        <h2 style="margin-top:1rem">De fotos de la planilla a <em>video listo para redes</em></h2>
-        <p class="section-sub">El bot toma las fotos de cada propiedad, aplica efectos cinematográficos, suma música y texto automático. Un video profesional para Instagram y Facebook sin editar nada.</p>
+        <span class="section-num" data-i18n-l="video_section_num">XI · Premium · Video IA</span>
+        <h2 style="margin-top:1rem" data-i18n-l="video_h2" data-i18n-mode="html">De fotos de la planilla a <em>video listo para redes</em></h2>
+        <p class="section-sub" data-i18n-l="video_sub">El bot toma las fotos de cada propiedad, aplica efectos cinematográficos, suma música y texto automático. Un video profesional para Instagram y Facebook sin editar nada.</p>
       </div>
     </div>
   </div>
@@ -906,29 +909,29 @@
       <div class="pb-video-step">
         <div class="pb-video-step-num">1</div>
         <div>
-          <h4>Link de fotos en Drive</h4>
-          <p>En la columna fotos_drive de la plantilla ponés el link de la carpeta de Drive con las fotos de esa propiedad.</p>
+          <h4 data-i18n-l="video_step1_h4">Link de fotos en Drive</h4>
+          <p data-i18n-l="video_step1_p">En la columna fotos_drive de la plantilla ponés el link de la carpeta de Drive con las fotos de esa propiedad.</p>
         </div>
       </div>
       <div class="pb-video-step">
         <div class="pb-video-step-num">2</div>
         <div>
-          <h4>IA aplica Ken Burns + texto</h4>
-          <p>Cada foto recibe zoom, paneo y texto descriptivo generado automáticamente: título, precio, barrio, características clave.</p>
+          <h4 data-i18n-l="video_step2_h4">IA aplica Ken Burns + texto</h4>
+          <p data-i18n-l="video_step2_p">Cada foto recibe zoom, paneo y texto descriptivo generado automáticamente: título, precio, barrio, características clave.</p>
         </div>
       </div>
       <div class="pb-video-step">
         <div class="pb-video-step-num">3</div>
         <div>
-          <h4>Música de fondo automática</h4>
-          <p>Selección de música ambiente según el tipo de propiedad: moderna para departamentos, cálida para casas de familia.</p>
+          <h4 data-i18n-l="video_step3_h4">Música de fondo automática</h4>
+          <p data-i18n-l="video_step3_p">Selección de música ambiente según el tipo de propiedad: moderna para departamentos, cálida para casas de familia.</p>
         </div>
       </div>
       <div class="pb-video-step">
         <div class="pb-video-step-num">4</div>
         <div>
-          <h4>Video listo en minutos</h4>
-          <p>Formato vertical (Reels/Stories) u horizontal (Feed). Listo para publicar directamente desde el bot.</p>
+          <h4 data-i18n-l="video_step4_h4">Video listo en minutos</h4>
+          <p data-i18n-l="video_step4_p">Formato vertical (Reels/Stories) u horizontal (Feed). Listo para publicar directamente desde el bot.</p>
         </div>
       </div>
     </div>
@@ -938,7 +941,7 @@
       <div class="pb-video-progress" id="video-progress">
         <div class="pb-video-progress-bar" id="video-progress-bar" style="width:0%"></div>
       </div>
-      <button class="pb-video-play" id="video-play-btn">▶ Ver demo del video</button>
+      <button class="pb-video-play" id="video-play-btn" data-i18n-l="video_play_btn">▶ Ver demo del video</button>
     </div>
   </div>
 </section>
@@ -948,56 +951,56 @@
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num">XII · Preguntas frecuentes</span>
-        <h2 style="margin-top:1rem">Respuestas a las dudas <em>más comunes</em></h2>
+        <span class="section-num" data-i18n-l="faq_section_num">XII · Preguntas frecuentes</span>
+        <h2 style="margin-top:1rem" data-i18n-l="faq_h2" data-i18n-mode="html">Respuestas a las dudas <em>más comunes</em></h2>
       </div>
     </div>
   </div>
 
   <div class="pb-faq-wrap">
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Cuánto cuesta PropBot?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Tenemos 3 planes: <strong>Growth a $199/mes</strong> (WhatsApp + Instagram, hasta 100 propiedades, lead qualification, follow-up), <strong>Scale a $399/mes</strong> (multi-canal, visitas con Calendar, CRM Tokko, dashboard, hasta 500 propiedades) y <strong>Enterprise a $799/mes</strong> (ilimitado, multi-sucursal, API, videos con IA). Una sola operación extra al mes = $3.000-8.000 USD de comisión, así que PropBot se paga solo con creces. Garantía 30 días — si no te convence, te devolvemos el dinero.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q1">¿Cuánto cuesta PropBot?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a1" data-i18n-mode="html">Tenemos 3 planes: <strong>Growth a $199/mes</strong> (WhatsApp + Instagram, hasta 100 propiedades, lead qualification, follow-up), <strong>Scale a $399/mes</strong> (multi-canal, visitas con Calendar, CRM Tokko, dashboard, hasta 500 propiedades) y <strong>Enterprise a $799/mes</strong> (ilimitado, multi-sucursal, API, videos con IA). Una sola operación extra al mes = $3.000-8.000 USD de comisión, así que PropBot se paga solo con creces. Garantía 30 días — si no te convence, te devolvemos el dinero.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Necesito saber programar para usarlo?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Para nada. Vos manejás la planilla de Google Sheets como siempre. Nosotros nos encargamos de toda la parte técnica: conexión, configuración y mantenimiento del bot.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q2">¿Necesito saber programar para usarlo?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a2">Para nada. Vos manejás la planilla de Google Sheets como siempre. Nosotros nos encargamos de toda la parte técnica: conexión, configuración y mantenimiento del bot.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Cómo cargo mis propiedades?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Nosotros te damos la plantilla de Google Sheets ya armada con todas las columnas. Vos la completás con tus propiedades, ponés el link a la carpeta de Drive con las fotos de cada una, y listo. Sin adaptar nada ni migrar datos.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q3">¿Cómo cargo mis propiedades?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a3">Nosotros te damos la plantilla de Google Sheets ya armada con todas las columnas. Vos la completás con tus propiedades, ponés el link a la carpeta de Drive con las fotos de cada una, y listo. Sin adaptar nada ni migrar datos.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Qué pasa si el cliente hace una pregunta muy específica que el bot no entiende?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">El bot detecta cuando no puede resolver la consulta y transfiere al asesor humano con un resumen de lo que el cliente buscó. No deja a nadie sin respuesta.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q4">¿Qué pasa si el cliente hace una pregunta muy específica que el bot no entiende?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a4">El bot detecta cuando no puede resolver la consulta y transfiere al asesor humano con un resumen de lo que el cliente buscó. No deja a nadie sin respuesta.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Cuánto tarda la implementación?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Generalmente 48-72 horas desde que nos pasás la planilla y damos acceso a los canales. Incluye pruebas y ajustes antes del lanzamiento.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q5">¿Cuánto tarda la implementación?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a5">Generalmente 48-72 horas desde que nos pasás la planilla y damos acceso a los canales. Incluye pruebas y ajustes antes del lanzamiento.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Puedo tener varias sucursales con sus propias planillas?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Sí, el plan Enterprise soporta múltiples planillas y sucursales. El bot puede segmentar las propiedades por sucursal y responder según la fuente de la consulta.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q6">¿Puedo tener varias sucursales con sus propias planillas?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a6">Sí, el plan Enterprise soporta múltiples planillas y sucursales. El bot puede segmentar las propiedades por sucursal y responder según la fuente de la consulta.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Qué pasa si agrego o saco propiedades de la planilla?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Los cambios se reflejan automáticamente. El bot lee la planilla en tiempo real, por lo que no necesitás notificarnos ni hacer ninguna actualización manual del sistema.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q7">¿Qué pasa si agrego o saco propiedades de la planilla?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a7">Los cambios se reflejan automáticamente. El bot lee la planilla en tiempo real, por lo que no necesitás notificarnos ni hacer ninguna actualización manual del sistema.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Puedo ver las conversaciones que tiene el bot con mis clientes?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Sí. Desde el dashboard ves cada conversación completa, con todo el historial de mensajes. Además podés responder directamente desde ahí: el bot se pausa y vos tomás el control.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q8">¿Puedo ver las conversaciones que tiene el bot con mis clientes?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a8">Sí. Desde el dashboard ves cada conversación completa, con todo el historial de mensajes. Además podés responder directamente desde ahí: el bot se pausa y vos tomás el control.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Funciona con mi WhatsApp Business actual?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Sí. Conectamos el bot a tu cuenta de WhatsApp Business existente a través de la API oficial de Meta. No perdés tu número ni tus contactos. Los mensajes manuales siguen funcionando normalmente.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q9">¿Funciona con mi WhatsApp Business actual?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a9">Sí. Conectamos el bot a tu cuenta de WhatsApp Business existente a través de la API oficial de Meta. No perdés tu número ni tus contactos. Los mensajes manuales siguen funcionando normalmente.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿Cómo me entero cuando un cliente está listo para cerrar?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">Cuando el bot detecta que un lead está calificado (tiene presupuesto, operación y timeline definidos), te manda un WhatsApp al instante con el resumen completo. También te avisa cuando un cliente agenda una visita y te manda un recordatorio 1 hora antes.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q10">¿Cómo me entero cuando un cliente está listo para cerrar?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a10">Cuando el bot detecta que un lead está calificado (tiene presupuesto, operación y timeline definidos), te manda un WhatsApp al instante con el resumen completo. También te avisa cuando un cliente agenda una visita y te manda un recordatorio 1 hora antes.</div>
     </div>
     <div class="pb-faq-item anim-card">
-      <div class="pb-faq-q"><span>¿El bot responde solo en español?</span><span class="pb-faq-toggle">+</span></div>
-      <div class="pb-faq-a">No. Si el cliente escribe en inglés, el bot responde en inglés automáticamente. Ideal si tenés consultas de turistas, inversores extranjeros o expats.</div>
+      <div class="pb-faq-q"><span data-i18n-l="faq_q11">¿El bot responde solo en español?</span><span class="pb-faq-toggle">+</span></div>
+      <div class="pb-faq-a" data-i18n-l="faq_a11">No. Si el cliente escribe en inglés, el bot responde en inglés automáticamente. Ideal si tenés consultas de turistas, inversores extranjeros o expats.</div>
     </div>
   </div>
 </section>
@@ -1005,34 +1008,34 @@
 <!-- ═══ XIII — CONTACTO / CALENDLY ══════════════════════════════════ -->
 <section id="contacto" class="pb-contact">
   <div class="pb-contact-header">
-    <span class="eyebrow">Reservá tu lugar</span>
-    <h2>15 minutos y tu bot <em>está en camino</em></h2>
-    <p>Te mostramos el bot en vivo, te armamos la propuesta y en 48hs tu inmobiliaria responde sola.</p>
+    <span class="eyebrow" data-i18n-l="contact_eyebrow">Reservá tu lugar</span>
+    <h2 data-i18n-l="contact_h2" data-i18n-mode="html">15 minutos y tu bot <em>está en camino</em></h2>
+    <p data-i18n-l="contact_p">Te mostramos el bot en vivo, te armamos la propuesta y en 48hs tu inmobiliaria responde sola.</p>
   </div>
 
   <div class="pb-contact-grid">
     <!-- Contact form -->
     <aside class="pb-contact-side anim-card">
       <div class="pb-contact-form" id="contact-form-wrap">
-        <h4>Dejanos tus datos</h4>
+        <h4 data-i18n-l="form_h4">Dejanos tus datos</h4>
         <form id="pb-contact-form" onsubmit="return handleContactForm(event)">
-          <label for="cf-name">Nombre</label>
-          <input type="text" id="cf-name" name="name" placeholder="Tu nombre" required>
-          <label for="cf-email">Email</label>
-          <input type="email" id="cf-email" name="email" placeholder="tu@email.com" required>
-          <label for="cf-phone">Teléfono (opcional)</label>
-          <input type="tel" id="cf-phone" name="phone" placeholder="+54 9 11 1234-5678">
-          <label for="cf-company">Inmobiliaria</label>
-          <input type="text" id="cf-company" name="company" placeholder="Nombre de tu inmobiliaria">
-          <label for="cf-message">Mensaje</label>
-          <textarea id="cf-message" name="message" placeholder="Contanos qué necesitás o preguntanos lo que quieras"></textarea>
+          <label for="cf-name" data-i18n-l="form_name">Nombre</label>
+          <input type="text" id="cf-name" name="name" placeholder="Tu nombre" data-i18n-l-placeholder="form_name_ph" required>
+          <label for="cf-email" data-i18n-l="form_email">Email</label>
+          <input type="email" id="cf-email" name="email" placeholder="tu@email.com" data-i18n-l-placeholder="form_email_ph" required>
+          <label for="cf-phone" data-i18n-l="form_phone">Teléfono (opcional)</label>
+          <input type="tel" id="cf-phone" name="phone" placeholder="+54 9 11 1234-5678" data-i18n-l-placeholder="form_phone_ph">
+          <label for="cf-company" data-i18n-l="form_company">Inmobiliaria</label>
+          <input type="text" id="cf-company" name="company" placeholder="Nombre de tu inmobiliaria" data-i18n-l-placeholder="form_company_ph">
+          <label for="cf-message" data-i18n-l="form_message">Mensaje</label>
+          <textarea id="cf-message" name="message" placeholder="Contanos qué necesitás o preguntanos lo que quieras" data-i18n-l-placeholder="form_message_ph"></textarea>
           <div id="contact-captcha" style="margin-bottom:1rem"></div>
-          <button type="submit" class="pb-form-submit">Enviar mensaje</button>
-          <p class="pb-form-note">Te respondemos en menos de 24hs.</p>
+          <button type="submit" class="pb-form-submit" data-i18n-l="form_submit">Enviar mensaje</button>
+          <p class="pb-form-note" data-i18n-l="form_note">Te respondemos en menos de 24hs.</p>
         </form>
         <div class="pb-form-success" id="form-success">
-          <h4>Mensaje enviado!</h4>
-          <p>Te respondemos a la brevedad. Mientras tanto, podés agendar una demo en el calendario.</p>
+          <h4 data-i18n-l="form_success_h4">Mensaje enviado!</h4>
+          <p data-i18n-l="form_success_p">Te respondemos a la brevedad. Mientras tanto, podés agendar una demo en el calendario.</p>
         </div>
       </div>
     </aside>
@@ -1041,7 +1044,7 @@
     <div class="pb-calendly-wrap anim-card">
       <div class="pb-calendly-loader" id="calendly-loader">
         <div class="pb-calendly-spinner"></div>
-        <span>Cargando calendario…</span>
+        <span data-i18n-l="calendly_loading">Cargando calendario…</span>
       </div>
       <div id="calendly-widget" class="calendly-inline-widget" data-url="https://calendly.com/sanchezgcandelaria/15min?hide_event_type_details=1&hide_gdpr_banner=1&text_color=1A1814&primary_color=9A6B2F" style="min-width:100%;height:100%"></div>
     </div>
@@ -1058,12 +1061,12 @@
     <a href="mailto:candelaria@propbot.cc" style="color:var(--gold);text-decoration:none;font-size:.9rem"><i class="fa-solid fa-envelope" style="margin-right:6px"></i>candelaria@propbot.cc</a>
     <a href="https://wa.me/5491123485638" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;font-size:.9rem"><i class="fa-brands fa-whatsapp" style="margin-right:6px"></i>WhatsApp</a>
   </div>
-  <p>© 2026 PropBot · Todos los derechos reservados</p>
+  <p data-i18n-l="footer_copy">© 2026 PropBot · Todos los derechos reservados</p>
   <a href="https://opengatehub.com" target="_blank" rel="noopener">
     Desarrollado por <img src="/static/img/opengatehub-footer.png" alt="OpenGateHub">
   </a>
   <div class="pb-credits" style="margin-top:2rem">
-    Fotografías cortesía de <a href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> — Yudiono Putranto, Franco Debartolo, Aalo Lens, Sebastian Cyrman, Jörg Reichelt, Zulfugar Karimov, Vitaly Gariev
+    <span data-i18n-l="footer_credits">Fotografías cortesía de</span> < href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> — Yudiono Putranto, Franco Debartolo, Aalo Lens, Sebastian Cyrman, Jörg Reichelt, Zulfugar Karimov, Vitaly Gariev
   </div>
 </footer>
 </div><!-- /pb-outro -->
@@ -1071,11 +1074,11 @@
 
 <!-- ═══ STICKY CTA BAR ══════════════════════════════════════════════ -->
 <div class="pb-sticky">
-  <div class="pb-sticky-text">
+  <div class="pb-sticky-text" data-i18n-l="sticky_text" data-i18n-mode="html">
     Setup en 48hs · Garantía 30 días · <span>Solo 5 nuevas por semana</span>
   </div>
   <a href="#contacto" class="btn-primary">
-    Reservar mi lugar <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+    <span data-i18n-l="sticky_cta">Reservar mi lugar</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
   </a>
 </div>
 
@@ -1092,6 +1095,7 @@
 <!-- ═══ SCRIPTS ═════════════════════════════════════════════════════ -->
 <script src="https://assets.calendly.com/assets/external/widget.js" async onload="if(window.onCalendlyLoad)window.onCalendlyLoad()"></script>
 <script src="https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit" async defer></script>
+<script src="/static/js/landing-i18n.js?v={{ v }}"></script>
 <script src="/static/js/landing.js?v={{ v }}"></script>
 <script>
 var contactCaptchaToken=null;
@@ -1111,10 +1115,11 @@ function handleContactForm(e){
   var f=e.target,btn=f.querySelector('.pb-form-submit');
   var isLocal=location.hostname==='localhost'||location.hostname==='127.0.0.1';
   if(!isLocal&&!contactCaptchaToken){
-    alert('Completá el captcha antes de enviar.');
+    var isEN=typeof getLandingLang==='function'&&getLandingLang()==='en';
+    alert(isEN?'Please complete the captcha before sending.':'Completá el captcha antes de enviar.');
     return false;
   }
-  btn.disabled=true;btn.textContent='Enviando...';
+  btn.disabled=true;btn.textContent=(typeof getLandingLang==='function'&&getLandingLang()==='en')?'Sending...':'Enviando...';
   fetch('/api/contact',{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -1128,8 +1133,9 @@ function handleContactForm(e){
     f.style.display='none';
     document.getElementById('form-success').classList.add('show');
   }).catch(function(){
-    btn.disabled=false;btn.textContent='Enviar mensaje';
-    alert('Error al enviar. Intentá de nuevo o escribinos por WhatsApp.');
+    var isEN2=typeof getLandingLang==='function'&&getLandingLang()==='en';
+    btn.disabled=false;btn.textContent=isEN2?'Send message':'Enviar mensaje';
+    alert(isEN2?'Error sending. Try again or reach us on WhatsApp.':'Error al enviar. Intentá de nuevo o escribinos por WhatsApp.');
   });
   return false;
 }

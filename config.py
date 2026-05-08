@@ -105,3 +105,6 @@ SALES_NOTIFY_NUMBER = os.environ.get("SALES_NOTIFY_NUMBER", "")
 # to clients who ask for direct contact. Leave empty to keep current behavior
 # (Vera never shares a phone, only offers callback).
 AGENT_PHONE = os.environ.get("AGENT_PHONE", "")
+
+# Office hours — shown to clients when they ask to speak with an agent
+OFFICE_HOURS = os.environ.get("OFFICE_HOURS", "lunes a viernes de 9 a 18")

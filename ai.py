@@ -8,7 +8,7 @@ import time
 import socket
 from datetime import date, datetime
 from openai import OpenAI
-from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ, SALES_NOTIFY_NUMBER, AGENT_PHONE
+from config import DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL, VISIT_MODE, AR_TZ, SALES_NOTIFY_NUMBER, AGENT_PHONE, OFFICE_HOURS
 import sheets
 import calendar_client
 
@@ -103,7 +103,7 @@ NUNCA digas que una propiedad "ya no está disponible" o "no está" si hay una e
 {visit_instructions}
 
 DERIVAR AL ASESOR
-- Si pide hablar con alguien: "le aviso a nuestro asesor, en qué horario preferís que te contacte?"
+- Si pide hablar con alguien: "le aviso a nuestro asesor! Nuestro horario de atención es {office_hours}, en qué horario dentro de ese rango preferís que te contacte?"
 - El bloque <!--callback:--> solo después de que dé el horario.
 <!--callback:{{"preferred_time":"horario","phone":"número o null"}}-->
 - También derivá si negocia condiciones, pregunta financiación o crédito hipotecario.
@@ -201,7 +201,7 @@ COORDINAR VISITAS — MODO DERIVACIÓN
 - Una vez derivada la visita, si el cliente pregunta otra cosa, respondé normalmente."""
         availability_block = ""
 
-    prompt = SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today, visit_instructions=visit_instructions) + availability_block
+    prompt = SYSTEM_PROMPT_TEMPLATE.format(listings=listings_text, today=today, visit_instructions=visit_instructions, office_hours=OFFICE_HOURS) + availability_block
 
     # Sales derivation: forward buy inquiries to a sales specialist instead of showing properties
     if SALES_NOTIFY_NUMBER:
