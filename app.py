@@ -638,7 +638,7 @@ def _extract_name(text: str, asked_for_name: bool = False):
 
 
 def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
-                    send_image_fn=None, skip_ai_response=False):
+                    send_image_fn=None):
     """Shared AI pipeline for all channels (WhatsApp, Facebook, Instagram)."""
     is_new = len(conversations.get_messages(identifier)) == 0
     analytics.log_event("message_in", identifier, channel=channel)
@@ -684,10 +684,6 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # If human agent has taken over, don't auto-reply but lead info is already extracted above
     if conversations.is_agent_takeover(identifier):
         logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
-        return
-
-    # Skip AI response when an interactive question (buttons/list) will be sent instead
-    if skip_ai_response:
         return
 
     if is_new:
@@ -917,51 +913,11 @@ def _send_wa_interactive_followup(phone: str):
             _wa_interactive_sent.setdefault(phone, set()).add("operation")
         return
 
-    if lead.get("operation") and not lead.get("property_type") and "property_type" not in sent:
-        time.sleep(0.5)
-        if en:
-            body = "What type of property are you looking for?"
-            btn_text = "See options"
-            section_title = "Property type"
-            rows = [
-                {"id": "pt_depto", "title": "Apartment"},
-                {"id": "pt_casa", "title": "House"},
-                {"id": "pt_ph", "title": "PH"},
-                {"id": "pt_mono", "title": "Studio"},
-                {"id": "pt_local", "title": "Commercial space"},
-                {"id": "pt_oficina", "title": "Office"},
-            ]
-        else:
-            body = "Que tipo de propiedad estas buscando?"
-            btn_text = "Ver opciones"
-            section_title = "Tipo de propiedad"
-            rows = [
-                {"id": "pt_depto", "title": "Departamento"},
-                {"id": "pt_casa", "title": "Casa"},
-                {"id": "pt_ph", "title": "PH"},
-                {"id": "pt_mono", "title": "Monoambiente"},
-                {"id": "pt_local", "title": "Local comercial"},
-                {"id": "pt_oficina", "title": "Oficina"},
-            ]
-        ok = whatsapp.send_list(
-            phone, body, btn_text,
-            [{"title": section_title, "rows": rows}],
-        )
-        if ok:
-            _wa_interactive_sent.setdefault(phone, set()).add("property_type")
 
 
 def _reply(phone: str, user_text: str):
-    # If operation is known but property_type is missing, skip AI response
-    # and let only the interactive list ask the next question (one at a time).
-    lead = conversations.get_lead(phone)
-    sent = _wa_interactive_sent.get(phone, set())
-    op = lead.get("operation") or _extract_operation(user_text)
-    pt = lead.get("property_type") or _extract_property_type(user_text)
-    skip = bool(op and not pt and "property_type" not in sent)
-
     _process_reply(phone, user_text, "whatsapp", whatsapp.send_message,
-                   send_image_fn=whatsapp.send_image, skip_ai_response=skip)
+                   send_image_fn=whatsapp.send_image)
     _send_wa_interactive_followup(phone)
 
 
