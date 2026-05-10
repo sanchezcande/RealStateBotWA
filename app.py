@@ -66,7 +66,7 @@ def _periodic_fix_meta_names():
     time.sleep(5)  # Wait for app to fully initialize
     while True:
         _fix_meta_names_once()
-        time.sleep(2 * 60 * 60)  # Retry every 2 hours
+        time.sleep(30 * 60)  # Retry every 30 minutes
 
 
 # Run in background thread so it doesn't block startup
@@ -1114,49 +1114,20 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
         except Exception as e:
             logger.warning("IG username retry error for %s: %s", sender_id, e)
 
-    # --- Method 4: Conversations API with user_id filter ---
-    try:
-        conv_params = {
-            "fields": "participants",
-            "user_id": sender_id,
-            "access_token": PAGE_ACCESS_TOKEN,
-        }
-        if channel == "instagram":
-            conv_params["platform"] = "instagram"
-        resp = requests.get(
-            f"https://graph.facebook.com/v21.0/me/conversations",
-            params=conv_params,
-            timeout=8,
-        )
-        if resp.ok:
-            convos = resp.json().get("data", [])
-            for convo in convos:
-                for p in convo.get("participants", {}).get("data", []):
-                    if p.get("id") == sender_id:
-                        v = _validate_name(p.get("name"))
-                        if v:
-                            logger.info("Got name from Conversations API for %s: %s", sender_id, v)
-                            return v
-                        if p.get("username"):
-                            logger.info("Got username from Conversations API for %s: %s", sender_id, p["username"])
-                            return p["username"]
-        else:
-            logger.warning("Conversations API (filtered) failed for %s: %s — %s",
-                           sender_id, resp.status_code, resp.text[:200])
-    except Exception as e:
-        logger.warning("Conversations API (filtered) error for %s: %s", sender_id, e)
-
-    # --- Method 5: Conversations API WITHOUT user_id — scan ALL recent conversations ---
-    if channel == "instagram":
+    # --- Method 4: Conversations API with user_id filter + nested fields ---
+    for fields_str in ("participants{name,username,id}", "participants"):
         try:
+            conv_params = {
+                "fields": fields_str,
+                "user_id": sender_id,
+                "access_token": PAGE_ACCESS_TOKEN,
+            }
+            if channel == "instagram":
+                conv_params["platform"] = "instagram"
             resp = requests.get(
                 f"https://graph.facebook.com/v21.0/me/conversations",
-                params={
-                    "fields": "participants",
-                    "platform": "instagram",
-                    "access_token": PAGE_ACCESS_TOKEN,
-                },
-                timeout=10,
+                params=conv_params,
+                timeout=8,
             )
             if resp.ok:
                 convos = resp.json().get("data", [])
@@ -1165,16 +1136,84 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
                         if p.get("id") == sender_id:
                             v = _validate_name(p.get("name"))
                             if v:
-                                logger.info("Got name from IG conversations scan for %s: %s", sender_id, v)
+                                logger.info("Got name from Conversations API for %s: %s", sender_id, v)
                                 return v
                             if p.get("username"):
-                                logger.info("Got username from IG conversations scan for %s: %s", sender_id, p["username"])
+                                logger.info("Got username from Conversations API for %s: %s", sender_id, p["username"])
                                 return p["username"]
-            else:
-                logger.warning("IG conversations scan failed: HTTP %s — %s",
-                               resp.status_code, resp.text[:200])
         except Exception as e:
-            logger.warning("IG conversations scan error: %s", e)
+            logger.warning("Conversations API error for %s: %s", sender_id, e)
+
+    # --- Method 5: Conversations API — scan ALL recent conversations (no user_id filter) ---
+    if channel == "instagram":
+        for fields_str in ("participants{name,username,id}", "participants"):
+            try:
+                resp = requests.get(
+                    f"https://graph.facebook.com/v21.0/me/conversations",
+                    params={
+                        "fields": fields_str,
+                        "platform": "instagram",
+                        "access_token": PAGE_ACCESS_TOKEN,
+                    },
+                    timeout=10,
+                )
+                if resp.ok:
+                    convos = resp.json().get("data", [])
+                    for convo in convos:
+                        for p in convo.get("participants", {}).get("data", []):
+                            if p.get("id") == sender_id:
+                                v = _validate_name(p.get("name"))
+                                if v:
+                                    logger.info("Got name from IG scan for %s: %s", sender_id, v)
+                                    return v
+                                if p.get("username"):
+                                    logger.info("Got username from IG scan for %s: %s", sender_id, p["username"])
+                                    return p["username"]
+            except Exception as e:
+                logger.warning("IG conversations scan error: %s", e)
+
+    # --- Method 6: Instagram thread lookup — get conversation ID then fetch participants ---
+    if channel == "instagram":
+        try:
+            # First get the conversation thread for this user
+            resp = requests.get(
+                f"https://graph.facebook.com/v21.0/me/conversations",
+                params={
+                    "platform": "instagram",
+                    "user_id": sender_id,
+                    "fields": "id",
+                    "access_token": PAGE_ACCESS_TOKEN,
+                },
+                timeout=8,
+            )
+            if resp.ok:
+                threads = resp.json().get("data", [])
+                for thread in threads:
+                    thread_id = thread.get("id")
+                    if not thread_id:
+                        continue
+                    # Fetch this specific thread with participant details
+                    t_resp = requests.get(
+                        f"https://graph.facebook.com/v21.0/{thread_id}",
+                        params={
+                            "fields": "participants{name,username,id}",
+                            "access_token": PAGE_ACCESS_TOKEN,
+                        },
+                        timeout=8,
+                    )
+                    if t_resp.ok:
+                        t_data = t_resp.json()
+                        for p in t_data.get("participants", {}).get("data", []):
+                            if p.get("id") == sender_id:
+                                v = _validate_name(p.get("name"))
+                                if v:
+                                    logger.info("Got name from IG thread for %s: %s", sender_id, v)
+                                    return v
+                                if p.get("username"):
+                                    logger.info("Got username from IG thread for %s: %s", sender_id, p["username"])
+                                    return p["username"]
+        except Exception as e:
+            logger.warning("IG thread lookup error for %s: %s", sender_id, e)
 
     logger.error("ALL methods failed to get name for %s (%s)", sender_id, channel)
     return None
