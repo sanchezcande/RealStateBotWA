@@ -5,7 +5,7 @@ const LANDING_I18N = {
     // -- Nav --
     nav_how: "How it works",
     nav_results: "Results",
-    nav_pricing: "Pricing",
+    nav_pricing: "Contact",
     nav_faq: "FAQ",
     nav_cta: "Activate my bot",
 
@@ -353,8 +353,8 @@ const LANDING_I18N = {
     // -- Section XII: FAQ --
     faq_section_num: "XII \u00b7 Frequently asked questions",
     faq_h2: 'Answers to the <em>most common</em> questions',
-    faq_q1: "How much does PropBot cost?",
-    faq_a1: 'We have 3 plans: <strong>Growth at $199/mo</strong> (WhatsApp + Instagram, up to 100 properties, lead qualification, follow-up), <strong>Scale at $399/mo</strong> (multi-channel, visits with Calendar, Tokko CRM, dashboard, up to 500 properties) and <strong>Enterprise at $799/mo</strong> (unlimited, multi-branch, API, AI videos). Just one extra deal per month = $3,000-8,000 USD in commission, so PropBot pays for itself many times over. 30-day guarantee \u2014 if you\u2019re not convinced, we refund your money.',
+    faq_q1: "How does the implementation work?",
+    faq_a1: 'We handle everything. You fill out a Google Sheets template with your properties and the link to your Drive photos folder. In <strong>48 hours</strong> your bot is live, answering on WhatsApp, Instagram, and Messenger. Update the spreadsheet whenever you want and the bot reads changes in real time. In the demo we show you everything working with your actual inventory.',
     faq_q2: "Do I need to know how to code?",
     faq_a2: "Not at all. You manage the Google Sheets template as always. We handle all the technical parts: connection, configuration, and bot maintenance.",
     faq_q3: "How do I load my properties?",
@@ -364,7 +364,7 @@ const LANDING_I18N = {
     faq_q5: "How long does implementation take?",
     faq_a5: "Usually 48-72 hours from when you send us the spreadsheet and give channel access. Includes testing and adjustments before launch.",
     faq_q6: "Can I have multiple branches with their own spreadsheets?",
-    faq_a6: "Yes, the Enterprise plan supports multiple spreadsheets and branches. The bot can segment properties by branch and respond based on the inquiry source.",
+    faq_a6: "Yes, PropBot supports multiple spreadsheets and branches. The bot can segment properties by branch and respond based on the inquiry source.",
     faq_q7: "What happens if I add or remove properties from the spreadsheet?",
     faq_a7: "Changes are reflected automatically. The bot reads the spreadsheet in real time, so you don\u2019t need to notify us or make any manual system update.",
     faq_q8: "Can I see the conversations the bot has with my clients?",
