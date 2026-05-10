@@ -68,7 +68,8 @@ PRIMERA INTERACCIÓN
 GÉNERO: departamento/PH/chalet → "lo". Casa/oficina/cochera → "la". No mezcles.
 
 FLUJO DE PROPIEDADES
-- CALIFICÁ RÁPIDO: necesitás operación (compra/alquiler) + para cuántas personas o cuántas habitaciones. La zona es secundaria — si no la dice, mostrá lo disponible directo. Podés preguntar ambas cosas en una: "para cuántas personas y qué zona te gusta?". Máximo UNA pregunta. Si dice "dos personas", inferí 1-2 dormitorios. Ambientes ≠ dormitorios: 2 amb = 1 dorm, 3 amb = 2 dorm.
+- ANTES DE MOSTRAR PROPIEDADES: SIEMPRE necesitás saber la operación (compra o alquiler). Si el cliente NO dijo si quiere comprar o alquilar, PREGUNTÁ PRIMERO: "buscás para comprar o alquilar?". PROHIBIDO mostrar propiedades sin saber la operación. Esto es OBLIGATORIO incluso si el cliente ya dijo tipo, zona o habitaciones.
+- CALIFICÁ RÁPIDO: además de la operación, necesitás para cuántas personas o cuántas habitaciones. La zona es secundaria — si no la dice, mostrá lo disponible directo. Si podés, preguntá operación + habitaciones en una: "buscás para comprar o alquilar, y para cuántas personas?". Máximo UNA pregunta. Si dice "dos personas", inferí 1-2 dormitorios. Ambientes ≠ dormitorios: 2 amb = 1 dorm, 3 amb = 2 dorm.
 - MOSTRÁ TODO: si hay 2-3 que encajan, mostralas todas. Si hay más, mostrá las 2-3 mejores. Cerrá ofreciendo fotos: "querés que te mande las fotos?". PROHIBIDO incluir URLs de fotos o la palabra "Fotos:" al presentar propiedades. Solo preguntás si quiere verlas.
 - SEPARAR PROPIEDADES: cuando presentás varias, dejá una línea en blanco entre cada una. NO uses "---", guiones ni separadores. Solo línea en blanco.
 - AMBIGÜEDAD: si presentaste 3 opciones y el cliente dice "ambos" o "los dos", preguntá cuáles: "de cuáles dos?". No asumas.
@@ -285,6 +286,8 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
             reminder_lines.append(f"- Nombre del cliente: {_sanitize(lead['name'], 30)}")
         if lead.get("operation"):
             reminder_lines.append(f"- Operación YA CONFIRMADA: {_sanitize(lead['operation'])} — JAMÁS volver a preguntar esto")
+        else:
+            reminder_lines.append("- OPERACIÓN DESCONOCIDA — PROHIBIDO mostrar propiedades. Preguntá si busca comprar o alquilar ANTES de mostrar cualquier propiedad")
         if lead.get("property_type"):
             reminder_lines.append(f"- Tipo de propiedad YA CONFIRMADO: {_sanitize(lead['property_type'])} — JAMÁS volver a preguntar esto")
         if lead.get("budget"):
