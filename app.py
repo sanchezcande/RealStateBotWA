@@ -43,9 +43,8 @@ import followup
 followup.start()
 
 
-def _startup_fix_meta_names():
-    """On startup, clean bad names and retry Meta API for nameless FB/IG conversations."""
-    time.sleep(5)  # Wait for app to fully initialize
+def _fix_meta_names_once():
+    """Clean bad names and retry Meta API for nameless FB/IG conversations."""
     try:
         nameless = analytics.fix_bad_meta_names()
         if not nameless:
@@ -59,11 +58,19 @@ def _startup_fix_meta_names():
                 logger.info("Fixed name for %s: %s", phone[:6], name)
             time.sleep(1)  # Rate limit
     except Exception as e:
-        logger.error("_startup_fix_meta_names error: %s", e)
+        logger.error("_fix_meta_names error: %s", e)
+
+
+def _periodic_fix_meta_names():
+    """On startup and every 2 hours, fix nameless FB/IG conversations."""
+    time.sleep(5)  # Wait for app to fully initialize
+    while True:
+        _fix_meta_names_once()
+        time.sleep(2 * 60 * 60)  # Retry every 2 hours
 
 
 # Run in background thread so it doesn't block startup
-threading.Thread(target=_startup_fix_meta_names, daemon=True).start()
+threading.Thread(target=_periodic_fix_meta_names, daemon=True).start()
 
 # Graceful shutdown: checkpoint SQLite WAL so no data is lost on redeploy
 import signal
@@ -1021,7 +1028,7 @@ _NOT_PROFILE_NAMES = {
 
 def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | None:
     """Fetch the user's name from Meta Graph API (FB & IG).
-    Tries User Profile API first, then Page Conversations API as fallback."""
+    Tries every available method until one succeeds."""
     if not PAGE_ACCESS_TOKEN:
         logger.warning("No PAGE_ACCESS_TOKEN — cannot fetch profile name for %s", sender_id)
         return None
@@ -1037,7 +1044,7 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
             return full
         return None
 
-    # --- Method 1: User Profile API ---
+    # --- Method 1: User Profile API (query param token) ---
     fields = "name,username" if channel == "instagram" else "first_name,name,username"
     try:
         resp = requests.get(
@@ -1067,7 +1074,28 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
     except Exception as e:
         logger.warning("Could not fetch Meta profile for %s: %s", sender_id, e)
 
-    # --- Method 2: Instagram — retry with just username field ---
+    # --- Method 2: User Profile API with Bearer header (some IG accounts need this) ---
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/v21.0/{sender_id}",
+            params={"fields": "name,username"},
+            headers={"Authorization": f"Bearer {PAGE_ACCESS_TOKEN}"},
+            timeout=5,
+        )
+        if resp.ok:
+            data = resp.json()
+            if data.get("name"):
+                v = _validate_name(data["name"])
+                if v:
+                    logger.info("Got name via Bearer header for %s: %s", sender_id, v)
+                    return v
+            if data.get("username"):
+                logger.info("Got username via Bearer header for %s: %s", sender_id, data["username"])
+                return data["username"]
+    except Exception as e:
+        logger.warning("Bearer header profile lookup error for %s: %s", sender_id, e)
+
+    # --- Method 3: Instagram — retry with just username field ---
     if channel == "instagram":
         try:
             resp = requests.get(
@@ -1086,7 +1114,7 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
         except Exception as e:
             logger.warning("IG username retry error for %s: %s", sender_id, e)
 
-    # --- Method 3: Page Conversations API (fallback for FB & IG) ---
+    # --- Method 4: Conversations API with user_id filter ---
     try:
         conv_params = {
             "fields": "participants",
@@ -1113,11 +1141,42 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
                             logger.info("Got username from Conversations API for %s: %s", sender_id, p["username"])
                             return p["username"]
         else:
-            logger.warning("Conversations API failed for %s: %s — %s",
+            logger.warning("Conversations API (filtered) failed for %s: %s — %s",
                            sender_id, resp.status_code, resp.text[:200])
     except Exception as e:
-        logger.warning("Conversations API error for %s: %s", sender_id, e)
+        logger.warning("Conversations API (filtered) error for %s: %s", sender_id, e)
 
+    # --- Method 5: Conversations API WITHOUT user_id — scan ALL recent conversations ---
+    if channel == "instagram":
+        try:
+            resp = requests.get(
+                f"https://graph.facebook.com/v21.0/me/conversations",
+                params={
+                    "fields": "participants",
+                    "platform": "instagram",
+                    "access_token": PAGE_ACCESS_TOKEN,
+                },
+                timeout=10,
+            )
+            if resp.ok:
+                convos = resp.json().get("data", [])
+                for convo in convos:
+                    for p in convo.get("participants", {}).get("data", []):
+                        if p.get("id") == sender_id:
+                            v = _validate_name(p.get("name"))
+                            if v:
+                                logger.info("Got name from IG conversations scan for %s: %s", sender_id, v)
+                                return v
+                            if p.get("username"):
+                                logger.info("Got username from IG conversations scan for %s: %s", sender_id, p["username"])
+                                return p["username"]
+            else:
+                logger.warning("IG conversations scan failed: HTTP %s — %s",
+                               resp.status_code, resp.text[:200])
+        except Exception as e:
+            logger.warning("IG conversations scan error: %s", e)
+
+    logger.error("ALL methods failed to get name for %s (%s)", sender_id, channel)
     return None
 
 
