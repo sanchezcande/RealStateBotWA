@@ -1409,8 +1409,13 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                 channel = r[2]
                 raw_name = r[6] or ""
                 clean_name = _clean_display_name(raw_name, channel)
+                # For IG/FB, masked sender IDs look like random numbers — show channel instead
+                if channel in ("instagram", "facebook") and len(phone) > 8:
+                    display_phone = "Instagram" if channel == "instagram" else "Facebook"
+                else:
+                    display_phone = phone[:4] + "****" + phone[-4:] if len(phone) > 8 else phone
                 items.append({
-                    "phone": phone[:4] + "****" + phone[-4:] if len(phone) > 8 else phone,
+                    "phone": display_phone,
                     "phone_hash": phone_hash,
                     "channel": channel,
                     "first_message": r[3],
