@@ -15,6 +15,23 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="/static/css/landing.css?v={{ v }}">
+
+<!-- Meta Pixel -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', 'TU_PIXEL_ID_ACA');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></noscript>
+<!-- End Meta Pixel -->
 </head>
 <body>
 <div class="pb-page-content">
@@ -1062,6 +1079,7 @@ function handleContactForm(e){
     if(!r.ok)throw new Error('fail');
     f.style.display='none';
     document.getElementById('form-success').classList.add('show');
+    if(typeof fbq==='function')fbq('track','Lead',{content_name:'contact_form'});
   }).catch(function(){
     var isEN2=typeof getLandingLang==='function'&&getLandingLang()==='en';
     btn.disabled=false;btn.textContent=isEN2?'Send message':'Enviar mensaje';
@@ -1069,6 +1087,12 @@ function handleContactForm(e){
   });
   return false;
 }
+document.addEventListener('click',function(e){
+  var a=e.target.closest('a[href*="wa.me"]');
+  if(a&&typeof fbq==='function'){
+    fbq('track','Contact',{content_name:'whatsapp_click'});
+  }
+});
 </script>
 </body>
 </html>
