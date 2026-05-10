@@ -1086,32 +1086,37 @@ def _get_meta_profile_name(sender_id: str, channel: str = "facebook") -> str | N
         except Exception as e:
             logger.warning("IG username retry error for %s: %s", sender_id, e)
 
-    # --- Method 3: Page Conversations API (fallback for FB Messenger) ---
-    if channel == "facebook":
-        try:
-            resp = requests.get(
-                f"https://graph.facebook.com/v21.0/me/conversations",
-                params={
-                    "fields": "participants",
-                    "user_id": sender_id,
-                    "access_token": PAGE_ACCESS_TOKEN,
-                },
-                timeout=8,
-            )
-            if resp.ok:
-                convos = resp.json().get("data", [])
-                for convo in convos:
-                    for p in convo.get("participants", {}).get("data", []):
-                        if p.get("id") == sender_id:
-                            v = _validate_name(p.get("name"))
-                            if v:
-                                logger.info("Got name from Conversations API for %s: %s", sender_id, v)
-                                return v
-            else:
-                logger.warning("Conversations API failed for %s: %s — %s",
-                               sender_id, resp.status_code, resp.text[:200])
-        except Exception as e:
-            logger.warning("Conversations API error for %s: %s", sender_id, e)
+    # --- Method 3: Page Conversations API (fallback for FB & IG) ---
+    try:
+        conv_params = {
+            "fields": "participants",
+            "user_id": sender_id,
+            "access_token": PAGE_ACCESS_TOKEN,
+        }
+        if channel == "instagram":
+            conv_params["platform"] = "instagram"
+        resp = requests.get(
+            f"https://graph.facebook.com/v21.0/me/conversations",
+            params=conv_params,
+            timeout=8,
+        )
+        if resp.ok:
+            convos = resp.json().get("data", [])
+            for convo in convos:
+                for p in convo.get("participants", {}).get("data", []):
+                    if p.get("id") == sender_id:
+                        v = _validate_name(p.get("name"))
+                        if v:
+                            logger.info("Got name from Conversations API for %s: %s", sender_id, v)
+                            return v
+                        if p.get("username"):
+                            logger.info("Got username from Conversations API for %s: %s", sender_id, p["username"])
+                            return p["username"]
+        else:
+            logger.warning("Conversations API failed for %s: %s — %s",
+                           sender_id, resp.status_code, resp.text[:200])
+    except Exception as e:
+        logger.warning("Conversations API error for %s: %s", sender_id, e)
 
     return None
 
