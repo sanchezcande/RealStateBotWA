@@ -558,3 +558,115 @@ def api_fix_names():
             errors += 1
 
     return jsonify({"fixed": fixed, "skipped": skipped, "errors": errors, "details": details})
+
+
+@api.route("/debug-ig-names", methods=["POST"])
+@_require_auth
+def api_debug_ig_names():
+    """Test Meta API for ALL nameless IG/FB contacts and return raw responses."""
+    import requests as req
+    from config import PAGE_ACCESS_TOKEN
+
+    with analytics._db_lock:
+        conn = analytics._get_conn()
+        all_convos = conn.execute(
+            """SELECT DISTINCT cm.phone, MAX(cm.channel) as channel, MAX(l.name) as name
+               FROM chat_messages cm
+               LEFT JOIN leads l ON cm.phone = l.phone
+               WHERE cm.channel IN ('instagram', 'facebook')
+               GROUP BY cm.phone"""
+        ).fetchall()
+
+    results = []
+    for phone, channel, current_name in all_convos:
+        if current_name:
+            results.append({"phone": phone[:6] + "...", "channel": channel,
+                           "name": current_name, "status": "has_name"})
+            continue
+
+        entry = {"phone": phone[:6] + "...", "channel": channel, "name": None,
+                "status": "nameless", "api_responses": {}}
+
+        # Test 1: Direct user profile
+        try:
+            fields = "name,username" if channel == "instagram" else "first_name,name,username"
+            r = req.get(f"https://graph.facebook.com/v21.0/{phone}",
+                       params={"fields": fields, "access_token": PAGE_ACCESS_TOKEN},
+                       timeout=5)
+            entry["api_responses"]["user_profile"] = {
+                "status": r.status_code,
+                "body": r.json() if r.ok else r.text[:300]
+            }
+            if r.ok:
+                data = r.json()
+                name = data.get("name") or data.get("first_name") or data.get("username")
+                if name:
+                    entry["name"] = name
+                    entry["status"] = "fixed_by_debug"
+                    import conversations as convos
+                    convos.update_lead(phone, name=name, channel=channel)
+        except Exception as e:
+            entry["api_responses"]["user_profile"] = {"error": str(e)}
+
+        # Test 2: Conversations API
+        try:
+            params = {"fields": "participants{name,username,id}",
+                     "user_id": phone, "access_token": PAGE_ACCESS_TOKEN}
+            if channel == "instagram":
+                params["platform"] = "instagram"
+            r = req.get("https://graph.facebook.com/v21.0/me/conversations",
+                       params=params, timeout=8)
+            resp_data = r.json() if r.ok else r.text[:300]
+            entry["api_responses"]["conversations_api"] = {
+                "status": r.status_code, "body": resp_data
+            }
+            if r.ok and not entry["name"]:
+                for convo in (resp_data if isinstance(resp_data, dict) else {}).get("data", []):
+                    for p in convo.get("participants", {}).get("data", []):
+                        if p.get("id") == phone:
+                            name = p.get("name") or p.get("username")
+                            if name:
+                                entry["name"] = name
+                                entry["status"] = "fixed_by_debug"
+                                import conversations as convos
+                                convos.update_lead(phone, name=name, channel=channel)
+        except Exception as e:
+            entry["api_responses"]["conversations_api"] = {"error": str(e)}
+
+        # Test 3: Scan all IG conversations
+        if channel == "instagram" and not entry["name"]:
+            try:
+                r = req.get("https://graph.facebook.com/v21.0/me/conversations",
+                           params={"fields": "participants{name,username,id}",
+                                  "platform": "instagram",
+                                  "access_token": PAGE_ACCESS_TOKEN},
+                           timeout=10)
+                if r.ok:
+                    scan_data = r.json()
+                    entry["api_responses"]["ig_scan"] = {
+                        "status": r.status_code,
+                        "conversation_count": len(scan_data.get("data", [])),
+                        "participants_found": []
+                    }
+                    for convo in scan_data.get("data", []):
+                        for p in convo.get("participants", {}).get("data", []):
+                            entry["api_responses"]["ig_scan"]["participants_found"].append(
+                                {k: v for k, v in p.items()}
+                            )
+                            if p.get("id") == phone:
+                                name = p.get("name") or p.get("username")
+                                if name:
+                                    entry["name"] = name
+                                    entry["status"] = "fixed_by_debug"
+                                    import conversations as convos
+                                    convos.update_lead(phone, name=name, channel=channel)
+                else:
+                    entry["api_responses"]["ig_scan"] = {
+                        "status": r.status_code, "body": r.text[:300]
+                    }
+            except Exception as e:
+                entry["api_responses"]["ig_scan"] = {"error": str(e)}
+
+        results.append(entry)
+
+    return jsonify({"results": results})
