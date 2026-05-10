@@ -675,6 +675,12 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
             name = _extract_name(segment.strip(), asked_for_name=_asked_name)
             if name:
                 break
+    # Multiline messages: try each line individually ("Fernando\nNecesito info...")
+    if not name and "\n" in user_text:
+        for line in user_text.split("\n"):
+            name = _extract_name(line.strip(), asked_for_name=_asked_name)
+            if name:
+                break
     if name:
         current = conversations.get_lead(identifier)
         if not current.get("name"):
@@ -1139,13 +1145,31 @@ def _reply_meta(sender_id: str, user_text: str, channel: str):
     if not current.get("channel"):
         conversations.update_lead(sender_id, channel=channel)
     if not current.get("name"):
+        # Try Meta API on every message until we get a name (not just the first)
         profile_name = _get_meta_profile_name(sender_id, channel=channel)
         if profile_name:
             conversations.update_lead(sender_id, name=profile_name)
             logger.info("Profile name pre-loaded for %s: %s", sender_id, profile_name)
+        else:
+            # API failed — try extracting from existing conversation history
+            extracted = analytics._extract_name_from_bot_messages(sender_id)
+            if extracted:
+                conversations.update_lead(sender_id, name=extracted)
+                logger.info("Pre-reply name extracted from history for %s: %s",
+                            sender_id[:6], extracted)
 
     _process_reply(sender_id, user_text, channel, _send_meta_message,
                    send_image_fn=_send_meta_image)
+
+    # Post-reply: if still no name, try extracting from bot messages
+    # (the AI often greets users by name: "Hola Romina!")
+    current_after = conversations.get_lead(sender_id)
+    if not current_after.get("name"):
+        extracted = analytics._extract_name_from_bot_messages(sender_id)
+        if extracted:
+            conversations.update_lead(sender_id, name=extracted)
+            logger.info("Post-reply name extracted for %s (%s): %s",
+                        sender_id[:6], channel, extracted)
 
 
 @app.get("/webhook/meta")
