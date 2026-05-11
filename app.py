@@ -1866,11 +1866,8 @@ def seed_inquiries():
     import random
     from datetime import datetime, timedelta
     conn = analytics._get_conn()
-    existing = conn.execute(
-        "SELECT COUNT(*) FROM events WHERE event_type='property_inquiry'"
-    ).fetchone()[0]
-    if existing > 0:
-        return jsonify({"status": "already_seeded", "count": existing}), 200
+    # Clear old property_inquiry events and rescan
+    conn.execute("DELETE FROM events WHERE event_type='property_inquiry'")
 
     listings = sheets.get_listings()
     props = []
