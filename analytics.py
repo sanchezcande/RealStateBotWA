@@ -757,33 +757,8 @@ def get_dashboard_data(days: int = 30) -> dict:
                 "values": [hour_map.get(h, 0) for h in range(24)],
             }
 
-            # --- Top properties by visits (confirmed + cancelled breakdown) ---
+            # --- Top properties by inquiries ---
             rows = conn.execute(
-                """SELECT property_title, COALESCE(MAX(NULLIF(address, '')), ''),
-                          SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed,
-                          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-                          COUNT(*) as total,
-                          MAX(property_id) as pid
-                   FROM visits
-                   WHERE created_at >= ?
-                   GROUP BY property_title
-                   ORDER BY total DESC, property_title ASC
-                   LIMIT 10""",
-                (cutoff,),
-            ).fetchall()
-            top_property_items = [
-                {
-                    "title": r[0],
-                    "address": r[1],
-                    "confirmed": r[2],
-                    "cancelled": r[3],
-                    "count": r[4],
-                    "property_id": r[5] if len(r) > 5 else None,
-                }
-                for r in rows
-            ]
-            # Merge with property inquiries from events (photo requests, etc.)
-            inquiry_rows = conn.execute(
                 """SELECT property, COUNT(*) as cnt
                    FROM events
                    WHERE property IS NOT NULL AND property != ''
@@ -794,54 +769,24 @@ def get_dashboard_data(days: int = 30) -> dict:
                    LIMIT 10""",
                 (cutoff,),
             ).fetchall()
-            # Merge inquiry counts into existing visit-based items
-            existing_titles = {item["title"] for item in top_property_items}
-            for r in inquiry_rows:
-                title, cnt = r[0], r[1]
-                found = False
-                for item in top_property_items:
-                    if item["title"] == title:
-                        item["count"] += cnt
-                        item["confirmed"] += cnt
-                        found = True
-                        break
-                if not found:
-                    top_property_items.append(
-                        {"title": title, "address": "", "confirmed": cnt, "cancelled": 0, "count": cnt}
-                    )
-            # Enrich titles and addresses from current listings
+            top_property_items = [
+                {"title": r[0], "address": "", "count": r[1]}
+                for r in rows
+            ]
+            # Enrich addresses from current listings
             try:
                 listings = sheets.get_listings()
-                # Build id→listing map for quick lookup
-                _id_map = {}
-                for p in listings:
-                    pid = str(p.get("id") or "").strip()
-                    if pid:
-                        _id_map[pid] = p
                 for it in top_property_items:
-                    # Try by property_id first, then fuzzy match
-                    match = None
-                    if it.get("property_id") and it["property_id"] in _id_map:
-                        match = _id_map[it["property_id"]]
-                    else:
-                        match = _match_listing(it["title"], listings)
+                    match = _match_listing(it["title"], listings)
                     if match:
-                        cur_title = (match.get("titulo") or "").strip()
                         cur_addr = str(match.get("direccion") or "").strip()
-                        if cur_title:
-                            it["title"] = cur_title
                         if cur_addr and cur_addr != "Consultar":
                             it["address"] = cur_addr
             except Exception:
                 pass
-            # Re-sort by count
-            top_property_items.sort(key=lambda x: x["count"], reverse=True)
-            top_property_items = top_property_items[:10]
             top_properties = {
                 "labels": [item["title"] for item in top_property_items],
                 "values": [item["count"] for item in top_property_items],
-                "confirmed": [item["confirmed"] for item in top_property_items],
-                "cancelled": [item["cancelled"] for item in top_property_items],
                 "items": top_property_items,
             }
 

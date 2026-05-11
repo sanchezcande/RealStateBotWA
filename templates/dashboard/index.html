@@ -203,7 +203,7 @@
     <h2 data-i18n="most_requested_props">Propiedades más solicitadas</h2>
     {% if top_properties["items"] %}
     <canvas id="propsChart" style="max-height:{{ [top_properties['items']|length * 70, 160] | max }}px"></canvas>
-    {% else %}<p class="no-data" data-i18n="no_visits_yet">Sin citas registradas todavía</p>{% endif %}
+    {% else %}<p class="no-data" data-i18n="no_inquiries_yet">Sin consultas registradas todavía</p>{% endif %}
   </div>
 
   </div>
@@ -245,27 +245,17 @@ if (OPS.labels.length) {
   buildLegend("opLegend", opLabels, OPS.values, opColors, total);
 }
 
-/* 4. Propiedades — horizontal bar (stacked: confirmed + cancelled) */
+/* 4. Propiedades más consultadas — horizontal bar */
 if (PROPS.values.length) {
   const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
   const BAR_COLORS = ["#9A6B2F","#2D6A4F","#6B5B95","#8B3A1F","#2A6B6B","#5B8C2A","#B85C5C","#D4A957","#3A6B4F","#7B5B3A","#4A6B8B","#6B3A5B"];
-  const confirmedData = PROPS.confirmed || PROPS.values;
-  const confirmedColors = confirmedData.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]);
+  const barColors = PROPS.values.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]);
   const datasets = [{
-    label: t("confirmed_visits") || "Confirmadas",
-    data: confirmedData,
-    backgroundColor: confirmedColors,
+    label: t("inquiries") || "Consultas",
+    data: PROPS.values,
+    backgroundColor: barColors,
     borderRadius: 4, barThickness: 28
   }];
-  if (PROPS.cancelled && PROPS.cancelled.some(v => v > 0)) {
-    const cancelledColors = PROPS.cancelled.map((_, i) => BAR_COLORS[i % BAR_COLORS.length] + "66");
-    datasets.push({
-      label: t("cancelled_visits") || "Canceladas",
-      data: PROPS.cancelled,
-      backgroundColor: cancelledColors,
-      borderRadius: 4, barThickness: 28
-    });
-  }
   Chart.Tooltip.positioners.propsCenter = function(elements, eventPosition) {
     if (!elements.length) return false;
     const el = elements[0].element;
@@ -306,7 +296,7 @@ if (PROPS.values.length) {
       options: {
         indexAxis: "y",
         plugins: {
-          legend: { display: datasets.length > 1, position: "top", labels: { boxWidth: 12 } },
+          legend: { display: false },
           tooltip: {
             backgroundColor: "rgba(62, 47, 33, 0.92)",
             titleFont: { size: 13, weight: 600 },
@@ -319,20 +309,17 @@ if (PROPS.values.length) {
               title: function(ctx) { return PROPS.labels[ctx[0].dataIndex]; },
               afterTitle: function(ctx) {
                 const addr = propAddresses[ctx[0].dataIndex];
-                return addr ? "📍 " + addr : "";
+                return addr ? "\ud83d\udccd " + addr : "";
               },
               label: function(ctx) {
-                const n = ctx.parsed.x;
-                const isCancel = ctx.datasetIndex === 1;
-                const label = isCancel ? (t("cancelled_f") || "Canceladas") : (t("confirmed_f") || "Confirmadas");
-                return label + ": " + n;
+                return (t("inquiries") || "Consultas") + ": " + ctx.parsed.x;
               }
             }
           }
         },
         scales: {
-          x: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
-          y: { stacked: true, ticks: { color: "transparent", font: { size: 12 }, padding: 10 }, grid: { display: false } }
+          x: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: "rgba(0,0,0,.04)" } },
+          y: { ticks: { color: "transparent", font: { size: 12 }, padding: 10 }, grid: { display: false } }
         }
       },
       plugins: [labelsPlugin]

@@ -33,7 +33,7 @@ def preview_dashboard():
         channel_split={"labels": ["WhatsApp","Instagram","Facebook"], "values": [189, 58, 37]},
         escalation_split={"labels": ["Resuelto por bot","Escalado a humano"], "values": [241, 43]},
         lead_quality_split={"labels": ["Caliente","Tibio","Frío"], "values": [12, 21, 14]},
-        top_properties={"labels": ["Depto 2amb Palermo","Casa c/pileta Nordelta","PH Belgrano","Depto 3amb Recoleta","Local Microcentro"], "items": [{"address":"Thames 2340"},{"address":"Los Sauces 145"},{"address":"Av Cabildo 1820"},{"address":"Av Alvear 1500"},{"address":"Florida 720"}], "values": [28,22,18,15,11], "confirmed": [24,19,16,13,9], "cancelled": [4,3,2,2,2]},
+        top_properties={"labels": ["Depto 2amb Palermo","Casa c/pileta Nordelta","PH Belgrano","Depto 3amb Recoleta","Local Microcentro"], "items": [{"address":"Thames 2340"},{"address":"Los Sauces 145"},{"address":"Av Cabildo 1820"},{"address":"Av Alvear 1500"},{"address":"Florida 720"}], "values": [34,27,21,18,15]},
         channel_breakdown=True,
     )
 
