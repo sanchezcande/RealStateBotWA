@@ -95,7 +95,10 @@ def landing():
     return render_template("landing.html")
 
 @app.route("/activar")
-def activar():
+@app.route("/activar/<period>")
+def activar(period=None):
+    if period not in (None, "anual", "trimestral"):
+        return "Not found", 404
     return render_template("activar.html")
 
 @app.route("/api/contact", methods=["POST"])

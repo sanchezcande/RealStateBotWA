@@ -89,6 +89,35 @@ def _credit_and_notify(info: dict):
 
 
 # ===========================================================================
+# Coupon validation
+# ===========================================================================
+
+def _load_coupons() -> dict:
+    """Parse COUPONS env var into {code: percent} dict."""
+    raw = os.environ.get("COUPONS", "")
+    coupons = {}
+    for entry in raw.split(","):
+        entry = entry.strip()
+        if ":" not in entry:
+            continue
+        code, pct = entry.split(":", 1)
+        try:
+            coupons[code.strip().upper()] = int(pct.strip())
+        except ValueError:
+            pass
+    return coupons
+
+
+def validate_coupon(code: str) -> dict | None:
+    """Return {"code": str, "percent": int} if valid, else None."""
+    coupons = _load_coupons()
+    code = code.strip().upper()
+    if code in coupons:
+        return {"code": code, "percent": coupons[code]}
+    return None
+
+
+# ===========================================================================
 # MercadoPago (ARS)
 # ===========================================================================
 
@@ -339,6 +368,144 @@ def ls_webhook():
         logger.error("LS webhook error: %s", e)
 
     return jsonify({"ok": True}), 200
+
+
+# ===========================================================================
+# Subscription checkout (MercadoPago)
+# ===========================================================================
+
+def create_subscription_checkout(plan: str, period: str = "anual",
+                                  coupon_code: str = "", payer_email: str = "") -> dict:
+    """Create a MercadoPago checkout for a PropBot subscription plan."""
+    sdk = _get_mp_sdk()
+    base_url = os.environ.get("BASE_URL", "")
+
+    prices = {
+        "anual": int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "5900000")),
+        "trimestral": int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "1750000")),
+    }
+    plan_names = {
+        "anual": "PropBot Premium — Anual",
+        "trimestral": "PropBot Premium — 3 meses",
+    }
+
+    if period not in prices:
+        raise ValueError(f"Periodo invalido: {period}")
+
+    price = prices[period]
+    discount_pct = 0
+
+    if coupon_code:
+        coupon = validate_coupon(coupon_code)
+        if coupon:
+            discount_pct = coupon["percent"]
+            price = int(price * (100 - discount_pct) / 100)
+
+    notification_url = f"{base_url}/api/payments/mercadopago/webhook" if base_url else ""
+
+    external_ref = json.dumps({
+        "type": "subscription",
+        "plan": plan,
+        "period": period,
+        "coupon": coupon_code.upper() if coupon_code else "",
+        "discount_pct": discount_pct,
+    })
+
+    preference_data: dict = {
+        "items": [
+            {
+                "title": plan_names[period],
+                "quantity": 1,
+                "unit_price": price,
+                "currency_id": "ARS",
+            }
+        ],
+        "external_reference": external_ref,
+        "back_urls": {
+            "success": f"{base_url}/activar/{period}?status=ok",
+            "failure": f"{base_url}/activar/{period}?status=error",
+            "pending": f"{base_url}/activar/{period}?status=pendiente",
+        },
+        "auto_return": "approved",
+        "payment_methods": {
+            "installments": 3,
+        },
+    }
+
+    if payer_email:
+        preference_data["payer"] = {"email": payer_email}
+
+    if notification_url:
+        preference_data["notification_url"] = notification_url
+
+    result = sdk.preference().create(preference_data)
+
+    if result["status"] == 201:
+        resp = result["response"]
+        analytics.record_payment(
+            payment_id=resp["id"],
+            provider="mercadopago",
+            status="pending",
+            amount=price,
+            currency="ARS",
+            video_count=0,
+            external_ref=external_ref,
+        )
+        return {
+            "checkout_url": resp["init_point"],
+            "preference_id": resp["id"],
+            "plan": plan,
+            "period": period,
+            "original_price": prices[period],
+            "final_price": price,
+            "discount_pct": discount_pct,
+        }
+
+    logger.error("MP subscription preference failed: %s", result)
+    raise RuntimeError("Error creando checkout de MercadoPago")
+
+
+@payments_bp.route("/subscription/prices")
+def api_subscription_prices():
+    """Return current plan prices."""
+    return jsonify({
+        "anual": int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "5900000")),
+        "trimestral": int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "1750000")),
+    })
+
+
+@payments_bp.route("/coupon/validate", methods=["POST"])
+def api_validate_coupon():
+    """Validate a coupon code. Returns discount percentage."""
+    data = request.get_json(silent=True) or {}
+    code = (data.get("code") or "").strip()
+    if not code:
+        return jsonify({"valid": False}), 200
+    result = validate_coupon(code)
+    if result:
+        return jsonify({"valid": True, "code": result["code"], "percent": result["percent"]})
+    return jsonify({"valid": False}), 200
+
+
+@payments_bp.route("/subscription/checkout", methods=["POST"])
+def api_subscription_checkout():
+    """Create a subscription checkout."""
+    data = request.get_json(silent=True) or {}
+    plan = (data.get("plan") or "premium").strip().lower()
+    period = (data.get("period") or "anual").strip().lower()
+    coupon = (data.get("coupon") or "").strip()
+    email = (data.get("email") or "").strip()
+
+    if period not in ("anual", "trimestral"):
+        return jsonify({"error": "Periodo invalido"}), 400
+
+    try:
+        result = create_subscription_checkout(plan, period=period, coupon_code=coupon, payer_email=email)
+        return jsonify(result)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except RuntimeError as e:
+        return jsonify({"error": str(e)}), 502
 
 
 # ---------------------------------------------------------------------------

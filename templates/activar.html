@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PropBot — Activar tu plan</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/static/img/propbot-logo-180.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+:root{
+  --cream:#F7F3EC;--cream-2:#EFE9DE;--ink:#1A1814;--ink-2:#3A342C;--ink-3:#6C6257;
+  --line:#D9CFBF;--gold:#9A6B2F;--gold-deep:#6E4716;--deep:#181512;
+  --serif:'Fraunces',ui-serif,Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+}
+body{
+  font-family:var(--sans);-webkit-font-smoothing:antialiased;
+  color:var(--ink);background:var(--cream);font-size:17px;line-height:1.65;
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;
+}
+::selection{background:var(--gold);color:var(--cream)}
+a{text-decoration:none;color:inherit}
+
+.act-header{
+  width:100%;padding:1.2rem 2rem;display:flex;align-items:center;gap:12px;
+  border-bottom:1px solid var(--line);
+}
+.act-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.act-logo img{width:36px;height:36px;border-radius:8px}
+.act-logo span{font-family:var(--sans);font-weight:700;font-size:1.1rem;color:var(--ink)}
+.act-logo .y{color:var(--gold)}
+
+.act-main{width:100%;max-width:540px;padding:3rem 1.5rem 4rem}
+.act-title{font-family:var(--serif);font-size:2rem;font-weight:500;margin-bottom:.4rem}
+.act-title em{font-style:italic;color:var(--gold)}
+.act-sub{color:var(--ink-3);margin-bottom:2rem;font-size:.95rem}
+
+/* Plan box */
+.act-plan-box{
+  border:2px solid var(--gold);border-radius:12px;padding:1.8rem;margin-bottom:2rem;
+  position:relative;box-shadow:0 0 0 3px rgba(154,107,47,.1);
+}
+.act-plan-badge{
+  position:absolute;top:-11px;left:20px;
+  background:var(--gold);color:var(--cream);font-family:var(--mono);
+  font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  padding:3px 12px;border-radius:4px;
+}
+.act-plan-name{font-family:var(--serif);font-size:1.4rem;font-weight:600;margin-bottom:.2rem}
+.act-plan-period{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:1rem}
+.act-plan-price{font-size:2rem;font-weight:700;color:var(--gold);margin-bottom:.2rem}
+.act-plan-price small{font-size:.8rem;font-weight:400;color:var(--ink-3)}
+.act-plan-monthly{font-size:.9rem;color:var(--ink-3);margin-bottom:.3rem}
+.act-plan-saving{font-size:.85rem;color:#2A6B2A;font-weight:600;margin-bottom:1.2rem}
+.act-plan-features{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:.35rem .8rem}
+@media(max-width:500px){.act-plan-features{grid-template-columns:1fr}}
+.act-plan-features li{font-size:.85rem;color:var(--ink-2);padding-left:1.2rem;position:relative}
+.act-plan-features li::before{content:"";position:absolute;left:0;top:7px;width:7px;height:7px;border-radius:50%;background:var(--gold)}
+
+/* Checkout */
+.act-checkout{
+  background:var(--cream-2);border-radius:12px;padding:1.8rem;
+  border:1px solid var(--line);
+}
+.act-checkout h3{font-family:var(--serif);font-size:1.1rem;font-weight:500;margin-bottom:1rem}
+.act-field{margin-bottom:1rem}
+.act-field label{
+  display:block;font-family:var(--mono);font-size:10px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;
+}
+.act-field input{
+  width:100%;padding:10px 14px;border:1px solid var(--line);border-radius:8px;
+  font-family:var(--sans);font-size:.95rem;background:#fff;color:var(--ink);
+  outline:none;transition:border-color .2s;
+}
+.act-field input:focus{border-color:var(--gold)}
+.act-coupon-row{display:flex;gap:8px;align-items:flex-end}
+.act-coupon-row .act-field{flex:1;margin-bottom:0}
+.act-coupon-btn{
+  padding:10px 18px;border:1px solid var(--gold);border-radius:8px;
+  font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--gold);background:transparent;
+  cursor:pointer;transition:all .2s;white-space:nowrap;height:42px;
+}
+.act-coupon-btn:hover{background:var(--gold);color:var(--cream)}
+.act-coupon-msg{font-size:.85rem;margin-top:6px;min-height:1.2em}
+.act-coupon-msg.ok{color:#2A6B2A}
+.act-coupon-msg.err{color:#8B3A1F}
+
+.act-summary{
+  margin:1.2rem 0;padding:1rem 1.2rem;background:#fff;border-radius:8px;
+  border:1px solid var(--line);display:flex;flex-direction:column;gap:.4rem;
+}
+.act-summary-row{display:flex;justify-content:space-between;font-size:.95rem}
+.act-summary-row.discount{color:#2A6B2A}
+.act-summary-row.total{font-weight:700;font-size:1.1rem;border-top:1px solid var(--line);padding-top:.6rem;margin-top:.2rem}
+.act-summary-row.installments{font-size:.85rem;color:var(--ink-3)}
+
+.act-pay-btn{
+  width:100%;padding:14px;border:none;border-radius:10px;
+  background:var(--gold);color:var(--cream);font-family:var(--sans);
+  font-size:1rem;font-weight:600;cursor:pointer;transition:background .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.act-pay-btn:hover{background:var(--gold-deep)}
+.act-pay-btn:disabled{opacity:.5;cursor:not-allowed}
+
+.act-status{
+  padding:1rem 1.5rem;border-radius:10px;margin-bottom:2rem;font-size:.95rem;display:none;
+}
+.act-status.ok{display:block;background:#E8F5E8;border:1px solid #A8D5A8;color:#1B5E1B}
+.act-status.error{display:block;background:#FDE8E8;border:1px solid #E8A8A8;color:#7B1B1B}
+.act-status.pending{display:block;background:#FFF3E0;border:1px solid #E8CFA8;color:#7B5A1B}
+
+.act-footer{
+  margin-top:auto;padding:2rem;text-align:center;
+  font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--ink-3);
+}
+.act-secure{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:.5rem}
+.act-secure i{color:var(--gold)}
+</style>
+</head>
+<body>
+
+<div class="act-header">
+  <a href="/" class="act-logo">
+    <img src="/static/img/propbot-logo-transparent.png" alt="PropBot">
+    <span>Prop<span class="y">Bot</span></span>
+  </a>
+</div>
+
+<main class="act-main">
+
+  <div class="act-status" id="status-banner"></div>
+
+  <h1 class="act-title">Activar <em>tu bot</em></h1>
+  <p class="act-sub">Tu bot se activa en 48 horas. Sin contratos largos, sin letra chica.</p>
+
+  <!-- Plan box — filled by JS based on period -->
+  <div class="act-plan-box">
+    <div class="act-plan-badge" id="badge"></div>
+    <div class="act-plan-name">PropBot Premium</div>
+    <div class="act-plan-period" id="period-label"></div>
+    <div class="act-plan-price" id="total-price"></div>
+    <div class="act-plan-monthly" id="monthly-label"></div>
+    <div class="act-plan-saving" id="saving-label"></div>
+    <ul class="act-plan-features">
+      <li>WhatsApp Business API</li>
+      <li>Facebook Messenger</li>
+      <li>Instagram Direct</li>
+      <li>Dashboard con metricas</li>
+      <li>Leads calificados + alertas</li>
+      <li>Agenda de visitas</li>
+      <li>Follow-up automatico</li>
+      <li>Conversaciones en vivo</li>
+      <li>Responder desde el panel</li>
+      <li>Media Studio (videos IA)</li>
+      <li>CRM Tokko integrado</li>
+      <li>Soporte prioritario</li>
+    </ul>
+  </div>
+
+  <!-- Checkout -->
+  <div class="act-checkout">
+    <h3>Finalizar activacion</h3>
+
+    <div class="act-field">
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="tu@email.com">
+    </div>
+
+    <div class="act-coupon-row">
+      <div class="act-field">
+        <label for="coupon">Codigo de descuento</label>
+        <input type="text" id="coupon" placeholder="Ej: LAUNCH20" style="text-transform:uppercase">
+      </div>
+      <button class="act-coupon-btn" onclick="applyCoupon()">Aplicar</button>
+    </div>
+    <div class="act-coupon-msg" id="coupon-msg"></div>
+
+    <div class="act-summary" id="summary">
+      <div class="act-summary-row">
+        <span id="sum-plan"></span>
+        <span id="sum-price"></span>
+      </div>
+      <div class="act-summary-row discount" id="sum-discount-row" style="display:none">
+        <span id="sum-discount-label"></span>
+        <span id="sum-discount-amount"></span>
+      </div>
+      <div class="act-summary-row total">
+        <span>Total</span>
+        <span id="sum-total"></span>
+      </div>
+      <div class="act-summary-row installments" id="sum-installments"></div>
+    </div>
+
+    <button class="act-pay-btn" onclick="checkout()" id="pay-btn">
+      <span>Pagar con MercadoPago</span>
+      <i class="fa-solid fa-arrow-right"></i>
+    </button>
+  </div>
+
+  <div class="act-footer">
+    <div class="act-secure"><i class="fa-solid fa-lock"></i> Pago seguro via MercadoPago</div>
+    <span>&copy; 2026 PropBot</span>
+  </div>
+
+</main>
+
+<script>
+// Detect period from URL path
+const path = window.location.pathname;
+const PERIOD = path.includes('/trimestral') ? 'trimestral' : 'anual';
+
+// Prices loaded from backend
+let CONFIG = {
+  anual: {
+    badge: 'Precio congelado 12 meses',
+    periodLabel: 'Plan anual',
+    months: 12,
+    totalPrice: 5900000,
+    monthlyPrice: 491667,
+    saving: 'Precio congelado por 12 meses — sin ajustes',
+    summaryName: 'PropBot Premium — Anual',
+  },
+  trimestral: {
+    badge: '3 meses para probar',
+    periodLabel: 'Plan trimestral',
+    months: 3,
+    totalPrice: 1750000,
+    monthlyPrice: 583333,
+    saving: 'Si despues activas el anual, te mantenemos el precio',
+    summaryName: 'PropBot Premium — 3 meses',
+  }
+};
+
+// Load real prices from backend
+fetch('/api/payments/subscription/prices').then(r=>r.json()).then(d=>{
+  if(d.anual) CONFIG.anual.totalPrice = d.anual;
+  if(d.trimestral) CONFIG.trimestral.totalPrice = d.trimestral;
+  CONFIG.anual.monthlyPrice = Math.round(CONFIG.anual.totalPrice / 12);
+  CONFIG.trimestral.monthlyPrice = Math.round(CONFIG.trimestral.totalPrice / 3);
+  fillPlan();
+}).catch(()=>{ fillPlan(); });
+
+let appliedCoupon = null;
+
+function fmt(n) { return '$' + n.toLocaleString('es-AR'); }
+
+function fillPlan() {
+  const C = CONFIG[PERIOD];
+  document.getElementById('badge').textContent = C.badge;
+  document.getElementById('period-label').textContent = C.periodLabel;
+  document.getElementById('total-price').innerHTML = fmt(C.totalPrice);
+  document.getElementById('monthly-label').textContent = fmt(C.monthlyPrice) + '/mes';
+  document.getElementById('saving-label').textContent = C.saving;
+  document.getElementById('saving-label').style.display = C.saving ? '' : 'none';
+  updateSummary();
+}
+fillPlan();
+
+function updateSummary() {
+  const C = CONFIG[PERIOD];
+  document.getElementById('sum-plan').textContent = C.summaryName;
+  document.getElementById('sum-price').textContent = fmt(C.totalPrice);
+
+  let final = C.totalPrice;
+  const discRow = document.getElementById('sum-discount-row');
+  if (appliedCoupon) {
+    const disc = Math.round(C.totalPrice * appliedCoupon.percent / 100);
+    final = C.totalPrice - disc;
+    document.getElementById('sum-discount-label').textContent = 'Descuento ' + appliedCoupon.percent + '%';
+    document.getElementById('sum-discount-amount').textContent = '-' + fmt(disc);
+    discRow.style.display = 'flex';
+  } else {
+    discRow.style.display = 'none';
+  }
+  document.getElementById('sum-total').textContent = fmt(final);
+
+  const installments = Math.round(final / 3);
+  document.getElementById('sum-installments').textContent = '3 cuotas de ' + fmt(installments);
+}
+
+function applyCoupon() {
+  const code = document.getElementById('coupon').value.trim();
+  const msg = document.getElementById('coupon-msg');
+  if (!code) { msg.textContent = ''; appliedCoupon = null; updateSummary(); return; }
+  fetch('/api/payments/coupon/validate', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({code})
+  }).then(r=>r.json()).then(d=>{
+    if (d.valid) {
+      appliedCoupon = {code: d.code, percent: d.percent};
+      msg.className = 'act-coupon-msg ok';
+      msg.textContent = 'Codigo aplicado: ' + d.percent + '% de descuento';
+    } else {
+      appliedCoupon = null;
+      msg.className = 'act-coupon-msg err';
+      msg.textContent = 'Codigo no valido';
+    }
+    updateSummary();
+  }).catch(()=>{
+    msg.className = 'act-coupon-msg err';
+    msg.textContent = 'Error validando el codigo';
+  });
+}
+
+function checkout() {
+  const btn = document.getElementById('pay-btn');
+  const email = document.getElementById('email').value.trim();
+  btn.disabled = true;
+  btn.querySelector('span').textContent = 'Procesando...';
+  fetch('/api/payments/subscription/checkout', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      plan: 'premium',
+      period: PERIOD,
+      coupon: appliedCoupon ? appliedCoupon.code : '',
+      email: email
+    })
+  }).then(r=>r.json()).then(d=>{
+    if (d.checkout_url) {
+      window.location.href = d.checkout_url;
+    } else {
+      btn.disabled = false;
+      btn.querySelector('span').textContent = 'Pagar con MercadoPago';
+      alert(d.error || 'Error creando el checkout');
+    }
+  }).catch(()=>{
+    btn.disabled = false;
+    btn.querySelector('span').textContent = 'Pagar con MercadoPago';
+    alert('Error de conexion. Intenta de nuevo.');
+  });
+}
+
+// Status from redirect
+(function(){
+  const s = new URLSearchParams(window.location.search).get('status');
+  const b = document.getElementById('status-banner');
+  if (s === 'ok') { b.className = 'act-status ok'; b.innerHTML = '<strong>Pago confirmado.</strong> Te enviamos un email con los proximos pasos. Tu bot se activa en 48hs.'; }
+  else if (s === 'error') { b.className = 'act-status error'; b.innerHTML = '<strong>El pago no se pudo procesar.</strong> Intenta de nuevo o contactanos por WhatsApp.'; }
+  else if (s === 'pendiente') { b.className = 'act-status pending'; b.innerHTML = '<strong>Pago pendiente.</strong> Te avisamos apenas se confirme.'; }
+})();
+</script>
+</body>
+</html>
