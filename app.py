@@ -1938,7 +1938,8 @@ def _do_seed_inquiries():
                 )
                 seeded += 1
 
-    conn.commit()
+    if hasattr(conn, "commit"):
+        conn.commit()
     return jsonify({"status": "seeded", "count": seeded}), 200
 
 
