@@ -76,11 +76,11 @@ BASE_URL = os.environ.get("BASE_URL", "")  # e.g. https://tu-app.up.railway.app
 OWNER_EMAIL = os.environ.get("OWNER_EMAIL", "sanchezgcandelaria@gmail.com")
 
 # Subscription plan prices (ARS) — base prices BEFORE discount codes
-PLAN_PREMIUM_ANUAL_ARS = int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "5900000"))
-PLAN_PREMIUM_TRIMESTRAL_ARS = int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "1750000"))
+PLAN_PREMIUM_ANUAL_ARS = int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "9900000"))
+PLAN_PREMIUM_TRIMESTRAL_ARS = int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "3250000"))
 
-# Discount coupons — format: "CODE1:percent,CODE2:percent" e.g. "LAUNCH20:20,AMIGO10:10"
-COUPONS = os.environ.get("COUPONS", "")
+# Discount coupons — format: "CODE1:percent,CODE2:percent"
+COUPONS = os.environ.get("COUPONS", "FUNDADOR:35")
 
 # Asset cache busting
 import subprocess as _sp, time as _time
