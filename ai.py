@@ -261,18 +261,17 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
     has_prior_exchange = any(m["role"] == "assistant" for m in messages)
     is_meta = lead and lead.get("channel") in ("facebook", "instagram")
 
-    # FB/IG: NEVER ask for name — this rule applies at ALL stages of the conversation
     has_name = lead and lead.get("name")
-    if is_meta:
-        system_prompt += "\n\nREGLA ABSOLUTA PARA FACEBOOK/INSTAGRAM: NUNCA preguntes el nombre del cliente. NUNCA digas 'con quién hablo?', 'me decís tu nombre?', 'tu nombre?', 'cómo te llamás?' ni NINGUNA variante que pida el nombre. Respondé directamente a lo que el cliente pregunta. Si el cliente dice su nombre por voluntad propia, usalo, pero JAMÁS lo pidas."
+
+    # FB/IG: if we already have the name, don't ask again
+    if is_meta and has_name:
+        system_prompt += "\n\nREGLA PARA FACEBOOK/INSTAGRAM: Ya tenés el nombre del cliente, NO lo pidas de nuevo."
 
     if has_prior_exchange:
         system_prompt += "\n\nRECORDATORIO: conversación en curso. JAMÁS digas 'Hola! Soy Vera, con quién hablo?' ni ninguna variante. JAMÁS te presentes de nuevo. Respondé directamente al último mensaje del cliente."
     elif has_name:
-        # Name already known (e.g. from FB/IG profile or earlier message)
+        # Name already known
         system_prompt += f"\n\nIMPORTANTE: Ya sabés que el cliente se llama {lead['name']}. NO le preguntes el nombre. Saludá con 'Hola {lead['name']}! Soy Vera, en qué te puedo ayudar?' y seguí el flujo normal de calificación."
-    elif is_meta:
-        system_prompt += "\n\nSaludá con 'Hola! Soy Vera, en qué te puedo ayudar?' y seguí el flujo de calificación sin pedir nombre."
 
     # Build a hard reminder injected as a separate system message just before the last user message.
     # This is much harder for the model to ignore than appending to the main system prompt.
@@ -307,7 +306,7 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
     if reminder_lines and messages:
         # Prepend context directly into the last user message — DeepSeek ignores extra system messages
         # but reliably reads the content it needs to respond to.
-        no_name_rule = " | PROHIBIDO pedir nombre al cliente, JAMÁS preguntar nombre" if is_meta else ""
+        no_name_rule = " | Ya tenés el nombre, NO lo pidas de nuevo" if (is_meta and has_name) else ""
         reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + no_name_rule + " | REGLA ABSOLUTA: JAMÁS uses ¿ ni ¡ en tu respuesta, solo signos de cierre ? y !]\n"
         last_msg = messages[-1].copy()
         last_msg["content"] = reminder_prefix + last_msg["content"]
