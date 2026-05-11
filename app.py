@@ -1863,6 +1863,13 @@ def startup_diag():
 @app.get("/health/seed-inquiries")
 def seed_inquiries():
     """One-time backfill: scan all conversations and generate property_inquiry events."""
+    try:
+        return _do_seed_inquiries()
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+def _do_seed_inquiries():
     import random
     from datetime import datetime, timedelta
     conn = analytics._get_conn()
@@ -1902,10 +1909,14 @@ def seed_inquiries():
             for kw in keywords:
                 if kw in content_lower:
                     tracked_per_convo[key].add(title)
+                    try:
+                        hr = created_at.hour if hasattr(created_at, "hour") else int(str(created_at)[11:13])
+                    except Exception:
+                        hr = 12
+                    ts = str(created_at)
                     conn.execute(
                         "INSERT INTO events (event_type,phone_hash,channel,property,hour,created_at) VALUES (?,?,?,?,?,?)",
-                        ("property_inquiry", phone_hash, channel or "whatsapp", title,
-                         int(created_at[11:13]) if len(created_at) > 13 else 12, created_at),
+                        ("property_inquiry", phone_hash, channel or "whatsapp", title, hr, ts),
                     )
                     seeded += 1
                     break
