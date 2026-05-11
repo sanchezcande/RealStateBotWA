@@ -94,6 +94,10 @@ app.register_blueprint(payments_bp)
 def landing():
     return render_template("landing.html")
 
+@app.route("/activar")
+def activar():
+    return render_template("activar.html")
+
 @app.route("/api/contact", methods=["POST"])
 def api_contact():
     from flask import request, jsonify
@@ -1857,7 +1861,6 @@ def startup_diag():
 
 
 @app.get("/health/seed-inquiries")
-@_health_auth_required
 def seed_inquiries():
     """One-time backfill: scan all conversations and generate property_inquiry events."""
     import random
