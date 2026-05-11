@@ -258,6 +258,16 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
         for m in messages
     ]
 
+    # Strip [img:...] markers from history so GPT doesn't learn to output them as text
+    import re as _re
+    _img_marker_re = _re.compile(r'\[img:/uploads/chat_photos/[a-zA-Z0-9._-]+\]\n?')
+    cleaned_messages = []
+    for m in messages:
+        content = _img_marker_re.sub('', m["content"]).strip()
+        if content:
+            cleaned_messages.append({"role": m["role"], "content": content})
+    messages = cleaned_messages
+
     has_prior_exchange = any(m["role"] == "assistant" for m in messages)
     is_meta = lead and lead.get("channel") in ("facebook", "instagram")
 

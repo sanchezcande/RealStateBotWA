@@ -712,6 +712,8 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
     clean_response = visit_scheduler.process(identifier, clean_response)
     clean_response = clean_response.replace("¿", "").replace("¡", "")
+    # Strip [img:...] markers GPT may parrot from conversation history
+    clean_response = re.sub(r'\[img:/uploads/chat_photos/[a-zA-Z0-9._-]+\]\n?', '', clean_response)
     # Strip markdown-style separators (---) the model sometimes adds
     clean_response = re.sub(r'\n*-{3,}\n*', '\n\n', clean_response).strip()
 
@@ -944,6 +946,38 @@ def _reply(phone: str, user_text: str):
 # Key: recipient_id, Value: timestamp of last bot-sent message.
 _bot_sent_ts: dict[str, float] = {}
 _BOT_ECHO_WINDOW = 60  # seconds — echoes within this window after bot send are ignored
+
+_FB_POST_URL_RE = re.compile(
+    r'https?://(?:www\.)?facebook\.com/[^/\s]+/posts/(\d+)',
+)
+
+
+def _enrich_fb_post_url(text: str) -> str:
+    """If the message contains a Facebook post URL, fetch the post text via
+    Graph API and prepend it as context so GPT knows which property the user
+    is asking about.  Returns the (possibly enriched) text."""
+    if not PAGE_ACCESS_TOKEN:
+        return text
+    m = _FB_POST_URL_RE.search(text)
+    if not m:
+        return text
+    post_id = m.group(1)
+    try:
+        resp = requests.get(
+            f"https://graph.facebook.com/v19.0/{post_id}",
+            params={"fields": "message", "access_token": PAGE_ACCESS_TOKEN},
+            timeout=8,
+        )
+        if resp.ok:
+            post_msg = resp.json().get("message", "").strip()
+            if post_msg:
+                logger.info("Enriched FB post %s: %s", post_id, post_msg[:120])
+                return f"[El cliente escribió desde esta publicación de Facebook: \"{post_msg}\"]\n{text}"
+        else:
+            logger.warning("FB post fetch failed %s: %s %s", post_id, resp.status_code, resp.text[:200])
+    except Exception as e:
+        logger.warning("FB post fetch error for %s: %s", post_id, e)
+    return text
 
 # Temporary storage for user-sent images pending AI processing.
 # Key: phone/sender_id, Value: {"data": bytes, "mime": str}
@@ -1322,9 +1356,36 @@ def receive_meta_message():
                             continue
                         logger.info("Human agent replied to %s via %s — pausing AI", recipient_id, obj_type)
                         conversations.set_agent_takeover(recipient_id)
+                        # Save agent's message so it appears in dashboard
+                        agent_text = message.get("text", "")
+                        if agent_text:
+                            channel = "instagram" if obj_type == "instagram" else "facebook"
+                            conversations.add_message(recipient_id, "agent", agent_text, channel=channel)
+                    continue
+                # Handle sticker attachments (emojis like 👍 sent as images)
+                attachments = message.get("attachments", {}).get("data", []) if isinstance(message.get("attachments"), dict) else message.get("attachments", [])
+                sticker_id = message.get("sticker_id")
+                if not sticker_id:
+                    for att in (attachments or []):
+                        sticker_id = (att.get("payload") or {}).get("sticker_id")
+                        if sticker_id:
+                            break
+                if sticker_id and not message.get("text"):
+                    _STICKER_EMOJI = {
+                        369239263222822: "👍", 369239343222814: "👍",
+                        369239383222810: "👍",
+                    }
+                    emoji_text = _STICKER_EMOJI.get(sticker_id, "👍")
+                    mid_s = message.get("mid", "")
+                    if mid_s:
+                        ch = "facebook" if obj_type == "page" else "instagram"
+                        if not analytics.mark_message_processed(mid_s, channel=ch):
+                            continue
+                    channel = "facebook" if obj_type == "page" else "instagram"
+                    if sender_id:
+                        _enqueue_meta(sender_id, emoji_text, channel)
                     continue
                 # Handle image attachments (IG/FB)
-                attachments = message.get("attachments", {}).get("data", []) if isinstance(message.get("attachments"), dict) else message.get("attachments", [])
                 img_att = next((a for a in attachments if a.get("type") == "image"), None) if attachments else None
                 if img_att and sender_id:
                     img_url = img_att.get("payload", {}).get("url", "")
@@ -1359,6 +1420,8 @@ def receive_meta_message():
                         logger.info("Duplicate Meta message ignored: %s", mid)
                         continue
                 text = message["text"].strip()
+                # Detect Facebook post URLs and fetch post context
+                text = _enrich_fb_post_url(text)
                 # Detect Instagram story replies — download story image for vision
                 reply_to = message.get("reply_to", {})
                 story = reply_to.get("story", {})
