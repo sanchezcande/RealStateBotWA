@@ -1861,6 +1861,7 @@ def startup_diag():
 
 
 @app.get("/health/seed-inquiries")
+@_health_auth_required
 def seed_inquiries():
     """One-time backfill: scan all conversations and generate property_inquiry events."""
     try:
