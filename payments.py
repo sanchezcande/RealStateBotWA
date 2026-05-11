@@ -93,8 +93,9 @@ def _credit_and_notify(info: dict):
 # ===========================================================================
 
 def _load_coupons() -> dict:
-    """Parse COUPONS env var into {code: percent} dict."""
-    raw = os.environ.get("COUPONS", "")
+    """Parse COUPONS config into {code: percent} dict."""
+    from config import COUPONS
+    raw = COUPONS
     coupons = {}
     for entry in raw.split(","):
         entry = entry.strip()
@@ -380,9 +381,10 @@ def create_subscription_checkout(plan: str, period: str = "anual",
     sdk = _get_mp_sdk()
     base_url = os.environ.get("BASE_URL", "")
 
+    from config import PLAN_PREMIUM_ANUAL_ARS, PLAN_PREMIUM_TRIMESTRAL_ARS
     prices = {
-        "anual": int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "5900000")),
-        "trimestral": int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "1750000")),
+        "anual": PLAN_PREMIUM_ANUAL_ARS,
+        "trimestral": PLAN_PREMIUM_TRIMESTRAL_ARS,
     }
     plan_names = {
         "anual": "PropBot Premium — Anual",
@@ -468,9 +470,10 @@ def create_subscription_checkout(plan: str, period: str = "anual",
 @payments_bp.route("/subscription/prices")
 def api_subscription_prices():
     """Return current plan prices."""
+    from config import PLAN_PREMIUM_ANUAL_ARS, PLAN_PREMIUM_TRIMESTRAL_ARS
     return jsonify({
-        "anual": int(os.environ.get("PLAN_PREMIUM_ANUAL_ARS", "5900000")),
-        "trimestral": int(os.environ.get("PLAN_PREMIUM_TRIMESTRAL_ARS", "1750000")),
+        "anual": PLAN_PREMIUM_ANUAL_ARS,
+        "trimestral": PLAN_PREMIUM_TRIMESTRAL_ARS,
     })
 
 
