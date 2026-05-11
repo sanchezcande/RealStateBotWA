@@ -737,23 +737,21 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
             logger.warning("Safety net stripped entire response for %s — skipping send", identifier)
             return
 
-    # Track property inquiries: detect which listings the AI mentioned
+    # Track property inquiries: detect which listings user asked about or AI mentioned
     try:
-        _resp_lower = clean_response.lower()
+        _combined_lower = (user_text + " " + clean_response).lower()
         _tracked = set()
         for listing in sheets.get_listings():
             title = (listing.get("titulo") or "").strip()
             if not title or title in _tracked:
                 continue
             addr = (listing.get("direccion") or "").strip()
-            # Match by full title, street name, or address
             matched = False
-            if len(title) > 5 and title.lower() in _resp_lower:
+            if len(title) > 5 and title.lower() in _combined_lower:
                 matched = True
             elif addr and len(addr) > 4:
-                # Match street name (first word of address, e.g. "Lugones" from "Diagonal Lugones 116")
                 for part in addr.split():
-                    if len(part) > 4 and part.lower() in _resp_lower:
+                    if len(part) > 4 and part.lower() in _combined_lower:
                         matched = True
                         break
             if matched:
