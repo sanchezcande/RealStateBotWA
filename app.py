@@ -743,7 +743,20 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
         _tracked = set()
         for listing in sheets.get_listings():
             title = (listing.get("titulo") or "").strip()
-            if title and len(title) > 5 and title.lower() in _resp_lower and title not in _tracked:
+            if not title or title in _tracked:
+                continue
+            addr = (listing.get("direccion") or "").strip()
+            # Match by full title, street name, or address
+            matched = False
+            if len(title) > 5 and title.lower() in _resp_lower:
+                matched = True
+            elif addr and len(addr) > 4:
+                # Match street name (first word of address, e.g. "Lugones" from "Diagonal Lugones 116")
+                for part in addr.split():
+                    if len(part) > 4 and part.lower() in _resp_lower:
+                        matched = True
+                        break
+            if matched:
                 _tracked.add(title)
                 analytics.log_event("property_inquiry", identifier, channel=channel,
                                     property=title)
