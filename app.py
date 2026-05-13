@@ -1866,26 +1866,32 @@ def startup_diag():
 @app.get("/health/broken-images")
 def broken_images_diag():
     """Diagnose broken chat images."""
-    conn = analytics._get_conn()
-    rows = conn.execute(
-        "SELECT content FROM chat_messages WHERE content LIKE '%[img:%'"
-    ).fetchall()
-    import glob as _glob
-    chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
-    existing_files = set(os.path.basename(f) for f in _glob.glob(os.path.join(chat_dir, "*"))) if os.path.isdir(chat_dir) else set()
-    markers = []
-    for (content,) in rows:
-        for m in re.findall(r'\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]', content):
-            fname = os.path.basename(m)
-            markers.append({"path": m, "exists": fname in existing_files})
-    missing = [m for m in markers if not m["exists"]]
-    return jsonify({
-        "total_markers": len(markers),
-        "missing": len(missing),
-        "existing_files_on_disk": len(existing_files),
-        "chat_dir": chat_dir,
-        "samples_missing": missing[:10],
-    }), 200
+    try:
+        conn = analytics._get_conn()
+        rows = conn.execute(
+            "SELECT content FROM chat_messages WHERE content LIKE '%[img:%'"
+        ).fetchall()
+        chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
+        existing_files = set()
+        if os.path.isdir(chat_dir):
+            existing_files = set(os.listdir(chat_dir))
+        markers = []
+        for row in rows:
+            content = row[0]
+            for m in re.findall(r'\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]', content):
+                fname = m.split("/")[-1]
+                markers.append({"path": m, "exists": fname in existing_files})
+        missing = [m for m in markers if not m["exists"]]
+        return jsonify({
+            "total_markers": len(markers),
+            "missing": len(missing),
+            "existing_files_on_disk": len(existing_files),
+            "chat_dir": chat_dir,
+            "volume_mounted": os.path.ismount("/data"),
+            "samples_missing": missing[:10],
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.get("/health/seed-inquiries")
