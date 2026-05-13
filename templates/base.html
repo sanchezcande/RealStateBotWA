@@ -15,6 +15,8 @@
 </head>
 <body>
 <div class="layout">
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
   <!-- Sidebar -->
   <nav class="sidebar" id="sidebar">
     <div class="sidebar-header">
@@ -65,12 +67,27 @@
 
   <!-- Main content -->
   <main class="main-content">
-    <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">
+    <button class="menu-toggle" onclick="toggleSidebar()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     {% block content %}{% endblock %}
   </main>
 </div>
 {% block scripts %}{% endblock %}
+<script>
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+  document.body.style.overflow = document.getElementById('sidebar').classList.contains('open') ? 'hidden' : '';
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+document.querySelectorAll('.nav-links a').forEach(function(a){
+  a.addEventListener('click', closeSidebar);
+});
+</script>
 </body>
 </html>

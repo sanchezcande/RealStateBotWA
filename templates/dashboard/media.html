@@ -92,6 +92,20 @@
   .format-toggle button.active {
     background: var(--ink); color: var(--cream); border-color: var(--ink);
   }
+
+  @media(max-width:480px){
+    .media-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+    .upload-zone { padding: 24px 14px; }
+    .upload-zone svg { width: 36px; height: 36px; }
+    .gen-panel { padding: 16px; }
+    .gen-panel textarea { min-height: 48px; }
+    .result-video { max-width: 100%; }
+    .result-image { max-width: 100%; }
+    .job-card { padding: 12px; }
+    .tabs button { padding: 8px 12px; font-size: .65rem; }
+    .format-toggle { gap: 4px; }
+    .format-toggle button { padding: 6px 10px; font-size: .72rem; }
+  }
 </style>
 {% endblock %}
 

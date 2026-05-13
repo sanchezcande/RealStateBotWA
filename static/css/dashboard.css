@@ -945,33 +945,158 @@ tr:hover td{background:var(--gold-light)}
 /* ═════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═════════════════════════════════════════════════════════════════ */
+
+/* ── Sidebar overlay (mobile) ──────────────────────────────────── */
+.sidebar-overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(24,21,18,.5);z-index:99;
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+}
+.sidebar-overlay.open{display:block}
+
+/* ── Tablet & small desktop ( <=768px ) ──────────────────────── */
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%)}
   .sidebar.open{transform:translateX(0)}
   .main-content{margin-left:0;padding:16px}
   .menu-toggle{display:block}
-  .subpage-hero{align-items:flex-start}
+
+  /* Header & section headings */
+  .dash-header{flex-direction:column;align-items:flex-start}
+  .section-heading{flex-direction:column;align-items:flex-start;gap:8px}
+  .section-heading h2{font-size:1.2rem}
+  .section-heading p{max-width:100%}
+  .page-header{flex-direction:column;align-items:flex-start}
+
+  /* Subpage hero */
+  .subpage-hero{flex-direction:column;align-items:flex-start}
   .subpage-hero h1{font-size:1.65rem}
-  .subpage-actions{width:100%}
+  .subpage-actions{width:100%;flex-direction:column}
   .subpage-actions > *{width:100%}
   .month-switcher{width:100%;justify-content:space-between}
-  .dash-header{flex-direction:column;align-items:flex-start}
-  .section-heading h2{font-size:1.2rem}
-  .conv-layout{grid-template-columns:1fr;height:auto}
-  .conv-list{max-height:40vh}
-  .conv-detail{min-height:50vh}
+
+  /* KPIs */
   .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi{padding:18px}
+  .kpi .num{font-size:2rem}
+
+  /* Charts */
   .charts{grid-template-columns:1fr}
+
+  /* Viz layouts */
   .viz-layout,.viz-layout-tight{grid-template-columns:1fr}
   .viz-chart,.viz-chart-small{min-height:220px}
   .legend-row{grid-template-columns:28px 10px minmax(0,1fr)}
   .legend-row-compact{grid-template-columns:10px minmax(0,1fr)}
   .legend-value{grid-column:3;align-items:flex-start;text-align:left}
   .legend-row-compact .legend-value{grid-column:2}
+  .donut-wrap{width:120px;min-width:120px}
+
+  /* Conversations */
+  .conv-layout{grid-template-columns:1fr;height:auto}
+  .conv-list{max-height:40vh}
+  .conv-detail{min-height:50vh}
+  .conv-detail-header{flex-wrap:wrap;gap:8px}
+
+  /* Calendar */
+  .cal-day{min-height:72px;padding:6px}
+  .cal-day-num{font-size:.78rem}
+  .cal-visit{font-size:.56rem;padding:1px 4px}
+  .cal-header{font-size:.58rem;padding:6px 2px}
+
+  /* Tables */
+  th,td{padding:8px 8px;font-size:.78rem}
+
+  /* Emoji picker */
+  .emoji-picker{width:280px;right:-40px}
+
+  /* Login */
   .login-wrap{padding:16px}
   .login-shell{grid-template-columns:1fr}
   .login-brand,.login-box{padding:24px}
   .login-brand h1{max-width:100%;font-size:2rem}
+}
+
+/* ── Small mobile ( <=480px ) ────────────────────────────────── */
+@media(max-width:480px){
+  .main-content{padding:12px 10px}
+
+  /* Titles */
+  .dash-title{font-size:1.4rem}
+  .section-heading h2{font-size:1.05rem}
+  .subpage-hero h1{font-size:1.3rem}
+
+  /* KPIs: single column */
+  .kpis{grid-template-columns:1fr;gap:10px}
+  .kpi{padding:16px}
+  .kpi .num{font-size:1.8rem}
+  .kpi .label{font-size:.62rem}
+
+  /* Period buttons: fill row */
+  .period-btns{gap:4px}
+  .period-btns a{padding:8px 10px;font-size:.65rem;flex:1;text-align:center}
+
+  /* Cards */
+  .card{padding:16px}
+
+  /* Conversations */
+  .conv-list{max-height:35vh}
+  .conv-detail{min-height:45vh}
+  .conv-detail-header{padding:12px 14px}
+  .conv-detail-header h2{font-size:.95rem}
+  .conv-messages{padding:12px}
+  .conv-reply-bar{padding:10px 12px}
+  .msg-bubble{max-width:88%;font-size:.82rem;padding:8px 12px}
+  .conv-search input{padding:8px 10px;font-size:.82rem}
+  .conv-item{padding:10px 12px}
+  .conv-item-name{font-size:.82rem}
+
+  /* Calendar */
+  .cal-day{min-height:52px;padding:3px}
+  .cal-day-num{font-size:.7rem}
+  .cal-visit{font-size:.5rem;padding:1px 2px;margin-bottom:1px}
+  .cal-header{font-size:.55rem;padding:4px 1px;letter-spacing:.04em}
+
+  /* Emoji picker full-width */
+  .emoji-picker{width:calc(100vw - 24px);right:auto;left:50%;transform:translateX(-50%);max-width:320px}
+  .emoji-pick{width:40px;height:40px;font-size:22px}
+
+  /* Buttons */
+  .btn{padding:10px 14px;font-size:.75rem}
+  .actions{gap:8px}
+  .actions .btn{width:100%;text-align:center;justify-content:center}
+  .btn-sm{padding:6px 10px;font-size:.7rem}
+
+  /* Tables */
+  th{font-size:.58rem;padding:6px;letter-spacing:.06em}
+  td{font-size:.74rem;padding:7px 6px}
+
+  /* Login */
+  .login-brand{padding:20px}
+  .login-box{padding:20px 16px}
+  .login-brand h1{font-size:1.6rem}
+
+  /* Funnel */
+  .funnel-bar{font-size:1.2rem;padding:12px 14px}
+  .funnel-label{font-size:.65rem}
+
+  /* Panel head */
+  .panel-head{flex-direction:column;align-items:flex-start}
+
+  /* Pagination */
+  .pagination a,.pagination span{padding:6px 10px;font-size:.7rem}
+
+  /* Sidebar when open - full width */
+  .sidebar.open{width:100%}
+}
+
+/* ── Safe area for notched phones ────────────────────────────── */
+@supports(padding:env(safe-area-inset-bottom)){
+  @media(max-width:768px){
+    .sidebar{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+    .main-content{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+    .conv-reply-bar{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+  }
 }
 
 /* ═════════════════════════════════════════════════════════════════
