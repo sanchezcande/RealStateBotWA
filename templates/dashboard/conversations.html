@@ -210,9 +210,9 @@ function convViewer() {
       if (!text) return '';
       // Escape HTML first to prevent XSS
       const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      // Replace [img:url] markers with <img> tags
+      // Replace [img:url] markers with <img> tags (hide on error if file was lost)
       const withImgs = esc.replace(/\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]/g,
-        '<img src="$1" class="chat-photo" loading="lazy" onclick="window.open(this.src)">');
+        '<img src="$1" class="chat-photo" loading="lazy" onclick="window.open(this.src)" onerror="this.style.display=\'none\'">');
       // Convert newlines to <br>
       return withImgs.replace(/\n/g, '<br>');
     },
