@@ -1869,7 +1869,8 @@ def broken_images_diag():
     try:
         conn = analytics._get_conn()
         rows = conn.execute(
-            "SELECT content FROM chat_messages WHERE content LIKE '%[img:%'"
+            "SELECT content FROM chat_messages WHERE content LIKE ?",
+            ("%[img:%",)
         ).fetchall()
         chat_dir = os.path.join(MEDIA_UPLOAD_DIR, "chat_photos")
         existing_files = set()
@@ -1877,7 +1878,10 @@ def broken_images_diag():
             existing_files = set(os.listdir(chat_dir))
         markers = []
         for row in rows:
-            content = row[0]
+            try:
+                content = row[0]
+            except (IndexError, TypeError):
+                continue
             for m in re.findall(r'\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]', content):
                 fname = m.split("/")[-1]
                 markers.append({"path": m, "exists": fname in existing_files})
