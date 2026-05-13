@@ -74,7 +74,15 @@
   </main>
 </div>
 {% block scripts %}{% endblock %}
+<!-- Scroll-to-top FAB (mobile) -->
+<button class="scroll-top-fab" id="scrollTopFab" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
 <script>
+(function(){
+  var fab=document.getElementById('scrollTopFab');
+  if(fab){window.addEventListener('scroll',function(){fab.classList.toggle('visible',window.scrollY>300)},{passive:true})}
+})();
 function toggleSidebar(){
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebarOverlay').classList.toggle('open');

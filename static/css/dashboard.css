@@ -1090,6 +1090,28 @@ tr:hover td{background:var(--gold-light)}
   .sidebar.open{width:100%}
 }
 
+/* ── Scroll-to-top FAB (mobile) ──────────────────────────────── */
+.scroll-top-fab{
+  display:none;position:fixed;bottom:24px;right:18px;z-index:90;
+  width:44px;height:44px;border-radius:50%;border:none;
+  background:var(--ink);color:var(--cream);
+  box-shadow:0 4px 14px rgba(24,21,18,.25);
+  cursor:pointer;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .25s ease,transform .25s ease;
+  transform:translateY(12px);
+}
+.scroll-top-fab.visible{opacity:1;transform:translateY(0)}
+.scroll-top-fab:active{background:var(--gold);transform:scale(.92)}
+.scroll-top-fab svg{width:20px;height:20px}
+@media(max-width:768px){
+  .scroll-top-fab{display:flex}
+}
+@supports(padding:env(safe-area-inset-bottom)){
+  @media(max-width:768px){
+    .scroll-top-fab{bottom:calc(24px + env(safe-area-inset-bottom))}
+  }
+}
+
 /* ── Safe area for notched phones ────────────────────────────── */
 @supports(padding:env(safe-area-inset-bottom)){
   @media(max-width:768px){
