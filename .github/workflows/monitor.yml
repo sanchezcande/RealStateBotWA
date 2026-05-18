@@ -17,7 +17,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install requests pytest
+        run: pip install requests pytest python-dotenv
 
       - name: Run smoke tests
         env:
