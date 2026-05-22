@@ -97,23 +97,23 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/audit.json ]; then
-            python -c "
-import json, sys
-d = json.load(open('/tmp/audit.json'))
-n = d.get('conversations_audited', 0)
-avg = d.get('average_score', 0)
-errs = d.get('errors', [])
-print(f'Audited: {n} conversations')
-print(f'Average score: {avg}/10')
-print(f'Errors found: {len(errs)}')
-if errs:
-    print()
-    for e in errs:
-        print(f\"  [{e['type']}] {e.get('conversation','?')}: {e['detail']}\")
-    print()
-    print('Errors were auto-fixed and pushed. Review the commit.')
-    sys.exit(1)
-else:
-    print('All conversations look good!')
-"
+            python3 << 'PYEOF'
+          import json, sys
+          d = json.load(open("/tmp/audit.json"))
+          n = d.get("conversations_audited", 0)
+          avg = d.get("average_score", 0)
+          errs = d.get("errors", [])
+          print(f"Audited: {n} conversations")
+          print(f"Average score: {avg}/10")
+          print(f"Errors found: {len(errs)}")
+          if errs:
+              print()
+              for e in errs:
+                  print(f"  [{e['type']}] {e.get('conversation','?')}: {e['detail']}")
+              print()
+              print("Errors were auto-fixed and pushed. Review the commit.")
+              sys.exit(1)
+          else:
+              print("All conversations look good!")
+          PYEOF
           fi
