@@ -2085,6 +2085,10 @@ section{padding:clamp(72px,10vw,130px) 0}
   font-family:var(--sans);font-weight:600;
   font-size:clamp(1.6rem,2.8vw,2rem);
   color:var(--ink);
+  margin-bottom:.6rem;
+}
+.pb-faq-sub{
+  font-family:var(--sans);font-size:.95rem;color:var(--ink-3);
   margin-bottom:clamp(28px,4vw,48px);
 }
 .pb-faq-item{
@@ -2094,8 +2098,7 @@ section{padding:clamp(72px,10vw,130px) 0}
 .pb-faq-item:first-child{border-top:1px solid var(--line)}
 .pb-faq-q{
   padding:20px 0;
-  display:flex;justify-content:space-between;align-items:flex-start;
-  gap:20px;
+  cursor:pointer;
 }
 .pb-faq-q span{
   font-family:var(--sans);
@@ -2103,28 +2106,25 @@ section{padding:clamp(72px,10vw,130px) 0}
   font-size:.95rem;
   color:var(--ink);
   line-height:1.4;
-  flex:1;
+  transition:color .2s;
 }
-.pb-faq-toggle{
-  font-family:var(--sans);
-  font-size:1.2rem;
-  color:var(--ink-3);
-  transition:transform .3s ease, color .2s;
-  flex-shrink:0;
-  font-weight:300;
-  margin-top:2px;
-}
-.pb-faq-item:hover .pb-faq-toggle{color:var(--ink)}
-.pb-faq-item.active .pb-faq-toggle{transform:rotate(45deg);color:var(--gold)}
+.pb-faq-item:hover .pb-faq-q span{color:var(--gold)}
+.pb-faq-item.active .pb-faq-q span{color:var(--gold)}
+.pb-faq-toggle{display:none}
 .pb-faq-a{
-  padding:0 0 20px;
+  display:none;
   font-size:.9rem;
   color:var(--ink-2);
   line-height:1.7;
-  display:none;
+  padding-bottom:20px;
+  animation:faqFadeIn .25s ease;
 }
 .pb-faq-a strong{color:var(--ink);font-weight:600}
 .pb-faq-item.active .pb-faq-a{display:block}
+@keyframes faqFadeIn{
+  from{opacity:0;transform:translateY(-6px)}
+  to{opacity:1;transform:translateY(0)}
+}
 
 /* ═════════════════════════════════════════════════════════════════
    CONTACT — editorial closing spread
