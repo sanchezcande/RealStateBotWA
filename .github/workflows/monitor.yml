@@ -1,10 +1,16 @@
 name: Monitor Bot Health
 
-# Corre cada 1 hora automáticamente
+# Corre cada 1 hora (health) + audit diario a las 8AM UTC (11AM ART)
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 * * * *"      # health check every hour
+    - cron: "0 11 * * *"     # daily audit at 8AM ART (11 UTC)
   workflow_dispatch:
+    inputs:
+      run_audit:
+        description: "Run conversation audit"
+        type: boolean
+        default: false
 
 jobs:
   health-check:
@@ -26,10 +32,63 @@ jobs:
           DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
         run: |
           if [ -z "$BOT_URL" ]; then
-            echo "⚠️ BOT_URL secret not configured — skipping monitor"
+            echo "BOT_URL secret not configured — skipping monitor"
             exit 0
           fi
           pytest tests/test_smoke.py -v --tb=short
 
-      # Si falla, GitHub te manda email automáticamente
-      # (Settings > Notifications > Actions > check "Send notifications for failed workflows")
+  daily-audit:
+    runs-on: ubuntu-latest
+    # Only run on the 11 UTC schedule or manual trigger with audit flag
+    if: github.event.schedule == '0 11 * * *' || github.event.inputs.run_audit == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5.6.0
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Audit conversations
+        env:
+          BOT_URL: ${{ secrets.BOT_URL }}
+          DASHBOARD_TOKEN: ${{ secrets.DASHBOARD_TOKEN }}
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
+          DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
+          AUDIT_DAYS: "1"
+        run: |
+          if [ -z "$BOT_URL" ] || [ -z "$DEEPSEEK_API_KEY" ]; then
+            echo "Missing secrets — skipping audit"
+            exit 0
+          fi
+          # Run audit with human-readable output
+          python audit_conversations.py
+          # Run again in JSON mode for auto-fixer
+          python audit_conversations.py --json > /tmp/audit.json || true
+
+      - name: Auto-fix prompt if errors found
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          DEEPSEEK_BASE_URL: ${{ secrets.DEEPSEEK_BASE_URL }}
+          DEEPSEEK_MODEL: ${{ secrets.DEEPSEEK_MODEL }}
+          CI: "true"
+        run: |
+          if [ ! -f /tmp/audit.json ]; then
+            echo "No audit results — skipping fix"
+            exit 0
+          fi
+          ERRORS=$(python -c "import json; d=json.load(open('/tmp/audit.json')); print(len(d.get('errors',[])))")
+          if [ "$ERRORS" = "0" ]; then
+            echo "No errors found — nothing to fix"
+            exit 0
+          fi
+          git config user.name "PropBot Auditor"
+          git config user.email "noreply@propbot.cc"
+          python audit_fix.py /tmp/audit.json
