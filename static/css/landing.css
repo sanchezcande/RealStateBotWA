@@ -2087,10 +2087,19 @@ section{padding:clamp(72px,10vw,130px) 0}
 @media(min-width:800px){
   .pb-faq-layout{grid-template-columns:.38fr .62fr;gap:clamp(40px,6vw,100px)}
 }
+.pb-faq-left{text-align:left}
+.pb-faq-left .section-num{
+  font-family:var(--sans);font-size:.8rem;font-weight:500;
+  letter-spacing:.04em;text-transform:none;
+  color:var(--gold);
+}
 .pb-faq-left h2{
   font-family:var(--sans);font-weight:600;
   font-size:clamp(1.8rem,3.2vw,2.6rem);
   color:var(--ink);margin-top:.8rem;line-height:1.15;
+}
+@media(min-width:800px){
+  .pb-faq-left{position:sticky;top:120px;align-self:start}
 }
 .pb-faq-sub{
   margin-top:1.2rem;
