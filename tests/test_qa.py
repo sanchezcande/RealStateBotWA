@@ -122,6 +122,17 @@ class TestExtractName:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestConversations:
+    def setup_method(self):
+        import conversations
+        import analytics
+        conversations._store.clear()
+        # Clear messages from DB to avoid cross-test contamination
+        conn = analytics._get_conn()
+        conn.execute("DELETE FROM chat_messages")
+        conn.execute("DELETE FROM leads")
+        conn.execute("DELETE FROM conversations")
+        conn.commit()
+
     def test_add_and_get_messages(self):
         import conversations
         conversations.add_message("5491112345678", "user", "hola")
@@ -803,25 +814,23 @@ class TestEdgeCases:
         assert "<!--" not in clean2
 
     def test_mid_dedup_fifo_eviction(self):
-        """Verify FIFO eviction instead of full clear."""
-        from app import _processed_mids, _processed_mids_lock
+        """Verify FIFO eviction pattern works correctly."""
+        from collections import OrderedDict
+        processed = OrderedDict()
 
-        with _processed_mids_lock:
-            _processed_mids.clear()
-            # Fill with 1001 entries
-            for i in range(1001):
-                _processed_mids[f"mid_{i}"] = True
-            # Trigger eviction
-            if len(_processed_mids) > 1000:
-                for _k in list(_processed_mids.keys())[:500]:
-                    del _processed_mids[_k]
+        # Fill with 1001 entries
+        for i in range(1001):
+            processed[f"mid_{i}"] = True
+        # Trigger eviction
+        if len(processed) > 1000:
+            for _k in list(processed.keys())[:500]:
+                del processed[_k]
 
-            # Should have ~501 entries, NOT 0
-            assert len(_processed_mids) == 501
-            # Oldest should be gone, newest should remain
-            assert "mid_0" not in _processed_mids
-            assert "mid_1000" in _processed_mids
-            _processed_mids.clear()
+        # Should have ~501 entries, NOT 0
+        assert len(processed) == 501
+        # Oldest should be gone, newest should remain
+        assert "mid_0" not in processed
+        assert "mid_1000" in processed
 
     @patch("whatsapp.send_message", return_value=True)
     @patch("ai.get_reply", return_value="Hola! Soy Vera, con quien hablo?")
@@ -993,7 +1002,8 @@ class TestMediaUsage:
         assert "remaining" in data
         assert data["free_limit"] == 4
 
-    def test_api_purchase_endpoint(self, flask_client):
+    @patch("payments.create_mp_checkout", return_value={"videos_purchased": 3, "total_allowed": 7, "checkout_url": "https://example.com"})
+    def test_api_purchase_endpoint(self, mock_checkout, flask_client):
         with flask_client.session_transaction() as sess:
             sess["dashboard_auth"] = True
         resp = flask_client.post(

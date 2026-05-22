@@ -70,14 +70,14 @@ def get(phone: str) -> dict:
 
 
 def add_message(phone: str, role: str, content: str, channel: str = "whatsapp"):
-    # Persist to DB first so data is safe even if worker crashes
-    analytics.save_message(phone, role, content, channel=channel)
     with _lock:
         _ensure_loaded(phone)
         msgs = _store[phone]["messages"]
         msgs.append({"role": role, "content": content})
         if len(msgs) > MAX_HISTORY:
             _store[phone]["messages"] = msgs[-MAX_HISTORY:]
+    # Persist to DB after in-memory update so _ensure_loaded doesn't double-load
+    analytics.save_message(phone, role, content, channel=channel)
 
 
 def update_lead(phone: str, **kwargs):

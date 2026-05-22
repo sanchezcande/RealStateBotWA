@@ -301,12 +301,11 @@ def process(phone: str, ai_text: str) -> str:
         )
 
         if event_id is None:
-            logger.error("Failed to create calendar event for %s / %s %s %s — visit NOT tracked", phone, property_title, date_str, time_str)
+            logger.error("Failed to create calendar event for %s / %s %s %s — tracking visit without calendar", phone, property_title, date_str, time_str)
             _notify_visit_failed(property_title, address, client_name, date_str, time_str, phone=phone)
-            continue
 
         scheduled_visits.append(visit_key)
-        visit_events[visit_key] = event_id
+        visit_events[visit_key] = event_id or ""
         conversations.update_lead(
             phone,
             visit_scheduled=True,
