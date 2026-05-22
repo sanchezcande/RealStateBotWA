@@ -244,8 +244,6 @@ def main():
             "average_score": round(avg, 1),
             "errors": all_errors,
         }, ensure_ascii=False))
-        if avg < 6 and scores:
-            sys.exit(1)
         return
 
     # Exit with error if average score is below threshold

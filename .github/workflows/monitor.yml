@@ -68,10 +68,10 @@ jobs:
             echo "Missing secrets — skipping audit"
             exit 0
           fi
-          # Run audit with human-readable output
-          python audit_conversations.py
-          # Run again in JSON mode for auto-fixer
-          python audit_conversations.py --json > /tmp/audit.json || true
+          # Run audit in JSON mode for auto-fixer + readable output
+          python audit_conversations.py --json > /tmp/audit.json
+          # Print readable version
+          python audit_conversations.py || true
 
       - name: Auto-fix prompt if errors found
         env:
@@ -92,3 +92,28 @@ jobs:
           git config user.name "PropBot Auditor"
           git config user.email "noreply@propbot.cc"
           python audit_fix.py /tmp/audit.json
+
+      - name: Report summary (fails if errors found — triggers email)
+        if: always()
+        run: |
+          if [ -f /tmp/audit.json ]; then
+            python -c "
+import json, sys
+d = json.load(open('/tmp/audit.json'))
+n = d.get('conversations_audited', 0)
+avg = d.get('average_score', 0)
+errs = d.get('errors', [])
+print(f'Audited: {n} conversations')
+print(f'Average score: {avg}/10')
+print(f'Errors found: {len(errs)}')
+if errs:
+    print()
+    for e in errs:
+        print(f\"  [{e['type']}] {e.get('conversation','?')}: {e['detail']}\")
+    print()
+    print('Errors were auto-fixed and pushed. Review the commit.')
+    sys.exit(1)
+else:
+    print('All conversations look good!')
+"
+          fi
