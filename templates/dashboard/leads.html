@@ -70,9 +70,9 @@
               <td x-text="l.budget || '—'"></td>
               <td x-text="l.timeline || '—'"></td>
               <td>
-                <span class="badge"
-                  :class="l.score === 'hot' ? 'badge-hot' : l.score === 'warm' ? 'badge-warm' : 'badge-cold'"
-                  x-text="l.score === 'hot' ? '🔥 Caliente' : l.score === 'warm' ? '🟡 Tibio' : '❄️ Frío'"></span>
+                <span class="score-pill"
+                  :class="l.score === 'hot' ? 'score-hot' : l.score === 'warm' ? 'score-warm' : 'score-cold'"
+                  x-text="l.score === 'hot' ? 'Caliente' : l.score === 'warm' ? 'Tibio' : 'Frío'"></span>
               </td>
               <td><span class="badge badge-gray" x-text="l.channel"></span></td>
               <td><span class="table-metric" x-text="l.message_count"></span></td>

@@ -22,7 +22,7 @@
     <div class="sidebar-header">
       <div style="display:flex;align-items:center;gap:10px">
         <img class="logo-icon" src="/static/img/propbot-logo-transparent.png" alt="PropBot" width="44" height="44">
-        <h1 class="logo"><span style="color:#F7F3EC">Prop</span><span style="color:#9A6B2F;font-style:italic">Bot</span></h1>
+        <h1 class="logo"><span style="color:#F8F6F1">Prop</span><span style="color:#B08D57">Bot</span></h1>
       </div>
       {% if branch %}<span class="branch-badge">{{ branch }}</span>{% endif %}
       <span class="plan-badge plan-{{ plan }}">{{ plan | upper }}</span>
@@ -30,7 +30,7 @@
     <div style="padding:12px 22px 0;display:flex;align-items:center;gap:10px">
       <img src="/static/img/Avatar.png" alt="Vera" width="36" height="36" style="border-radius:50%;object-fit:cover;border:2px solid rgba(154,107,47,.4)">
       <div>
-        <div style="font-size:.78rem;font-weight:500;color:#F7F3EC;font-family:'Fraunces',serif">Vera</div>
+        <div style="font-size:.78rem;font-weight:500;color:#F8F6F1;font-family:'Playfair Display',serif">Vera</div>
         <div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:rgba(247,243,236,.4);text-transform:uppercase;letter-spacing:.1em">Asistente IA activa</div>
       </div>
     </div>
@@ -58,9 +58,9 @@
         <a href="/dashboard/logout" class="logout-link" data-i18n="logout">Cerrar sesión</a>
         <button id="langToggle" class="lang-toggle" onclick="toggleLang()">EN</button>
       </div>
-      <a href="https://opengatehub.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(247,243,236,.06);text-decoration:none;color:rgba(247,243,236,.3);font-family:'JetBrains Mono',monospace;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      <a href="https://opengatehub.com" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:5px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(247,243,236,.06);text-decoration:none;color:rgba(247,243,236,.3);font-family:'Space Grotesk','JetBrains Mono',sans-serif;font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         <span>Desarrollado por</span>
-        <img src="/static/img/opengatehub-footer.png" alt="OpenGateHub" height="18" style="margin-top:-2px">
+        <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:11px;letter-spacing:-0.04em;text-transform:none;color:rgba(247,243,236,.5)">open<span style="color:#CC5A50">gate</span>hub</span>
       </a>
     </div>
   </nav>

@@ -35,7 +35,6 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
 </head>
 <body>
 <div class="pb-page-content">
-<!-- ═══ TOP BLEED — photo behind nav that fades out ═══════════════════ -->
 <div class="pb-top-bleed" aria-hidden="true"></div>
 
 <!-- ═══ HEADER ═══════════════════════════════════════════════════════ -->
@@ -51,24 +50,15 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
     <a href="#faq" data-i18n-l="nav_faq" data-i18n-mode="html">FAQ</a>
   </nav>
   <div style="display:flex;align-items:center;gap:10px">
-    <button id="landingLangToggle" onclick="setLandingLang(getLandingLang()==='es'?'en':'es')" style="background:transparent;border:1px solid rgba(247,243,236,.25);color:var(--cream);font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:5px 10px;cursor:pointer;border-radius:4px">EN</button>
+    <button id="landingLangToggle" onclick="setLandingLang(getLandingLang()==='es'?'en':'es')" style="background:transparent;border:1px solid var(--line);color:var(--ink-3);font-family:var(--mono);font-size:9px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;padding:6px 12px;cursor:pointer;border-radius:0;transition:all .3s ease">EN</button>
     <a href="#contacto" class="pb-header-cta">
       <span data-i18n-l="nav_cta">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
     </a>
   </div>
 </header>
 
-<!-- ═══ HERO — MAGAZINE COVER ═══════════════════════════════════════ -->
+<!-- ═══ HERO ═══════════════════════════════════════════════════════ -->
 <section class="pb-hero">
-  <div class="pb-hero-top">
-    <div class="pb-hero-issue">
-      <strong>PropBot Nº 01</strong> &nbsp;·&nbsp; <span data-i18n-l="hero_issue">The new way to sell real estate</span>
-    </div>
-    <div class="pb-hero-issue">
-      <span class="italic-accent">2026 Edition</span>
-    </div>
-  </div>
-
   <div class="pb-hero-main">
     <div class="pb-hero-text anim-card">
       <span class="eyebrow" data-i18n-l="hero_eyebrow">Inteligencia artificial · Inmobiliario</span>
@@ -141,7 +131,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
           <div class="pb-mockup-typing"><span></span><span></span><span></span></div>
         </div>
       </div>
-      <div class="pb-hero-cover-tag" data-i18n-l="hero_cover_tag">Captura — conversación real del bot</div>
+      <div class="pb-hero-cover-tag" data-i18n-l="hero_cover_tag">Conversación real del bot</div>
     </div>
   </div>
 </section>
@@ -179,7 +169,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
     </figure>
   </div>
   <div class="pb-bigstats-cta">
-    <a href="#contacto" class="btn-primary"><span data-i18n-l="bigstats_cta">Quiero estos números en mi inmobiliaria</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="bigstats_cta">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
   </div>
 </section>
 
@@ -205,103 +195,15 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   </div>
 </div>
 
-<!-- ═══ PHOTO STRIP — editorial showcase ═══════════════════════════ -->
-<section class="pb-photostrip">
-  <div class="pb-photostrip-label">
-    <span class="eyebrow" data-i18n-l="photostrip_eyebrow">Cualquier propiedad, cualquier canal</span>
-    <p data-i18n-l="photostrip_desc" data-i18n-mode="html">Departamentos en el centro, casas de campo, locales comerciales — PropBot responde <em>por todas</em>.</p>
-  </div>
-  <div class="pb-photostrip-grid">
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/interior-1.jpg" alt="Modern loft">
-      <figcaption>Loft · Tokyo</figcaption>
-    </figure>
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/interior-2.jpg" alt="Elegant kitchen">
-      <figcaption>Villa · Bali</figcaption>
-    </figure>
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/house-exterior.jpg" alt="Casa moderna">
-      <figcaption>Casa · Córdoba</figcaption>
-    </figure>
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/cityscape.jpg" alt="Modern facade">
-      <figcaption>Departamento · Microcentro</figcaption>
-    </figure>
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/skyline.jpg" alt="Skyline">
-      <figcaption>Tower · Buenos Aires</figcaption>
-    </figure>
-    <figure class="pb-photostrip-item anim-card">
-      <img src="/static/img/editorial/chair.jpg" alt="Minimalist interior">
-      <figcaption>Beach House · Australia</figcaption>
-    </figure>
-  </div>
-</section>
 
-<!-- ═══ I — COSTO DE NO RESPONDER ═══════════════════════════════════ -->
-<section class="pb-cost">
-  <div class="section-header">
-    <div class="section-header-row">
-      <div class="section-header-title">
-        <span class="section-num" data-i18n-l="cost_section_num">I · El diagnóstico</span>
-        <h2 style="margin-top:1rem" data-i18n-l="cost_h2" data-i18n-mode="html">Cada hora de silencio le cuesta <em>ventas</em> a tu inmobiliaria.</h2>
-        <p class="section-sub" data-i18n-l="cost_sub">Los clientes no esperan. Si no respondés en minutos, ya están hablando con la competencia.</p>
-      </div>
-    </div>
-  </div>
 
-  <div class="pb-cost-grid">
-    <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label" data-i18n-l="cost_card1_label">Tasa de elección</div>
-      <div class="pb-cost-stat">78<span style="font-size:.5em;vertical-align:top">%</span></div>
-      <h3 class="pb-cost-head" data-i18n-l="cost_card1_head">Eligen a quien responde primero</h3>
-      <p class="pb-cost-body" data-i18n-l="cost_card1_body">De los compradores y locatarios que contactan por chat, casi 8 de 10 terminan eligiendo la inmobiliaria que respondió más rápido.</p>
-    </div>
-    <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label" data-i18n-l="cost_card2_label">Paciencia promedio</div>
-      <div class="pb-cost-stat">8<span style="font-size:.4em;margin-left:.1em">min</span></div>
-      <h3 class="pb-cost-head" data-i18n-l="cost_card2_head">Es lo que esperan antes de irse</h3>
-      <p class="pb-cost-body" data-i18n-l="cost_card2_body">Después de 8 minutos sin respuesta, la mayoría abandona la conversación y busca otra opción. Para siempre.</p>
-    </div>
-    <div class="pb-cost-card anim-card">
-      <div class="pb-cost-label" data-i18n-l="cost_card3_label">Tiempo perdido</div>
-      <div class="pb-cost-stat">3<span style="font-size:.4em;margin-left:.1em">hs</span></div>
-      <h3 class="pb-cost-head" data-i18n-l="cost_card3_head">Por día en respuestas repetidas</h3>
-      <p class="pb-cost-body" data-i18n-l="cost_card3_body">Tu equipo pasa horas respondiendo "tiene cochera", "cuántos ambientes", "cuál es el precio". PropBot lo hace en 5 segundos.</p>
-    </div>
-  </div>
-
-  <div class="pb-cost-banner">
-    <div class="pb-cost-banner-inner anim-card">
-      <div>
-        <h3 data-i18n-l="cost_banner_h3" data-i18n-mode="html">PropBot responde en <em>menos de 5 segundos</em>. Siempre.</h3>
-        <p data-i18n-l="cost_banner_p">A las 3 AM del domingo, en feriados, mientras tu equipo está en una visita.</p>
-      </div>
-      <a href="#contacto" class="btn-primary" style="background:var(--gold);border-color:var(--gold)">
-        <span data-i18n-l="cost_banner_cta">Quiero el bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
-      </a>
-    </div>
-  </div>
-</section>
-
-<!-- CTA Band -->
-<div class="pb-cta-band">
-  <h3 data-i18n-l="cta1_h3" data-i18n-mode="html">No pierdas más clientes por <em>no responder a tiempo</em></h3>
-  <p data-i18n-l="cta1_p">En 15 minutos te mostramos cómo PropBot atiende por vos. Sin compromiso.</p>
-  <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta1_btn">Velo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
-    <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20saber%20más%20sobre%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
-    <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
-  </div>
-</div>
 
 <!-- ═══ II — DEMO CONVERSACIONES ════════════════════════════════════ -->
 <section class="pb-demo">
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="demo_section_num">II · Demostración</span>
+        <span class="section-num" data-i18n-l="demo_section_num">I · Demostración</span>
         <h2 style="margin-top:1rem" data-i18n-l="demo_h2" data-i18n-mode="html">Así responde el bot a <em>tus clientes</em></h2>
         <p class="section-sub" data-i18n-l="demo_sub">Seleccioná la plataforma y mirá cómo se ve una conversación real.</p>
       </div>
@@ -342,7 +244,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="steps_section_num">III · El proceso</span>
+        <span class="section-num" data-i18n-l="steps_section_num">II · El proceso</span>
         <h2 style="margin-top:1rem" data-i18n-l="steps_h2" data-i18n-mode="html">De tu planilla a tus clientes <em>en 4 pasos</em></h2>
         <p class="section-sub" data-i18n-l="steps_sub">Sin código, sin complicaciones. Solo conectás y el bot empieza a trabajar.</p>
       </div>
@@ -373,14 +275,6 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   </div>
 </section>
 
-<!-- CTA Band -->
-<div class="pb-cta-band">
-  <h3 data-i18n-l="cta2_h3" data-i18n-mode="html">3 pasos. 48 horas. <em>Tu bot está listo.</em></h3>
-  <p data-i18n-l="cta2_p">Conectás tu planilla, elegís el tono y listo. Nosotros hacemos el resto.</p>
-  <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta2_btn">Empezar ahora</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
-  </div>
-</div>
 
 <!-- ═══ EDITORIAL SPREAD — product screenshot + pull quote ══════════ -->
 <section class="pb-spread">
@@ -407,12 +301,12 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
             <svg class="pb-dash-mock-chart" viewBox="0 0 300 90" preserveAspectRatio="none">
               <defs>
                 <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#9A6B2F" stop-opacity=".35"/>
-                  <stop offset="100%" stop-color="#9A6B2F" stop-opacity="0"/>
+                  <stop offset="0%" stop-color="#B08D57" stop-opacity=".35"/>
+                  <stop offset="100%" stop-color="#B08D57" stop-opacity="0"/>
                 </linearGradient>
               </defs>
               <path d="M0,70 L30,62 L60,68 L90,48 L120,52 L150,38 L180,42 L210,28 L240,32 L270,18 L300,12 L300,90 L0,90 Z" fill="url(#chartGrad)"/>
-              <path d="M0,70 L30,62 L60,68 L90,48 L120,52 L150,38 L180,42 L210,28 L240,32 L270,18 L300,12" fill="none" stroke="#9A6B2F" stroke-width="1.5"/>
+              <path d="M0,70 L30,62 L60,68 L90,48 L120,52 L150,38 L180,42 L210,28 L240,32 L270,18 L300,12" fill="none" stroke="#B08D57" stroke-width="1.5"/>
             </svg>
             <div class="pb-dash-mock-row">
               <div class="pb-dash-mock-mini"><span data-i18n-l="dash_mock_mini1">Leads calificados</span><strong>89</strong></div>
@@ -443,7 +337,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="sheet_section_num">IV · El archivo</span>
+        <span class="section-num" data-i18n-l="sheet_section_num">III · El archivo</span>
         <h2 style="margin-top:1rem" data-i18n-l="sheet_h2" data-i18n-mode="html">Tu plantilla, <em>lista para completar</em></h2>
         <p class="section-sub" data-i18n-l="sheet_sub">Te damos la plantilla con todas las columnas armadas. Solo la completás con tus propiedades y agregás el link de Drive con las fotos de cada una.</p>
       </div>
@@ -453,7 +347,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   <div class="pb-sheet-table">
     <div class="pb-sheet-frame anim-card">
       <div class="pb-sheet-header">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="#9A6B2F"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/></svg>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="#B08D57"><path d="M19 11V9h-6V3H9v6H3v2h6v6h4v-6h6z"/></svg>
         <span data-i18n-l="sheet_header">Propiedades_inmobiliaria.xlsx — Hoja 1</span>
       </div>
       <div style="overflow-x:auto">
@@ -490,7 +384,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="feat_section_num">V · Funcionalidades</span>
+        <span class="section-num" data-i18n-l="feat_section_num">IV · Funcionalidades</span>
         <h2 style="margin-top:1rem" data-i18n-l="feat_h2" data-i18n-mode="html">Todo lo que el bot <em>hace por vos</em></h2>
         <p class="section-sub" data-i18n-l="feat_sub">Diseñado específicamente para el negocio inmobiliario.</p>
       </div>
@@ -608,138 +502,21 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   <h3 data-i18n-l="cta3_h3" data-i18n-mode="html">Todo esto funcionando <em>en 48 horas</em></h3>
   <p data-i18n-l="cta3_p">Agendá una demo y mirá el bot respondiendo con tus propiedades reales.</p>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta3_btn">Agendar demo</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta3_btn">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
     <a href="https://wa.me/5491123485638?text=Hola!%20Quiero%20una%20demo%20de%20PropBot" target="_blank" rel="noopener noreferrer" class="btn-secondary"><i class="fa-brands fa-whatsapp"></i> WhatsApp</a>
     <a href="mailto:candelaria@propbot.cc" class="btn-secondary"><i class="fa-solid fa-envelope"></i> Email</a>
   </div>
 </div>
 
-<!-- ═══ VI — MOTOR DE BÚSQUEDA ══════════════════════════════════════ -->
-<section class="pb-search">
-  <div class="section-header">
-    <div class="section-header-row">
-      <div class="section-header-title">
-        <span class="section-num" data-i18n-l="search_section_num">VI · Lenguaje natural</span>
-        <h2 style="margin-top:1rem" data-i18n-l="search_h2" data-i18n-mode="html">El bot entiende <em>cómo habla la gente</em></h2>
-        <p class="section-sub" data-i18n-l="search_sub">No necesita comandos exactos. Interpreta intenciones, filtros, presupuesto y ubicación en tiempo real.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="pb-search-grid">
-    <div class="pb-search-card anim-card">
-      <div class="pb-search-query">busco depto 2 amb con balcón en alquiler en el centro</div>
-      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
-      <div class="pb-search-filters">
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: alquiler</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: departamento</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> ambientes: 2</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> balcon: sí</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> barrio: Centro</span>
-      </div>
-    </div>
-    <div class="pb-search-card anim-card">
-      <div class="pb-search-query">quiero comprar casa con pileta, máximo 200 mil dólares</div>
-      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
-      <div class="pb-search-filters">
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: venta</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: casa</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> pileta: sí</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> precio_usd: ≤ 200000</span>
-      </div>
-    </div>
-    <div class="pb-search-card anim-card">
-      <div class="pb-search-query">local comercial en zona business para alquilar</div>
-      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
-      <div class="pb-search-filters">
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_operacion: alquiler</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> tipo_propiedad: local</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> barrio: Business District</span>
-      </div>
-    </div>
-    <div class="pb-search-card anim-card">
-      <div class="pb-search-query">3 dormitorios, suite, cochera, apto crédito</div>
-      <div class="pb-search-label" data-i18n-l="search_label">Filtros aplicados automáticamente</div>
-      <div class="pb-search-filters">
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> dormitorios: 3</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> suite: sí</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> cochera: sí</span>
-        <span class="pb-search-filter"><i class="fa-solid fa-circle-check"></i> apto_credito: sí</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ VII — DASHBOARD PREVIEW ═════════════════════════════════════ -->
-<section class="pb-dashboard">
-  <div class="section-header">
-    <div class="section-header-row">
-      <div class="section-header-title">
-        <span class="section-num" data-i18n-l="dashboard_section_num">VII · Panel de control</span>
-        <h2 style="margin-top:1rem" data-i18n-l="dashboard_h2" data-i18n-mode="html">Todo lo que pasa con tus leads, <em>en un solo lugar</em></h2>
-        <p class="section-sub" data-i18n-l="dashboard_sub">No es solo un bot. Es un sistema completo para que tu equipo sepa qué está pasando sin preguntar.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="pb-dashboard-grid">
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">1</div>
-      <h3 data-i18n-l="dash1_h3">Métricas en tiempo real</h3>
-      <p data-i18n-l="dash1_p">Consultas por día, horarios pico, propiedades más buscadas, conversión consulta → visita.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">2</div>
-      <h3 data-i18n-l="dash2_h3">Historial de conversaciones</h3>
-      <p data-i18n-l="dash2_p">Leé cada conversación completa, filtrá por canal o estado. Respondé directo desde el panel.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">3</div>
-      <h3 data-i18n-l="dash3_h3">Base de leads calificados</h3>
-      <p data-i18n-l="dash3_p">Nombre, presupuesto, operación, timeline, canal. Ordenable, filtrable, exportable a CSV.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">4</div>
-      <h3 data-i18n-l="dash4_h3">Calendario de visitas</h3>
-      <p data-i18n-l="dash4_p">Vista con todas las visitas programadas. Sincronizado con Google Calendar.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">5</div>
-      <h3 data-i18n-l="dash5_h3">Media Studio con IA</h3>
-      <p data-i18n-l="dash5_p">Generá videos tour e imágenes de marketing para tus propiedades directamente desde el panel.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">6</div>
-      <h3 data-i18n-l="dash6_h3">Reportes exportables</h3>
-      <p data-i18n-l="dash6_p">Exportá leads y métricas en CSV. Imprimí reportes en PDF para reuniones de equipo.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">7</div>
-      <h3 data-i18n-l="dash7_h3">Follow-up automático</h3>
-      <p data-i18n-l="dash7_p">Si un lead no responde en 3 días, el bot le escribe automáticamente con un mensaje personalizado.</p>
-    </div>
-    <div class="pb-dashboard-card anim-card">
-      <div class="num">8</div>
-      <h3 data-i18n-l="dash8_h3">CRM Tokko integrado</h3>
-      <p data-i18n-l="dash8_p">Leads y visitas se sincronizan automáticamente con Tokko. También soporta webhook para otros CRMs.</p>
-    </div>
-  </div>
-
-  <div class="pb-dashboard-cta anim-card">
-    <a href="#contacto" class="btn-primary">
-      <span data-i18n-l="dashboard_cta">Quiero verlo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
-    </a>
-  </div>
-</section>
 
 <!-- ═══ VIII — TESTIMONIOS ═══════════════════════════════════════════ -->
 <section id="testimonios" class="pb-testimonials">
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="test_section_num">VIII · Testimonios</span>
-        <h2 style="margin-top:1rem" data-i18n-l="test_h2" data-i18n-mode="html">Inmobiliarias que ya venden más <em>con PropBot</em></h2>
-        <p class="section-sub" data-i18n-l="test_sub">No te lo contamos nosotros. Te lo cuentan ellos.</p>
+        <span class="section-num" data-i18n-l="test_section_num">V · Caso de éxito</span>
+        <h2 style="margin-top:1rem" data-i18n-l="test_h2" data-i18n-mode="html">Esquel Propiedades ya vende más <em>con PropBot</em></h2>
+        <p class="section-sub" data-i18n-l="test_sub">En producción desde febrero 2026.</p>
       </div>
     </div>
   </div>
@@ -754,7 +531,7 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
       <div class="pb-testimonial-author">
         <img src="/static/img/esquel-propiedades-logo.png" alt="Esquel Propiedades" style="height:36px;width:auto;margin-right:12px;border-radius:6px">
         <span class="pb-testimonial-name">Esquel Propiedades</span>
-        <span class="pb-testimonial-role" data-i18n-l="test_role">Inmobiliaria, Esquel — Chubut</span>
+        <span class="pb-testimonial-role" data-i18n-l="test_role">Inmobiliaria, Esquel — Chubut · Cliente desde feb. 2026</span>
       </div>
     </article>
 
@@ -765,63 +542,14 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
 <div class="pb-cta-band">
   <h3 data-i18n-l="cta4_h3" data-i18n-mode="html">Si ya funciona para inmobiliarias reales, <em>imaginate en la tuya</em></h3>
   <div class="pb-cta-row">
-    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta4_btn">Quiero verlo en acción</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
+    <a href="#contacto" class="btn-primary"><span data-i18n-l="cta4_btn">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i></a>
   </div>
 </div>
-
-<!-- ═══ IX — COMPARACIÓN ════════════════════════════════════════════ -->
-<section class="pb-compare">
-  <div class="section-header">
-    <div class="section-header-row">
-      <div class="section-header-title">
-        <span class="section-num" data-i18n-l="compare_section_num">IX · La comparación</span>
-        <h2 style="margin-top:1rem" data-i18n-l="compare_h2" data-i18n-mode="html">PropBot vs. contratar <em>a alguien para redes</em></h2>
-        <p class="section-sub" data-i18n-l="compare_sub">Mirá la diferencia real antes de decidir.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="pb-compare-wrap">
-    <div class="pb-compare-table anim-card">
-      <div class="pb-compare-row head">
-        <div data-i18n-l="compare_col1">Característica</div>
-        <div class="off" data-i18n-l="compare_col2">Sin bot · Asesor redes</div>
-        <div data-i18n-l="compare_col3">PropBot · Automatizado</div>
-      </div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r1">Horario de atención</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r1_bad">8hs × 5 días</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r1_good">24/7 · 365 días</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r2">Tiempo de 1ª respuesta</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r2_bad">15–60 minutos</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r2_good">&lt; 5 segundos</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r3">Canales cubiertos</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r3_bad">1 (difícil cubrir 3)</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r3_good">WhatsApp + IG + FB</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r4">Tiempo libre del equipo</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r4_bad">0 — todos al chat</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r4_good">3+ horas/día recuperadas</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r5">Feriados y fines de semana</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r5_bad">Sin cobertura</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r5_good">Funciona igual</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r6">Escala a humano</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r6_bad">Siempre manual</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r6_good">Automático con contexto</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r7">Vacaciones / bajas</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r7_bad">Para todo</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r7_good">No aplica</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r8">Agendado de visitas</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r8_bad">Manual, ida y vuelta</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r8_good">Auto + Calendar + recordatorio</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r9">Leads calificados</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r9_bad">Depende de quién atienda</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r9_good">Auto + alerta WhatsApp</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r10">Follow-up a leads fríos</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r10_bad">Nadie se acuerda</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r10_good">Auto a los 3 días, personalizado</div></div>
-      <div class="pb-compare-row"><div data-i18n-l="cmp_r11">CRM actualizado</div><div class="bad" data-label="Sin bot" data-i18n-l="cmp_r11_bad">Si alguien lo carga</div><div class="good" data-label="PropBot" data-i18n-l="cmp_r11_good">Sync automático con Tokko</div></div>
-    </div>
-    <p style="text-align:center;margin-top:1.5rem;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3)">
-      <span data-i18n-l="compare_footnote">PropBot no tiene sueldo, aportes, vacaciones ni días libres</span>
-    </p>
-  </div>
-</section>
 
 <!-- ═══ OUTRO ATMOSPHERIC WRAPPER ═══════════════════════════════════ -->
 <div class="pb-outro">
   <div class="pb-outro-bg"></div>
-  <div class="pb-outro-grain"></div>
 
-<!-- ═══ SCARCITY BAR ════════════════════════════════════════════════ -->
-<section class="pb-scarcity-bar">
-  <h3 data-i18n-l="scarcity_h3" data-i18n-mode="html">Mientras leés esto, tu competencia ya respondió <em>3 consultas</em></h3>
-  <p data-i18n-l="scarcity_p">Cada consulta sin responder es un cliente que cierra con otro. El bot se activa en 48 horas y no necesitás saber programar.</p>
-  <div class="pb-scarcity-bar-row">
-    <span class="pb-scarcity-pill"><span class="pb-scarcity-dot"></span> <span data-i18n-l="scarcity_pill">Solo 5 inmobiliarias nuevas por semana</span></span>
-    <a href="#contacto" class="btn-primary" style="background:var(--gold);border-color:var(--gold)">
-      <span data-i18n-l="scarcity_cta">Reservar mi lugar</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
-    </a>
-  </div>
-</section>
 
 <!-- ═══ X — PRECIOS ═════════════════════════════════════════════════ -->
 <!-- Pricing section removed — prices discussed on call -->
@@ -839,66 +567,12 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
   </div>
 </section>
 
-<!-- ═══ XI — VIDEO IA DEMO ══════════════════════════════════════════ -->
-<section class="pb-video">
-  <div class="section-header">
-    <div class="section-header-row">
-      <div class="section-header-title">
-        <span class="section-num" data-i18n-l="video_section_num">XI · Premium · Video IA</span>
-        <h2 style="margin-top:1rem" data-i18n-l="video_h2" data-i18n-mode="html">De fotos de la planilla a <em>video listo para redes</em></h2>
-        <p class="section-sub" data-i18n-l="video_sub">El bot toma las fotos de cada propiedad, aplica efectos cinematográficos, suma música y texto automático. Un video profesional para Instagram y Facebook sin editar nada.</p>
-      </div>
-    </div>
-  </div>
-
-  <div class="pb-video-grid">
-    <div>
-      <div class="pb-video-step">
-        <div class="pb-video-step-num">1</div>
-        <div>
-          <h4 data-i18n-l="video_step1_h4">Link de fotos en Drive</h4>
-          <p data-i18n-l="video_step1_p">En la columna fotos_drive de la plantilla ponés el link de la carpeta de Drive con las fotos de esa propiedad.</p>
-        </div>
-      </div>
-      <div class="pb-video-step">
-        <div class="pb-video-step-num">2</div>
-        <div>
-          <h4 data-i18n-l="video_step2_h4">IA aplica Ken Burns + texto</h4>
-          <p data-i18n-l="video_step2_p">Cada foto recibe zoom, paneo y texto descriptivo generado automáticamente: título, precio, barrio, características clave.</p>
-        </div>
-      </div>
-      <div class="pb-video-step">
-        <div class="pb-video-step-num">3</div>
-        <div>
-          <h4 data-i18n-l="video_step3_h4">Música de fondo automática</h4>
-          <p data-i18n-l="video_step3_p">Selección de música ambiente según el tipo de propiedad: moderna para departamentos, cálida para casas de familia.</p>
-        </div>
-      </div>
-      <div class="pb-video-step">
-        <div class="pb-video-step-num">4</div>
-        <div>
-          <h4 data-i18n-l="video_step4_h4">Video listo en minutos</h4>
-          <p data-i18n-l="video_step4_p">Formato vertical (Reels/Stories) u horizontal (Feed). Listo para publicar directamente desde el bot.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="pb-video-right">
-      <div class="pb-video-phone" id="video-phone"></div>
-      <div class="pb-video-progress" id="video-progress">
-        <div class="pb-video-progress-bar" id="video-progress-bar" style="width:0%"></div>
-      </div>
-      <button class="pb-video-play" id="video-play-btn" data-i18n-l="video_play_btn">▶ Ver demo del video</button>
-    </div>
-  </div>
-</section>
-
 <!-- ═══ XII — FAQ ═══════════════════════════════════════════════════ -->
 <section id="faq" class="pb-faq">
   <div class="section-header">
     <div class="section-header-row">
       <div class="section-header-title">
-        <span class="section-num" data-i18n-l="faq_section_num">XII · Preguntas frecuentes</span>
+        <span class="section-num" data-i18n-l="faq_section_num">VI · Preguntas frecuentes</span>
         <h2 style="margin-top:1rem" data-i18n-l="faq_h2" data-i18n-mode="html">Respuestas a las dudas <em>más comunes</em></h2>
       </div>
     </div>
@@ -1009,8 +683,8 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
     <a href="https://wa.me/5491123485638" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:none;font-size:.9rem"><i class="fa-brands fa-whatsapp" style="margin-right:6px"></i>WhatsApp</a>
   </div>
   <p data-i18n-l="footer_copy">© 2026 PropBot · Todos los derechos reservados</p>
-  <a href="https://opengatehub.com" target="_blank" rel="noopener">
-    Desarrollado por <img src="/static/img/opengatehub-footer.png" alt="OpenGateHub">
+  <a href="https://opengatehub.com" target="_blank" rel="noopener" style="text-decoration:none;color:inherit">
+    Desarrollado por <span style="font-family:'Space Grotesk',sans-serif;font-weight:700;letter-spacing:-0.04em;">open<span style="color:#CC5A50">gate</span>hub</span>
   </a>
   <div class="pb-credits" style="margin-top:2rem">
     <span data-i18n-l="footer_credits">Fotografías cortesía de</span> < href="https://unsplash.com" target="_blank" rel="noopener">Unsplash</a> — Yudiono Putranto, Franco Debartolo, Aalo Lens, Sebastian Cyrman, Jörg Reichelt, Zulfugar Karimov, Vitaly Gariev
@@ -1022,10 +696,10 @@ src="https://www.facebook.com/tr?id=TU_PIXEL_ID_ACA&ev=PageView&noscript=1"/></n
 <!-- ═══ STICKY CTA BAR ══════════════════════════════════════════════ -->
 <div class="pb-sticky">
   <div class="pb-sticky-text" data-i18n-l="sticky_text" data-i18n-mode="html">
-    Setup en 48hs · Garantía 30 días · <span>Solo 5 nuevas por semana</span>
+    Setup en 48hs · Garantía 30 días
   </div>
   <a href="#contacto" class="btn-primary">
-    <span data-i18n-l="sticky_cta">Reservar mi lugar</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
+    <span data-i18n-l="sticky_cta">Activar mi bot</span> <i class="fa-solid fa-arrow-right" style="font-size:9px"></i>
   </a>
 </div>
 

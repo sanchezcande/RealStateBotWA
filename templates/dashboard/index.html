@@ -248,7 +248,7 @@ if (OPS.labels.length) {
 /* 4. Propiedades más consultadas — horizontal bar */
 if (PROPS.values.length) {
   const propAddresses = PROPS.items ? PROPS.items.map(it => it.address || "") : [];
-  const BAR_COLORS = ["#9A6B2F","#2D6A4F","#6B5B95","#8B3A1F","#2A6B6B","#5B8C2A","#B85C5C","#D4A957","#3A6B4F","#7B5B3A","#4A6B8B","#6B3A5B"];
+  const BAR_COLORS = ["#B08D57","#2D6A4F","#6B5B95","#8B3A1F","#2A6B6B","#5B8C2A","#B85C5C","#D4A957","#3A6B4F","#7B5B3A","#4A6B8B","#6B3A5B"];
   const barColors = PROPS.values.map((_, i) => BAR_COLORS[i % BAR_COLORS.length]);
   const datasets = [{
     label: t("inquiries") || "Consultas",

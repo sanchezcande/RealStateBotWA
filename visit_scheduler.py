@@ -63,7 +63,7 @@ def clean_response(ai_text: str) -> str:
     return text.strip()
 
 
-def _find_listing(property_title: str) -> dict | None:
+def _find_listing(property_title: str):
     """Look up a listing by title. Returns the listing dict or None."""
     listings = sheets.get_listings()
     title_lower = property_title.lower()

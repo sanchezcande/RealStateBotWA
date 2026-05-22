@@ -474,6 +474,7 @@ def api_subscription_prices():
     return jsonify({
         "anual": PLAN_PREMIUM_ANUAL_ARS,
         "trimestral": PLAN_PREMIUM_TRIMESTRAL_ARS,
+        "mp_configured": bool(os.environ.get("MP_ACCESS_TOKEN", "")),
     })
 
 
