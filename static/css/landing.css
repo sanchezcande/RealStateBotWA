@@ -2089,14 +2089,15 @@ section{padding:clamp(72px,10vw,130px) 0}
   color:var(--ink);margin-top:.8rem;
 }
 .pb-faq-wrap{
-  max-width:900px;
+  max-width:1100px;
   margin:0 auto;
   padding:0 var(--gutter);
-  columns:1;
-  column-gap:2rem;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:12px;
 }
 @media(min-width:700px){
-  .pb-faq-wrap{columns:2}
+  .pb-faq-wrap{grid-template-columns:1fr 1fr}
 }
 .pb-faq-item{
   background:#fff;
@@ -2105,7 +2106,6 @@ section{padding:clamp(72px,10vw,130px) 0}
   padding:0 clamp(16px,2vw,24px);
   margin-bottom:12px;
   cursor:pointer;
-  break-inside:avoid;
   transition:box-shadow .2s ease;
 }
 .pb-faq-item:hover{box-shadow:0 2px 12px rgba(0,0,0,.04)}
