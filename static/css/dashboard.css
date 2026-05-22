@@ -34,9 +34,9 @@ img{max-width:100%;display:block}
   --ink-3:#9CA3AF;
   --line:#E5E7EB;
   --line-light:#F3F4F6;
-  --gold:#B08D57;
-  --gold-light:rgba(176,141,87,.06);
-  --gold-deep:#6E4716;
+  --gold:#ae6b51;
+  --gold-light:rgba(174,107,81,.06);
+  --gold-deep:#8a5440;
   --rust:#8B3A1F;
   --deep:#FAFAF9;
   --green:#059669;
@@ -366,7 +366,7 @@ canvas{max-height:280px}
   font-family:var(--mono);font-size:.78rem;font-weight:700;
 }
 .legend-swatch{width:10px;height:36px;background:var(--gold)}
-.swatch-0{background:#B08D57}.swatch-1{background:#2D6A4F}
+.swatch-0{background:#ae6b51}.swatch-1{background:#2D6A4F}
 .swatch-2{background:#D4A957}.swatch-3{background:#8B3A1F}
 .swatch-4{background:#6B5B95}.swatch-5{background:#2A6B6B}
 .swatch-6{background:#B85C5C}.swatch-7{background:#5B8C2A}

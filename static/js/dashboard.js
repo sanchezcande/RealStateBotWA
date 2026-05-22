@@ -1,7 +1,7 @@
 /* Shared chart helpers — Editorial palette */
-const BLUE  = "rgba(154,107,47,0.85)";
+const BLUE  = "rgba(174,107,81,0.85)";
 const GREEN = "rgba(45,106,79,0.85)";
-const PAL   = ["#B08D57","#2D6A4F","#D4A957","#8B3A1F","#6B5B95","#2A6B6B","#B85C5C","#5B8C2A"];
+const PAL   = ["#ae6b51","#2D6A4F","#D4A957","#8B3A1F","#6B5B95","#2A6B6B","#B85C5C","#5B8C2A"];
 const CHANNEL_PAL = ["#2D6A4F", "#8B3A1F", "#2A4A6B", "#6C6257"];
 
 const OPTS_CLEAN  = { plugins: { legend: { display: false } } };

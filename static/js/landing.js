@@ -290,10 +290,10 @@ document.addEventListener("DOMContentLoaded", function () {
     phoneEl.innerHTML = `
       <div class="pb-video-notch"></div>
       <div style="position:absolute;inset:0;background:rgba(24,21,18,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;gap:10px;font-family:'Inter',sans-serif">
-        <div style="font-family:'Playfair Display',serif;font-size:2.2rem;color:#B08D57;font-weight:300">✓</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2.2rem;color:#ae6b51;font-weight:300">✓</div>
         <div style="color:#F7F3EC;font-family:'Playfair Display',serif;font-weight:500;font-size:1rem">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Video ready':'Video listo'}</div>
         <div style="color:rgba(247,243,236,.55);font-size:10px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Ready to publish':'Listo para publicar'}</div>
-        <button onclick="resetVideo()" style="margin-top:10px;background:transparent;color:#F7F3EC;border:1px solid #B08D57;padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;cursor:pointer">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Watch again':'Ver de nuevo'}</button>
+        <button onclick="resetVideo()" style="margin-top:10px;background:transparent;color:#F7F3EC;border:1px solid #ae6b51;padding:8px 20px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:.14em;cursor:pointer">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'Watch again':'Ver de nuevo'}</button>
       </div>`;
   }
 
@@ -303,7 +303,7 @@ document.addEventListener("DOMContentLoaded", function () {
     phoneEl.innerHTML = `
       <div class="pb-video-notch"></div>
       <div style="position:absolute;inset:0;background:#181512;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;font-family:'Inter',sans-serif;padding:2rem 1rem">
-        <div style="font-family:'Playfair Display',serif;font-size:2.8rem;color:#B08D57;font-weight:300">iv</div>
+        <div style="font-family:'Playfair Display',serif;font-size:2.8rem;color:#ae6b51;font-weight:300">iv</div>
         <div style="color:#F7F3EC;font-family:'Playfair Display',serif;font-weight:500;font-size:1.05rem;text-align:center;line-height:1.3">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'House with pool<br>& BBQ area':'Casa con pileta<br>y quincho'}</div>
         <div style="color:rgba(247,243,236,.45);font-size:9px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em">${typeof getLandingLang==='function'&&getLandingLang()==='en'?'5 photos · Generating...':'5 fotos · Generando...'}</div>
         <div style="display:flex;gap:4px;margin-top:4px">${thumbs}</div>
