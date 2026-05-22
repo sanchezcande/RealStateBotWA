@@ -2290,20 +2290,18 @@ body:has(.pb-sticky.show) .pb-footer{padding-bottom:80px}
 .pb-footer-text .y{color:var(--gold)}
 .pb-footer p{
   color:rgba(247,243,236,.4);
-  font-family:var(--mono);
-  font-size:10px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
+  font-family:var(--sans);
+  font-size:12px;
+  letter-spacing:normal;
   margin:.5rem 0;
 }
 .pb-footer a{
   display:inline-flex;align-items:center;gap:8px;
   margin-top:10px;
   color:rgba(247,243,236,.5);
-  font-family:var(--mono);
-  font-size:10px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
+  font-family:var(--sans);
+  font-size:13px;
+  letter-spacing:normal;
   transition:color .3s ease;
 }
 .pb-footer a:hover{color:var(--gold)}
