@@ -534,7 +534,6 @@ tr:hover td{background:var(--line-light)}
 .conv-item:hover{background:var(--line-light)}
 .conv-item.selected{
   background:var(--line-light);
-  border-left:2px solid var(--ink);
 }
 .conv-item-name{font-weight:600;font-size:.86rem;color:var(--ink)}
 .conv-item-preview{font-size:.78rem;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -583,7 +582,6 @@ tr:hover td{background:var(--line-light)}
   background:#FEF3C7;
   margin-left:auto;
   border:1px solid #FDE68A;
-  border-right:3px solid #F59E0B;
 }
 .agent-tag{
   display:inline-block;background:#F59E0B;color:#fff;
