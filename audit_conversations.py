@@ -32,8 +32,8 @@ import requests
 BOT_URL = os.environ.get("BOT_URL", "").rstrip("/")
 DASHBOARD_TOKEN = os.environ.get("DASHBOARD_TOKEN", "")
 DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.openai.com/v1")
-DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "gpt-4o-mini")
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
 AUDIT_DAYS = int(os.environ.get("AUDIT_DAYS", "1"))
 
 AUDIT_PROMPT = """Sos un auditor de calidad de un bot inmobiliario llamado Vera.
@@ -66,7 +66,7 @@ NO incluyas texto fuera del JSON."""
 
 def fetch_conversations() -> list[dict]:
     """Fetch conversation list from dashboard API."""
-    url = f"{BOT_URL}/dashboard/api/conversations"
+    url = f"{BOT_URL}/api/dashboard/conversations"
     all_convos = []
     page = 1
     while True:
@@ -85,7 +85,7 @@ def fetch_conversations() -> list[dict]:
 
 def fetch_thread(phone_hash: str) -> list[dict]:
     """Fetch full message thread for a conversation."""
-    url = f"{BOT_URL}/dashboard/api/conversations/{phone_hash}"
+    url = f"{BOT_URL}/api/dashboard/conversations/{phone_hash}"
     resp = requests.get(url, params={"token": DASHBOARD_TOKEN}, timeout=30)
     resp.raise_for_status()
     data = resp.json()
@@ -94,7 +94,7 @@ def fetch_thread(phone_hash: str) -> list[dict]:
 
 def is_recent(convo: dict, days: int) -> bool:
     """Check if conversation has activity within the last N days."""
-    last = convo.get("last_message_at") or convo.get("updated_at") or convo.get("timestamp") or ""
+    last = convo.get("last_message") or convo.get("last_message_at") or convo.get("updated_at") or convo.get("timestamp") or ""
     if not last:
         return False
     try:

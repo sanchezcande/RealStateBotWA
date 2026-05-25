@@ -768,6 +768,105 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     except Exception:
         pass
 
+    # --- Photo injection safety net ---
+    # Ensures photos are delivered even when the AI doesn't include Drive URLs.
+    # Triggers: (1) AI promises photos without URL, (2) user confirms a previous photo offer.
+    _PHOTO_PROMISE_RE = re.compile(
+        r"(?:"
+        r"te (?:paso|mando|envío|comparto) (?:las )?(?:fotos|del |de )"
+        r"|te (?:paso|mando|envío|comparto) (?:unas )?fotos"
+        r"|te las (?:paso|mando|envío)"
+        r"|ahí (?:te )?(?:van|mando)"
+        r"|acá (?:te (?:paso|mando)|van)"
+        r"|(?:mirá|fijate) las fotos"
+        r")",
+        re.IGNORECASE,
+    )
+    _needs_photo_injection = False
+    if not drive_photos.extract_drive_urls(clean_response):
+        if _PHOTO_PROMISE_RE.search(clean_response):
+            _needs_photo_injection = True
+        else:
+            # Check if user is confirming a previous photo offer (e.g. "si" to "querés fotos?")
+            _prev_msgs = [m for m in history_after if m["role"] == "assistant"]
+            _prev_asst = _prev_msgs[-1]["content"] if _prev_msgs else ""
+            _prev_offered = bool(re.search(
+                r"(?:(?:te|que te) (?:mande|pase|envíe|mando|paso) (?:las )?fotos"
+                r"|querés (?:ver|que te)|want.+(?:photos|pics))",
+                _prev_asst, re.IGNORECASE,
+            ))
+            _user_confirms = bool(re.match(
+                r"\s*(?:si+|sí|dale|bueno|va|genial|claro|ok(?:ey)?|porfa|por favor|"
+                r"mandalas|mandamelas|pasalas|pasamelas|dale dale|buenísimo|re|"
+                r"yes|yeah|sure|please|send)[\s!.,]*$",
+                user_text, re.IGNORECASE,
+            ))
+            if _prev_offered and _user_confirms:
+                _needs_photo_injection = True
+
+    if _needs_photo_injection:
+        # Build context from AI response + user msg + previous assistant msg for property matching
+        _prev_msgs = [m for m in history_after if m["role"] == "assistant"]
+        _prev_asst = _prev_msgs[-1]["content"] if _prev_msgs else ""
+        _match_ctx = (clean_response + " " + user_text + " " + _prev_asst).lower()
+
+        _listings = sheets.get_listings()
+        _injected_urls = []
+
+        _STOP_WORDS = frozenset({
+            "departamento", "departamentos", "depto", "deptos", "casa", "casas",
+            "alquiler", "alquilar", "venta", "comprar", "compra",
+            "propiedad", "propiedades", "precio", "barrio", "zona",
+            "centro", "norte", "sur", "este", "oeste",
+            "calle", "avenida", "entre", "piso", "planta", "baja", "alta",
+            "fotos", "foto", "mando", "paso", "quiero", "queres",
+            "buenos", "aires", "ciudad", "capital", "ambientes", "dormitorios",
+        })
+
+        for _listing in _listings:
+            _fotos = str(_listing.get("fotos_url", "") or "").strip()
+            if not _fotos:
+                continue
+            _addr = str(_listing.get("direccion", "") or "").lower().strip()
+            _title = str(_listing.get("titulo", "") or "").lower().strip()
+            _matched = False
+
+            # Priority 1: address words (most specific — street names and numbers)
+            if _addr:
+                for _word in _addr.split():
+                    if _word in _STOP_WORDS:
+                        continue
+                    if (_word.isdigit() and len(_word) >= 3) or (not _word.isdigit() and len(_word) > 3):
+                        if _word in _match_ctx:
+                            _matched = True
+                            break
+
+            # Priority 2: title words (excluding generic terms)
+            if not _matched and _title:
+                for _word in _title.split():
+                    if _word in _STOP_WORDS:
+                        continue
+                    if len(_word) > 4 and _word in _match_ctx:
+                        _matched = True
+                        break
+
+            if _matched and _fotos not in _injected_urls:
+                _injected_urls.append(_fotos)
+
+        if _injected_urls:
+            clean_response = clean_response.rstrip() + "\n" + "\n".join(_injected_urls)
+            logger.info("Photo safety net: injected %d URL(s) for %s", len(_injected_urls), identifier)
+        else:
+            _new = _PHOTO_PROMISE_RE.sub(
+                "las fotos de esa no las tengo cargadas todavía, pero podemos coordinar una visita así lo ves en persona",
+                clean_response,
+            )
+            if _new != clean_response:
+                clean_response = _new
+            else:
+                clean_response = clean_response.rstrip() + "\nlas fotos de esa no las tengo cargadas todavía, pero podemos coordinar una visita así lo ves en persona"
+            logger.info("Photo safety net: no fotos_url matched, replaced promise for %s", identifier)
+
     # Detect Drive URLs — download photos and send as images
     drive_urls = drive_photos.extract_drive_urls(clean_response)
     import uuid as _uuid
