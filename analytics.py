@@ -1405,6 +1405,46 @@ def get_conversation_thread(phone_hash: str) -> dict:
         return {"messages": [], "lead": None}
 
 
+def get_recent_conversations(hours: int = 24) -> list[dict]:
+    """Return conversations with activity in the last N hours (for audit)."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            cutoff = (datetime.now(AR_TZ) - timedelta(hours=hours)).strftime("%Y-%m-%dT%H:%M:%S")
+            rows = conn.execute(
+                """SELECT cm.phone_hash,
+                          MAX(cm.channel) as channel,
+                          MAX(l.name) as name,
+                          COUNT(cm.id) as msg_count
+                   FROM chat_messages cm
+                   LEFT JOIN leads l ON cm.phone = l.phone
+                   WHERE cm.created_at >= ?
+                   GROUP BY cm.phone_hash
+                   HAVING COUNT(cm.id) >= 3
+                   ORDER BY MAX(cm.created_at) DESC""",
+                (cutoff,),
+            ).fetchall()
+        return [{"phone_hash": r[0], "channel": r[1], "name": r[2], "message_count": r[3]} for r in rows]
+    except Exception as e:
+        logger.error("analytics.get_recent_conversations error: %s", e)
+        return []
+
+
+def load_messages_by_hash(phone_hash: str) -> list[dict]:
+    """Load all messages for a phone_hash. Returns list of {role, content}."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            rows = conn.execute(
+                "SELECT role, content FROM chat_messages WHERE phone_hash = ? ORDER BY id",
+                (phone_hash,),
+            ).fetchall()
+        return [{"role": r[0], "content": r[1]} for r in rows]
+    except Exception as e:
+        logger.error("analytics.load_messages_by_hash error: %s", e)
+        return []
+
+
 def resolve_phone_by_hash(phone_hash: str) -> str | None:
     """Resolve a phone_hash back to the real phone number."""
     try:

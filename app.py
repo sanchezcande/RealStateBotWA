@@ -42,6 +42,9 @@ analytics.init_db()
 import followup
 followup.start()
 
+import audit_scheduler
+audit_scheduler.start(followup._scheduler)
+
 
 def _fix_meta_names_once():
     """Clean bad names and retry Meta API for nameless FB/IG conversations."""
