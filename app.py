@@ -555,13 +555,25 @@ def _flush(phone: str, gen: int):
     for _attempt in range(2):
         try:
             _reply(phone, combined)
-            break
+            return
         except Exception as e:
             logger.error("Error in _reply for %s (attempt %d/2): %s", phone, _attempt + 1, e, exc_info=True)
             if _attempt == 0:
                 import time as _time; _time.sleep(1)
-            else:
-                logger.error("All retries exhausted for %s — no error message sent to user", phone)
+    logger.error("All retries exhausted for %s — scheduling deferred retry in 60s", phone)
+    threading.Timer(60, _deferred_retry, args=[phone, combined, "whatsapp"]).start()
+
+
+def _deferred_retry(identifier: str, text: str, channel: str):
+    """Retry a failed reply once after a delay. If it fails again, give up silently."""
+    logger.info("Deferred retry for %s (%s)", identifier, channel)
+    try:
+        if channel == "whatsapp":
+            _reply(identifier, text)
+        else:
+            _reply_meta(identifier, text, channel)
+    except Exception as e:
+        logger.error("Deferred retry also failed for %s (%s): %s", identifier, channel, e)
 
 
 def _extract_operation(text: str):
@@ -723,7 +735,8 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
 
     if ai_response is None:
         logger.error("AI returned None for %s — skipping reply (no error message sent to user)", identifier)
-        return
+        analytics.log_event("failed_reply", identifier, channel=channel)
+        return False
 
     clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
     clean_response = visit_scheduler.process(identifier, clean_response)
@@ -1007,6 +1020,8 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
                 logger.error("Failed sending photo to %s: %s", identifier, e)
         if sent_markers:
             conversations.add_message(identifier, "assistant", "\n".join(sent_markers), channel=channel)
+
+    return True
 
 
 _wa_interactive_sent: dict[str, set] = {}  # phone -> set of sent interactive types
@@ -1600,13 +1615,13 @@ def _flush_meta(key, gen: int):
     for _attempt in range(2):
         try:
             _reply_meta(sender_id, combined, channel)
-            break
+            return
         except Exception as e:
             logger.error("Error in _reply_meta for %s (attempt %d/2): %s", sender_id, _attempt + 1, e, exc_info=True)
             if _attempt == 0:
                 import time as _time; _time.sleep(1)
-            else:
-                logger.error("All retries exhausted for %s (%s) — no error message sent to user", sender_id, channel)
+    logger.error("All retries exhausted for %s (%s) — scheduling deferred retry in 60s", sender_id, channel)
+    threading.Timer(60, _deferred_retry, args=[sender_id, combined, channel]).start()
 
 
 
