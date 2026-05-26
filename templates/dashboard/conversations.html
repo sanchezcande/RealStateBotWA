@@ -24,7 +24,7 @@
     </button>
     <button class="inbox-tab" :class="{ active: tab === 'hot' }"
             @click="tab='hot'; filterStatus='lead'; archivedFilter='0'; page=1; loadList()">
-      Calientes
+      Interesados
     </button>
     <button class="inbox-tab" :class="{ active: tab === 'archived' }"
             @click="tab='archived'; filterStatus=''; archivedFilter='1'; page=1; loadList()">
@@ -72,10 +72,15 @@
             <div class="inbox-item-badges">
               <span class="inbox-badge inbox-badge-count" x-text="c.message_count + 's'"></span>
               <span class="inbox-badge inbox-badge-channel" x-text="channelShort(c.channel)"></span>
-              <span x-show="c.score === 'hot'" class="inbox-badge inbox-badge-hot">Caliente</span>
+              <span x-show="c.score === 'hot'" class="inbox-badge inbox-badge-hot">Interesado</span>
               <span x-show="c.is_lead" class="inbox-badge inbox-badge-lead">Lead</span>
             </div>
           </div>
+          <button class="inbox-archive-btn" @click.stop="quickArchive(c)"
+                  :title="c.archived ? 'Desarchivar' : 'Archivar'">
+            <svg x-show="!c.archived" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+            <svg x-show="c.archived" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          </button>
         </div>
       </template>
       <!-- Pagination -->
@@ -362,7 +367,28 @@ function convViewer() {
       });
     },
 
+    quickArchive(c) {
+      const newState = !c.archived;
+      dashFetch(`/api/dashboard/conversations/${c.phone_hash}/archive`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({archived: newState}),
+      }).then(data => {
+        if (data.ok) {
+          if (this.selected === c.phone_hash) this.selectedArchived = newState;
+          this.items = this.items.filter(i => i.phone_hash !== c.phone_hash);
+          if (this.selected === c.phone_hash && ((this.tab === 'all' && newState) || (this.tab === 'archived' && !newState))) {
+            this.selected = null;
+          }
+          this.total--;
+          this.loadList();
+        }
+      });
+    },
+
     archiveConv() {
+      const c = this.items.find(i => i.phone_hash === this.selected);
+      if (c) { this.quickArchive(c); return; }
       const newState = !this.selectedArchived;
       dashFetch(`/api/dashboard/conversations/${this.selected}/archive`, {
         method: 'POST',
@@ -371,12 +397,7 @@ function convViewer() {
       }).then(data => {
         if (data.ok) {
           this.selectedArchived = newState;
-          // Remove from current list if filtering would exclude it
-          if ((this.tab === 'all' && newState) || (this.tab === 'archived' && !newState)) {
-            this.items = this.items.filter(i => i.phone_hash !== this.selected);
-            this.selected = null;
-            this.total--;
-          }
+          this.selected = null;
           this.loadList();
         }
       });
