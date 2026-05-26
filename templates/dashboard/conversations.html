@@ -1,94 +1,130 @@
 {% extends "base.html" %}
-{% block title %}PropBot — {{ "Conversations" if request.args.get('lang') == 'en' else "Conversaciones" }}{% endblock %}
+{% block title %}PropBot — Bandeja de entrada{% endblock %}
 
 {% block content %}
 <div x-data="convViewer()" x-init="loadList(); _startListPoll()">
-  <section class="subpage-hero">
+  <!-- Inbox header -->
+  <div class="inbox-header">
     <div>
-      <span class="section-kicker">Seguimiento de conversaciones</span>
-      <h1 data-i18n="conversations">Conversaciones</h1>
-      <p>Lectura centralizada de WhatsApp, Instagram y Facebook para detectar intención, objeciones y timing.</p>
+      <span class="inbox-kicker">— C O N V E R S A C I O N E S</span>
+      <h1 class="inbox-title">Bandeja de entrada</h1>
+      <p class="inbox-subtitle">
+        Hoy — <span x-text="todayTotal"></span> conversaciones, <span x-text="pending"></span> pendientes
+      </p>
     </div>
-    <div class="subpage-actions">
-      <select x-model="filterChannel" @change="page=1; loadList()">
-        <option value="" x-text="t('all_channels')"></option>
-        <option value="whatsapp">WhatsApp</option>
-        <option value="instagram">Instagram</option>
-        <option value="facebook">Facebook</option>
-        <option value="meta">Instagram / Facebook legado</option>
-      </select>
-      <select x-model="filterStatus" @change="page=1; loadList()">
-        <option value="" x-text="t('all')"></option>
-        <option value="lead" x-text="t('leads_only')"></option>
-        <option value="visit" x-text="t('with_visit')"></option>
-      </select>
-    </div>
-  </section>
+  </div>
+
+  <div class="inbox-divider"></div>
+
+  <!-- Tabs -->
+  <div class="inbox-tabs">
+    <button class="inbox-tab" :class="{ active: tab === 'all' }"
+            @click="tab='all'; filterStatus=''; archivedFilter='0'; page=1; loadList()">
+      Todas <span class="inbox-tab-count" x-text="total" x-show="tab === 'all'"></span>
+    </button>
+    <button class="inbox-tab" :class="{ active: tab === 'hot' }"
+            @click="tab='hot'; filterStatus='lead'; archivedFilter='0'; page=1; loadList()">
+      Calientes
+    </button>
+    <button class="inbox-tab" :class="{ active: tab === 'archived' }"
+            @click="tab='archived'; filterStatus=''; archivedFilter='1'; page=1; loadList()">
+      Archivadas
+    </button>
+  </div>
 
   <div class="conv-layout conv-layout-premium">
     <!-- Left panel: conversation list -->
     <div class="conv-list">
       <div class="conv-search">
-        <input type="text" :placeholder="t('search_placeholder')"
+        <input type="text" placeholder="Buscar por nombre, mensaje..."
                x-model="search" @input.debounce.400ms="loadList()">
+        <div class="conv-search-filters">
+          <select x-model="filterChannel" @change="page=1; loadList()" class="conv-filter-select">
+            <option value="">Todos los canales</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+          </select>
+        </div>
       </div>
       <template x-if="items.length === 0 && !loading">
-        <div class="conv-empty" style="padding:40px" x-text="t('no_conversations')"></div>
+        <div class="conv-empty" style="padding:40px;text-align:center;color:var(--ink-3)">
+          <template x-if="tab === 'archived'">
+            <span>No hay conversaciones archivadas</span>
+          </template>
+          <template x-if="tab !== 'archived'">
+            <span>No hay conversaciones</span>
+          </template>
+        </div>
       </template>
       <template x-for="c in items" :key="c.phone_hash">
-        <div class="conv-item" :class="{ selected: selected === c.phone_hash }"
+        <div class="inbox-item" :class="{ selected: selected === c.phone_hash, 'inbox-item-pending': c.last_role === 'user' }"
              @click="selectConv(c)">
-          <div class="conv-item-name" x-text="c.name || (c.channel === 'whatsapp' ? c.phone : 'Usuario ' + prettyChannel(c.channel))"></div>
-          <div class="conv-item-preview" x-text="c.last_preview"></div>
-          <div class="conv-item-meta">
-            <span class="conv-item-time" x-text="timeAgo(c.last_message)"></span>
-            <div class="conv-item-badges">
-              <span x-show="c.is_lead" class="badge badge-green" x-text="t('lead')"></span>
-              <span x-show="c.visit_count > 0" class="badge badge-blue" x-text="c.visit_count + ' ' + (c.visit_count > 1 ? t('visit_plural') : t('visit_singular'))"></span>
-              <span x-show="c.score === 'hot'" class="badge badge-hot">🔥</span>
-              <span x-show="c.score === 'warm'" class="badge badge-warm">🟡</span>
-              <span class="badge badge-gray" x-text="prettyChannel(c.channel)"></span>
+          <div class="inbox-avatar" :style="'background:' + avatarColor(c.name || c.phone)">
+            <span x-text="avatarInitials(c.name || c.phone)"></span>
+          </div>
+          <div class="inbox-item-body">
+            <div class="inbox-item-top">
+              <span class="inbox-item-name" x-text="c.name || (c.channel === 'whatsapp' ? c.phone : 'Usuario ' + prettyChannel(c.channel))"></span>
+              <span class="inbox-item-time" x-text="shortTime(c.last_message)"></span>
+            </div>
+            <div class="inbox-item-preview" x-text="c.last_preview"></div>
+            <div class="inbox-item-badges">
+              <span class="inbox-badge inbox-badge-count" x-text="c.message_count + 's'"></span>
+              <span class="inbox-badge inbox-badge-channel" x-text="channelShort(c.channel)"></span>
+              <span x-show="c.score === 'hot'" class="inbox-badge inbox-badge-hot">Caliente</span>
+              <span x-show="c.is_lead" class="inbox-badge inbox-badge-lead">Lead</span>
             </div>
           </div>
         </div>
       </template>
       <!-- Pagination -->
-      <div class="pagination" style="padding:12px" x-show="totalPages > 1">
-        <a href="#" x-show="page > 1" @click.prevent="page--; loadList()" x-text="t('previous')"></a>
-        <span class="current" x-text="page + ' / ' + totalPages"></span>
-        <a href="#" x-show="page < totalPages" @click.prevent="page++; loadList()" x-text="t('next')"></a>
+      <div class="inbox-pagination" x-show="totalPages > 1">
+        <a href="#" x-show="page > 1" @click.prevent="page--; loadList()">Anterior</a>
+        <span x-text="page + ' / ' + totalPages"></span>
+        <a href="#" x-show="page < totalPages" @click.prevent="page++; loadList()">Siguiente</a>
       </div>
     </div>
 
     <!-- Right panel: conversation detail -->
     <div class="conv-detail">
       <template x-if="!selected">
-        <div class="conv-empty" x-text="t('select_conversation')"></div>
+        <div class="conv-empty" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink-3)">
+          Seleccioná una conversación
+        </div>
       </template>
       <template x-if="selected">
         <div style="display:flex;flex-direction:column;height:100%">
           <div class="conv-detail-header">
-            <div>
-              <h2 style="cursor:pointer;display:inline" @click="editName()" x-text="selectedName || (selectedChannel === 'whatsapp' ? selectedPhone : 'Usuario ' + prettyChannel(selectedChannel))" :title="'Click para editar nombre'"></h2>
-              <div class="soft-meta" x-text="selectedPhone"></div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="inbox-avatar inbox-avatar-sm" :style="'background:' + avatarColor(selectedName || selectedPhone)">
+                <span x-text="avatarInitials(selectedName || selectedPhone)"></span>
+              </div>
+              <div>
+                <h2 style="cursor:pointer;display:inline" @click="editName()" x-text="selectedName || (selectedChannel === 'whatsapp' ? selectedPhone : 'Usuario ' + prettyChannel(selectedChannel))" title="Click para editar nombre"></h2>
+                <div class="soft-meta" x-text="selectedPhone + ' · ' + prettyChannel(selectedChannel)"></div>
+              </div>
             </div>
-            <div style="display:flex;gap:8px;align-items:center">
-              <span x-show="selectedLead" class="badge badge-green" x-text="t('qualified_lead')"></span>
-              <a class="btn btn-outline btn-sm"
+            <div style="display:flex;gap:6px;align-items:center">
+              <button class="btn-icon" @click="archiveConv()" :title="selectedArchived ? 'Desarchivar' : 'Archivar'">
+                <svg x-show="!selectedArchived" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>
+                <svg x-show="selectedArchived" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+              </button>
+              <a class="btn-icon"
                  :href="'/api/dashboard/conversations/' + selected + '/export?token=' + encodeURIComponent(new URLSearchParams(window.location.search).get('token') || '')"
-                 target="_blank">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                PDF
+                 target="_blank" title="Exportar PDF">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
               </a>
+              <span x-show="selectedLead" class="inbox-badge inbox-badge-lead" style="font-size:.65rem">Lead calificado</span>
             </div>
           </div>
           <!-- Lead info bar -->
           <template x-if="leadInfo">
             <div class="conv-lead-info">
-              <template x-if="leadInfo.operation"><span><strong x-text="t('operation_label')"></strong> <span x-text="leadInfo.operation"></span> | </span></template>
-              <template x-if="leadInfo.property_type"><span><strong x-text="t('type_label')"></strong> <span x-text="leadInfo.property_type"></span> | </span></template>
-              <template x-if="leadInfo.budget"><span><strong x-text="t('budget_label')"></strong> <span x-text="leadInfo.budget"></span> | </span></template>
-              <template x-if="leadInfo.timeline"><span><strong x-text="t('timeline_label')"></strong> <span x-text="leadInfo.timeline"></span></span></template>
+              <template x-if="leadInfo.operation"><span><strong>Op:</strong> <span x-text="leadInfo.operation"></span> | </span></template>
+              <template x-if="leadInfo.property_type"><span><strong>Tipo:</strong> <span x-text="leadInfo.property_type"></span> | </span></template>
+              <template x-if="leadInfo.budget"><span><strong>Presupuesto:</strong> <span x-text="leadInfo.budget"></span> | </span></template>
+              <template x-if="leadInfo.timeline"><span><strong>Plazo:</strong> <span x-text="leadInfo.timeline"></span></span></template>
             </div>
           </template>
           <!-- Messages -->
@@ -107,7 +143,7 @@
                   'msg-emoji-only': isEmojiOnly(m.content)
                 }" x-html="renderMsg(m.content)"></div>
                 <div class="msg-time" :style="m.role !== 'user' ? 'text-align:right' : ''">
-                  <span x-show="m.role === 'agent'" class="agent-tag" x-text="t('agent_label')"></span>
+                  <span x-show="m.role === 'agent'" class="agent-tag">Agente</span>
                   <span x-text="formatTime(m.time)"></span>
                 </div>
               </div>
@@ -121,48 +157,27 @@
                   <input type="checkbox" :checked="!botPaused" @change="botPaused = !$event.target.checked; toggleBotPause()">
                   <span class="switch-slider"></span>
                 </div>
-                <span x-text="botPaused ? t('bot_paused') : t('bot_active')" :style="botPaused ? 'color:var(--gold)' : ''"></span>
+                <span x-text="botPaused ? 'Bot pausado' : 'Bot activo'" :style="botPaused ? 'color:var(--gold)' : ''"></span>
               </label>
             </div>
             <div class="conv-reply-input">
               <textarea x-model="replyText"
-                        :placeholder="t('type_reply')"
+                        placeholder="Escribir como agente..."
                         @keydown.enter.exact.prevent="sendReply()"
                         @keydown.enter.shift="/* allow newline */"
                         rows="1"
                         maxlength="4000"
                         :disabled="sending"></textarea>
               <div style="position:relative">
-                <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button">😊</button>
+                <button class="btn-emoji" @click="showEmoji = !showEmoji" type="button">+</button>
                 <div x-show="showEmoji" x-transition @click.outside="showEmoji=false" class="emoji-picker">
-                  <div class="emoji-picker-header">Reacciones rápidas</div>
+                  <div class="emoji-picker-header">Reacciones</div>
                   <div class="emoji-picker-body">
-                    <div class="emoji-picker-section">
-                      <div class="emoji-section-label">Caras & gestos</div>
-                      <div class="emoji-picker-grid">
-                        <template x-for="e in emojis.slice(0,20)" :key="'a'+e">
-                          <button @click="replyText += e; showEmoji=false"
-                                  class="emoji-pick" x-text="e"></button>
-                        </template>
-                      </div>
-                    </div>
-                    <div class="emoji-picker-section">
-                      <div class="emoji-section-label">Inmobiliario</div>
-                      <div class="emoji-picker-grid">
-                        <template x-for="e in emojis.slice(20,30)" :key="'b'+e">
-                          <button @click="replyText += e; showEmoji=false"
-                                  class="emoji-pick" x-text="e"></button>
-                        </template>
-                      </div>
-                    </div>
-                    <div class="emoji-picker-section">
-                      <div class="emoji-section-label">Acciones</div>
-                      <div class="emoji-picker-grid">
-                        <template x-for="e in emojis.slice(30)" :key="'c'+e">
-                          <button @click="replyText += e; showEmoji=false"
-                                  class="emoji-pick" x-text="e"></button>
-                        </template>
-                      </div>
+                    <div class="emoji-picker-grid" style="padding:8px">
+                      <template x-for="e in emojis" :key="e">
+                        <button @click="replyText += e; showEmoji=false"
+                                class="emoji-pick" x-text="e"></button>
+                      </template>
                     </div>
                   </div>
                 </div>
@@ -175,7 +190,7 @@
                   </svg>
                 </template>
                 <template x-if="sending">
-                  <span x-text="t('sending')"></span>
+                  <span>...</span>
                 </template>
               </button>
             </div>
@@ -191,10 +206,18 @@
 <script src="/static/js/dashboard.js?v={{ v }}"></script>
 <script>
 function convViewer() {
+  const _avatarColors = [
+    '#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899',
+    '#f43f5e','#ef4444','#f97316','#eab308','#22c55e',
+    '#14b8a6','#06b6d4','#3b82f6','#0ea5e9','#64748b',
+  ];
   return {
     items: [], total: 0, page: 1, perPage: 20,
-    search: "", filterChannel: "", filterStatus: "",
-    selected: null, selectedName: "", selectedPhone: "", selectedChannel: "", selectedLead: false,
+    search: "", filterChannel: "", filterStatus: "", archivedFilter: "0",
+    tab: "all",
+    todayTotal: 0, pending: 0,
+    selected: null, selectedName: "", selectedPhone: "", selectedChannel: "",
+    selectedLead: false, selectedArchived: false,
     messages: [], leadInfo: null, loading: false,
     replyText: "", sending: false, botPaused: false,
     showEmoji: false,
@@ -206,14 +229,42 @@ function convViewer() {
     ],
     _pollTimer: null,
 
+    avatarColor(name) {
+      let hash = 0;
+      for (let i = 0; i < (name||'').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      return _avatarColors[Math.abs(hash) % _avatarColors.length];
+    },
+
+    avatarInitials(name) {
+      if (!name) return '?';
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return name.slice(0, 2).toUpperCase();
+    },
+
+    channelShort(ch) {
+      if (ch === 'whatsapp') return 'WA';
+      if (ch === 'instagram') return 'IG';
+      if (ch === 'facebook') return 'FB';
+      return ch || '—';
+    },
+
+    shortTime(ts) {
+      if (!ts) return '';
+      const d = new Date(ts);
+      const now = new Date();
+      const isToday = d.toDateString() === now.toDateString();
+      if (isToday) return d.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
+      const yesterday = new Date(now); yesterday.setDate(now.getDate()-1);
+      if (d.toDateString() === yesterday.toDateString()) return 'Ayer';
+      return d.toLocaleDateString('es-AR', {day:'numeric', month:'short'});
+    },
+
     renderMsg(text) {
       if (!text) return '';
-      // Escape HTML first to prevent XSS
       const esc = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      // Replace [img:url] markers with <img> tags (hide on error if file was lost)
       const withImgs = esc.replace(/\[img:(\/uploads\/chat_photos\/[a-zA-Z0-9._-]+)\]/g,
         '<img src="$1" class="chat-photo" loading="lazy" onclick="window.open(this.src)" onerror="this.style.display=\'none\'">');
-      // Convert newlines to <br>
       return withImgs.replace(/\n/g, '<br>');
     },
 
@@ -231,7 +282,6 @@ function convViewer() {
       if (channel === "whatsapp") return "WhatsApp";
       if (channel === "instagram") return "Instagram";
       if (channel === "facebook") return "Facebook";
-      if (channel === "meta") return "IG/FB legado";
       return channel || "—";
     },
 
@@ -241,9 +291,12 @@ function convViewer() {
       if (this.search) url += `&q=${encodeURIComponent(this.search)}`;
       if (this.filterChannel) url += `&channel=${this.filterChannel}`;
       if (this.filterStatus) url += `&status=${this.filterStatus}`;
+      if (this.archivedFilter !== '') url += `&archived=${this.archivedFilter}`;
       dashFetch(url).then(data => {
         this.items = data.items;
         this.total = data.total;
+        this.todayTotal = data.today_total || 0;
+        this.pending = data.pending || 0;
         this.loading = false;
       }).catch(() => { this.loading = false; });
     },
@@ -254,16 +307,15 @@ function convViewer() {
       this.selectedPhone = c.phone;
       this.selectedChannel = c.channel;
       this.selectedLead = c.is_lead;
+      this.selectedArchived = c.archived || false;
       this.messages = [];
       this.leadInfo = null;
       this.replyText = "";
 
       this._loadMessages();
-      // Check takeover status
       dashFetch(`/api/dashboard/conversations/${c.phone_hash}/takeover`).then(data => {
         this.botPaused = data.paused;
       }).catch(() => {});
-      // Start auto-refresh every 5 seconds
       this._startPoll();
     },
 
@@ -283,8 +335,7 @@ function convViewer() {
     },
 
     _startListPoll() {
-      // Always poll the list, even without a conversation selected
-      setInterval(() => { this.loadList(); }, 5000);
+      setInterval(() => { this.loadList(); }, 8000);
     },
 
     _startPoll() {
@@ -307,6 +358,26 @@ function convViewer() {
           this.selectedName = data.name;
           const item = this.items.find(i => i.phone_hash === this.selected);
           if (item) item.name = data.name;
+        }
+      });
+    },
+
+    archiveConv() {
+      const newState = !this.selectedArchived;
+      dashFetch(`/api/dashboard/conversations/${this.selected}/archive`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({archived: newState}),
+      }).then(data => {
+        if (data.ok) {
+          this.selectedArchived = newState;
+          // Remove from current list if filtering would exclude it
+          if ((this.tab === 'all' && newState) || (this.tab === 'archived' && !newState)) {
+            this.items = this.items.filter(i => i.phone_hash !== this.selected);
+            this.selected = null;
+            this.total--;
+          }
+          this.loadList();
         }
       });
     },
@@ -343,7 +414,7 @@ function convViewer() {
           alert(data.error || "Error enviando mensaje");
         }
       })
-      .catch(() => alert(t("network_error")))
+      .catch(() => alert("Error de red"))
       .finally(() => { this.sending = false; });
     },
 

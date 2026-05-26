@@ -271,6 +271,7 @@ def init_db():
         _migrations = [
             ("conversations", "agent_takeover_until", "TEXT"),
             ("visits", "property_id", "TEXT"),
+            ("conversations", "archived", "INTEGER DEFAULT 0"),
         ]
         for tbl, col, col_type in _migrations:
             try:
@@ -1288,7 +1289,8 @@ def mark_message_processed(message_id: str, channel: str = "whatsapp") -> bool:
 # ---------------------------------------------------------------------------
 
 def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
-                           channel: str = "", status: str = "") -> dict:
+                           channel: str = "", status: str = "",
+                           archived: bool | None = None) -> dict:
     """Return paginated conversation list for the dashboard."""
     try:
         with _db_lock:
@@ -1314,7 +1316,8 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                        COUNT(cm.id) as msg_count,
                        MAX(l.name) as name,
                        MAX(COALESCE(c.became_lead, 0)) as is_lead,
-                       MAX(COALESCE(c.visit_count, 0)) as visits
+                       MAX(COALESCE(c.visit_count, 0)) as visits,
+                       MAX(COALESCE(c.archived, 0)) as archived
                 FROM chat_messages cm
                 LEFT JOIN leads l ON cm.phone = l.phone
                 LEFT JOIN conversations c ON cm.phone_hash = c.phone_hash
@@ -1322,14 +1325,44 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                 GROUP BY cm.phone
             """
 
+            having_clauses = []
             if status == "lead":
-                base_query += " HAVING MAX(COALESCE(c.became_lead, 0)) = 1"
+                having_clauses.append("MAX(COALESCE(c.became_lead, 0)) = 1")
             elif status == "visit":
-                base_query += " HAVING MAX(COALESCE(c.visit_count, 0)) > 0"
+                having_clauses.append("MAX(COALESCE(c.visit_count, 0)) > 0")
+
+            if archived is True:
+                having_clauses.append("MAX(COALESCE(c.archived, 0)) = 1")
+            elif archived is False:
+                having_clauses.append("MAX(COALESCE(c.archived, 0)) = 0")
+
+            if having_clauses:
+                base_query += " HAVING " + " AND ".join(having_clauses)
 
             # Count total
             count_q = f"SELECT COUNT(*) FROM ({base_query}) sub"
             total = conn.execute(count_q, params).fetchone()[0]
+
+            # Count today's conversations and pending (last_role=user)
+            today_str = datetime.now(AR_TZ).strftime("%Y-%m-%d")
+            today_total = conn.execute(
+                f"""SELECT COUNT(*) FROM (
+                    SELECT 1 FROM chat_messages cm
+                    LEFT JOIN conversations c ON cm.phone_hash = c.phone_hash
+                    WHERE cm.created_at >= ? AND COALESCE(c.archived, 0) = 0
+                    GROUP BY cm.phone
+                ) sub""",
+                (today_str,),
+            ).fetchone()[0]
+            pending = conn.execute(
+                f"""SELECT COUNT(*) FROM (
+                    SELECT cm.phone FROM chat_messages cm
+                    LEFT JOIN conversations c ON cm.phone_hash = c.phone_hash
+                    WHERE COALESCE(c.archived, 0) = 0
+                    GROUP BY cm.phone
+                    HAVING (SELECT role FROM chat_messages WHERE phone = cm.phone ORDER BY id DESC LIMIT 1) = 'user'
+                ) sub""",
+            ).fetchone()[0]
 
             # Get page
             query = f"{base_query} ORDER BY last_msg DESC LIMIT ? OFFSET ?"
@@ -1364,16 +1397,34 @@ def get_conversations_list(page: int = 1, per_page: int = 20, search: str = "",
                     "name": clean_name,
                     "is_lead": bool(r[7]),
                     "visit_count": r[8],
+                    "archived": bool(r[9]),
                     "last_preview": (last_row[0][:80] + "...") if last_row and len(last_row[0]) > 80 else (last_row[0] if last_row else ""),
                     "last_role": last_row[1] if last_row else "",
                     "score": _lead_score(None, r[8], r[5], is_lead=bool(r[7]),
                                          has_visit_interest=visit_interest > 0),
                 })
 
-        return {"items": items, "total": total, "page": page, "per_page": per_page}
+        return {"items": items, "total": total, "page": page, "per_page": per_page,
+                "today_total": today_total, "pending": pending}
     except Exception as e:
         logger.error("analytics.get_conversations_list error: %s", e)
-        return {"items": [], "total": 0, "page": page, "per_page": per_page}
+        return {"items": [], "total": 0, "page": page, "per_page": per_page,
+                "today_total": 0, "pending": 0}
+
+
+def set_conversation_archived(phone_hash: str, archived: bool) -> bool:
+    """Archive or unarchive a conversation."""
+    try:
+        with _db_lock:
+            conn = _get_conn()
+            conn.execute(
+                "UPDATE conversations SET archived = ? WHERE phone_hash = ?",
+                (1 if archived else 0, phone_hash),
+            )
+        return True
+    except Exception as e:
+        logger.error("analytics.set_conversation_archived error: %s", e)
+        return False
 
 
 def get_conversation_thread(phone_hash: str) -> dict:

@@ -1,19 +1,21 @@
 """
 Daily conversation auditor — runs inside the app via APScheduler.
 Audits recent conversations using the same LLM API the bot uses,
-and sends a WhatsApp summary to NOTIFY_NUMBER if errors are found.
+and sends an email report to the dashboard owner.
 """
 import json
 import logging
-import threading
+import os
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from openai import OpenAI
 
 import analytics
-import whatsapp
 from config import (
     DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL,
-    NOTIFY_NUMBER, AR_TZ,
+    AR_TZ, OWNER_EMAIL,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +57,6 @@ def _format_thread(messages: list[dict]) -> str:
     for i, m in enumerate(messages):
         role = m.get("role", "unknown")
         content = m.get("content", "")
-        # Skip image markers
         if content.strip().startswith("[img:"):
             continue
         label = "CLIENTE" if role == "user" else ("AGENTE HUMANO" if role == "agent" else "VERA")
@@ -84,6 +85,105 @@ def _audit_one(thread_text: str, name: str) -> dict | None:
         return None
 
 
+def _send_audit_email(subject: str, body_html: str):
+    """Send audit report via email."""
+    smtp_host = os.environ.get("SMTP_HOST", "")
+    smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+    smtp_user = os.environ.get("SMTP_USER", "")
+    smtp_pass = os.environ.get("SMTP_PASS", "")
+    to_email = OWNER_EMAIL
+
+    if not (smtp_host and smtp_user and to_email):
+        logger.warning("Audit email not sent: SMTP not configured or OWNER_EMAIL missing")
+        return
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    msg["From"] = smtp_user
+    msg["To"] = to_email
+    msg.attach(MIMEText(body_html, "html"))
+
+    try:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        logger.info("Audit email sent to %s", to_email)
+    except Exception as e:
+        logger.error("Failed to send audit email: %s", e)
+
+
+def _build_email_html(audited: int, avg: float, all_errors: list, by_type: dict) -> str:
+    """Build a clean HTML email for the audit report."""
+    score_color = "#059669" if avg >= 7 else ("#E65100" if avg >= 5 else "#DC2626")
+
+    error_rows = ""
+    for err_type, errs in sorted(by_type.items(), key=lambda x: -len(x[1])):
+        details = "".join(
+            f'<li style="color:#525252;font-size:13px;margin:2px 0">{e["conversation"]}: {e["detail"]}</li>'
+            for e in errs[:4]
+        )
+        error_rows += f"""
+        <tr>
+          <td style="padding:10px 14px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:13px;color:#1a1a1a;white-space:nowrap;vertical-align:top">{err_type}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #f3f4f6;text-align:center;font-size:13px;color:#525252;vertical-align:top">{len(errs)}</td>
+          <td style="padding:10px 14px;border-bottom:1px solid #f3f4f6;vertical-align:top"><ul style="margin:0;padding-left:16px">{details}</ul></td>
+        </tr>"""
+
+    no_errors_msg = ""
+    if not all_errors:
+        no_errors_msg = '<p style="color:#059669;font-size:14px;text-align:center;padding:20px">Sin errores detectados. Todas las conversaciones OK.</p>'
+
+    return f"""
+    <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff">
+      <div style="padding:24px 0;border-bottom:1px solid #e5e7eb">
+        <span style="font-size:11px;letter-spacing:2px;color:#9ca3af;text-transform:uppercase">PropBot</span>
+        <h1 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:6px 0 4px">Audit diario de Vera</h1>
+        <p style="font-size:13px;color:#9ca3af;margin:0">{audited} conversaciones auditadas</p>
+      </div>
+
+      <div style="display:flex;gap:16px;padding:20px 0;border-bottom:1px solid #e5e7eb">
+        <div style="flex:1;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:{score_color}">{avg:.1f}</div>
+          <div style="font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase">Score</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#1a1a1a">{len(all_errors)}</div>
+          <div style="font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase">Errores</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#1a1a1a">{audited}</div>
+          <div style="font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase">Charlas</div>
+        </div>
+      </div>
+
+      {no_errors_msg}
+
+      {"" if not all_errors else f'''
+      <table style="width:100%;border-collapse:collapse;margin-top:16px">
+        <thead>
+          <tr style="background:#fafaf9">
+            <th style="padding:8px 14px;text-align:left;font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #e5e7eb">Error</th>
+            <th style="padding:8px 14px;text-align:center;font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #e5e7eb">Cant</th>
+            <th style="padding:8px 14px;text-align:left;font-size:11px;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #e5e7eb">Detalle</th>
+          </tr>
+        </thead>
+        <tbody>
+          {error_rows}
+        </tbody>
+      </table>
+      '''}
+
+      <div style="padding:20px 0;margin-top:16px;border-top:1px solid #e5e7eb;text-align:center">
+        <a href="https://propbot.cc/dashboard/conversations" style="display:inline-block;padding:10px 24px;background:#ae6b51;color:#fff;text-decoration:none;border-radius:6px;font-size:13px;font-weight:600">Ver conversaciones</a>
+      </div>
+
+      <div style="padding:12px 0;text-align:center">
+        <span style="font-size:11px;color:#9ca3af">Enviado por PropBot Audit System</span>
+      </div>
+    </div>"""
+
+
 def run_daily_audit():
     """Run the daily audit. Called by APScheduler."""
     logger.info("Starting daily conversation audit...")
@@ -94,8 +194,7 @@ def run_daily_audit():
 
 
 def _do_audit():
-    """Core audit logic — fetch recent conversations, audit each, notify."""
-    # Get conversations with activity in the last 24h
+    """Core audit logic — fetch recent conversations, audit each, send email."""
     recent = analytics.get_recent_conversations(hours=24)
     if not recent:
         logger.info("Daily audit: no recent conversations to audit")
@@ -110,7 +209,6 @@ def _do_audit():
         name = convo.get("name") or phone_hash[:8]
         channel = convo.get("channel", "?")
 
-        # Load messages from DB
         messages = analytics.load_messages_by_hash(phone_hash)
         if len(messages) < 3:
             continue
@@ -140,34 +238,19 @@ def _do_audit():
     logger.info("Daily audit complete: %d convos, avg score %.1f, %d errors",
                 audited, avg, len(all_errors))
 
-    # Save audit results as analytics event
     analytics.log_event("daily_audit", "system", channel="system",
                         score=round(avg, 1), errors=len(all_errors),
                         audited=audited)
 
-    # Send WhatsApp notification to NOTIFY_NUMBER
-    if not NOTIFY_NUMBER:
-        return
-
-    if not all_errors:
-        msg = f"Audit diario: {audited} conversaciones, score promedio {avg:.1f}/10. Sin errores."
-        whatsapp.send_message(NOTIFY_NUMBER, msg)
-        return
-
-    # Group errors by type
+    # Build and send email report
     by_type: dict[str, list] = {}
     for e in all_errors:
         by_type.setdefault(e["type"], []).append(e)
 
-    lines = [f"Audit diario: {audited} charlas, score {avg:.1f}/10, {len(all_errors)} error(es):\n"]
-    for err_type, errs in sorted(by_type.items(), key=lambda x: -len(x[1])):
-        lines.append(f"*{err_type}* ({len(errs)}x)")
-        for e in errs[:3]:  # Max 3 examples per type
-            lines.append(f"  - {e['conversation']}: {e['detail']}")
-    if avg < 6:
-        lines.append(f"\nScore bajo ({avg:.1f}). Revisar conversaciones en el dashboard.")
-
-    whatsapp.send_message(NOTIFY_NUMBER, "\n".join(lines))
+    score_label = "OK" if avg >= 7 else ("Revisar" if avg >= 5 else "ALERTA")
+    subject = f"Vera Audit: {avg:.1f}/10 — {len(all_errors)} error(es) — {score_label}"
+    body_html = _build_email_html(audited, avg, all_errors, by_type)
+    _send_audit_email(subject, body_html)
 
 
 def start(scheduler):

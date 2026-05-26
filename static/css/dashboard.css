@@ -501,9 +501,40 @@ tr:hover td{background:var(--line-light)}
 .score-cold::before{background:var(--ink-3)}
 
 /* ═════════════════════════════════════════════════════════════════
+   INBOX HEADER
+   ═════════════════════════════════════════════════════════════════ */
+.inbox-header{padding:0 0 8px}
+.inbox-kicker{
+  font-family:var(--sans);font-size:.68rem;font-weight:500;
+  letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;
+}
+.inbox-title{
+  font-family:var(--sans);font-size:1.6rem;font-weight:700;
+  color:var(--ink);margin:4px 0 2px;letter-spacing:-.02em;
+}
+.inbox-subtitle{font-size:.85rem;color:var(--ink-3);font-family:var(--sans)}
+.inbox-divider{height:1px;background:var(--line);margin:12px 0 0}
+.inbox-tabs{
+  display:flex;gap:0;border-bottom:1px solid var(--line);
+  margin-bottom:16px;
+}
+.inbox-tab{
+  padding:12px 20px;font-family:var(--sans);font-size:.86rem;font-weight:500;
+  color:var(--ink-3);background:none;border:none;border-bottom:2px solid transparent;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;
+}
+.inbox-tab:hover{color:var(--ink)}
+.inbox-tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+.inbox-tab-count{
+  background:var(--line-light);color:var(--ink-3);
+  font-size:.7rem;font-weight:600;padding:1px 7px;border-radius:10px;
+}
+.inbox-tab.active .inbox-tab-count{background:var(--gold-light);color:var(--gold)}
+
+/* ═════════════════════════════════════════════════════════════════
    CONVERSATION VIEWER
    ═════════════════════════════════════════════════════════════════ */
-.conv-layout{display:grid;grid-template-columns:340px 1fr;gap:0;height:calc(100vh - 100px)}
+.conv-layout{display:grid;grid-template-columns:380px 1fr;gap:0;height:calc(100vh - 220px);min-height:500px}
 .conv-layout-premium{
   background:var(--white);
   border:1px solid var(--line);border-radius:12px;
@@ -518,28 +549,66 @@ tr:hover td{background:var(--line-light)}
 .conv-list::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
 .conv-list::-webkit-scrollbar-thumb:hover{background:var(--ink-3)}
 .conv-search{
-  padding:14px;border-bottom:1px solid var(--line-light);
-  position:sticky;top:0;background:rgba(255,255,255,.96);z-index:2;
+  padding:12px;border-bottom:1px solid var(--line-light);
+  position:sticky;top:0;background:rgba(255,255,255,.97);z-index:2;
 }
 .conv-search input{
-  width:100%;padding:10px 12px;border:1px solid var(--line);
-  font-size:.84rem;outline:none;font-family:var(--sans);
+  width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+  font-size:.82rem;outline:none;font-family:var(--sans);background:var(--cream-2);
 }
-.conv-search input{border-radius:8px}
-.conv-search input:focus{border-color:var(--ink-3);box-shadow:0 0 0 3px rgba(0,0,0,.04)}
-.conv-item{
-  padding:16px 18px;border-bottom:1px solid var(--line-light);
-  cursor:pointer;transition:background .2s;
+.conv-search input:focus{border-color:var(--ink-3);box-shadow:0 0 0 3px rgba(0,0,0,.04);background:var(--white)}
+.conv-search-filters{margin-top:8px}
+.conv-filter-select{
+  width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:6px;
+  font-size:.78rem;font-family:var(--sans);color:var(--ink-2);
+  background:var(--white);outline:none;cursor:pointer;
 }
-.conv-item:hover{background:var(--line-light)}
-.conv-item.selected{
-  background:var(--line-light);
+
+/* Inbox list items */
+.inbox-item{
+  display:flex;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line-light);
+  cursor:pointer;transition:background .15s;align-items:flex-start;
 }
-.conv-item-name{font-weight:600;font-size:.86rem;color:var(--ink)}
-.conv-item-preview{font-size:.78rem;color:var(--ink-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.conv-item-meta{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
-.conv-item-time{font-family:var(--mono);font-size:.65rem;color:var(--line)}
-.conv-item-badges{display:flex;gap:4px}
+.inbox-item:hover{background:var(--cream-2)}
+.inbox-item.selected{background:var(--line-light)}
+.inbox-item-pending{border-left:3px solid var(--gold)}
+.inbox-avatar{
+  width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;
+  font-family:var(--sans);font-size:.78rem;font-weight:700;color:#fff;
+  letter-spacing:.02em;
+}
+.inbox-avatar-sm{width:34px;height:34px;font-size:.68rem}
+.inbox-item-body{flex:1;min-width:0}
+.inbox-item-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.inbox-item-name{font-weight:600;font-size:.86rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inbox-item-time{font-family:var(--sans);font-size:.7rem;color:var(--ink-3);flex-shrink:0;font-weight:400}
+.inbox-item-preview{
+  font-size:.78rem;color:var(--ink-3);margin-top:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.inbox-item-badges{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.inbox-badge{
+  font-family:var(--sans);font-size:.62rem;font-weight:600;
+  padding:2px 8px;border-radius:4px;letter-spacing:.02em;
+}
+.inbox-badge-count{background:#E8F5E9;color:#2E7D32}
+.inbox-badge-channel{background:var(--line-light);color:var(--ink-3)}
+.inbox-badge-hot{background:#FFF3E0;color:#E65100}
+.inbox-badge-lead{background:var(--gold-light);color:var(--gold)}
+.inbox-pagination{
+  padding:12px 16px;display:flex;justify-content:center;gap:16px;
+  align-items:center;font-size:.8rem;color:var(--ink-3);
+}
+.inbox-pagination a{color:var(--gold);font-weight:500}
+
+/* Detail header icon buttons */
+.btn-icon{
+  display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border:1px solid var(--line);border-radius:6px;
+  background:var(--white);cursor:pointer;color:var(--ink-2);transition:all .15s;
+}
+.btn-icon:hover{background:var(--cream-2);color:var(--ink)}
 
 .conv-detail{
   overflow-y:auto;background:var(--white);
@@ -1017,10 +1086,14 @@ tr:hover td{background:var(--line-light)}
   .donut-wrap{width:120px;min-width:120px}
 
   /* Conversations */
+  .inbox-title{font-size:1.3rem}
+  .inbox-tabs{overflow-x:auto}
   .conv-layout{grid-template-columns:1fr;height:auto}
   .conv-list{max-height:40vh}
   .conv-detail{min-height:50vh}
   .conv-detail-header{flex-wrap:wrap;gap:8px}
+  .inbox-avatar{width:38px;height:38px;font-size:.72rem}
+  .inbox-item{padding:12px 14px;gap:10px}
 
   /* Calendar */
   .cal-day{height:80px;padding:6px}

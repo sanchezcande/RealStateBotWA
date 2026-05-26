@@ -54,9 +54,15 @@ def api_conversations():
     search = request.args.get("q", "")
     channel = request.args.get("channel", "")
     status = request.args.get("status", "")
+    archived_param = request.args.get("archived", None)
+    archived = None
+    if archived_param == "1":
+        archived = True
+    elif archived_param == "0":
+        archived = False
     data = analytics.get_conversations_list(
         page=page, per_page=per_page, search=search,
-        channel=channel, status=status,
+        channel=channel, status=status, archived=archived,
     )
     return jsonify(data)
 
@@ -68,6 +74,18 @@ def api_conversation_thread(phone_hash):
         return jsonify({"error": "No disponible en plan Starter"}), 403
     data = analytics.get_conversation_thread(phone_hash)
     return jsonify(data)
+
+
+@api.route("/conversations/<phone_hash>/archive", methods=["POST"])
+@_require_auth
+def api_archive_conversation(phone_hash):
+    """Archive or unarchive a conversation."""
+    data = request.get_json(silent=True) or {}
+    archived = data.get("archived", True)
+    ok = analytics.set_conversation_archived(phone_hash, archived)
+    if ok:
+        return jsonify({"ok": True, "archived": archived})
+    return jsonify({"error": "Error actualizando conversación"}), 500
 
 
 @api.route("/conversations/<phone_hash>/delete", methods=["POST"])
