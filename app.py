@@ -465,8 +465,12 @@ def _save_chat_photo(phone: str, media_id: str, caption: str = ""):
     filepath = os.path.join(chat_dir, filename)
     with open(filepath, "wb") as f:
         f.write(data)
-    # Store image for GPT vision processing
+    # Store image for vision processing
     _pending_images[phone] = {"data": data, "mime": "image/jpeg"}
+    # Describe with Gemini so the AI has visual context
+    desc = _describe_image_gemini(data, "image/jpeg")
+    if desc:
+        _pending_image_descriptions[phone] = desc
     img_marker = f"[img:/uploads/chat_photos/{filename}]"
     text = f"{caption}\n{img_marker}" if caption else f"[El cliente envió una imagen]\n{img_marker}"
     _enqueue(phone, text)
@@ -499,6 +503,37 @@ def _transcribe_audio_gemini(audio_bytes: bytes, mime_type: str = "audio/ogg") -
         return text if text else None
     except Exception as e:
         logger.error("Gemini audio transcription failed: %s", e)
+        return None
+
+
+def _describe_image_gemini(image_bytes: bytes, mime_type: str = "image/jpeg") -> str | None:
+    """Describe an image using Google Gemini (for story replies, user photos, etc.)."""
+    from config import GOOGLE_AI_API_KEY
+    key = os.environ.get("GOOGLE_AI_API_KEY", "") or GOOGLE_AI_API_KEY
+    if not key:
+        logger.warning("GOOGLE_AI_API_KEY not set — cannot describe image")
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+        client = genai.Client(api_key=key)
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=[
+                types.Content(parts=[
+                    types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+                    types.Part.from_text(
+                        "Describí brevemente qué se ve en esta imagen (es una historia de Instagram "
+                        "de una inmobiliaria). Mencioná si hay una propiedad, texto, dirección, "
+                        "precio, o cualquier dato relevante. Máximo 2-3 oraciones, en español."
+                    ),
+                ]),
+            ],
+        )
+        text = (response.text or "").strip()
+        return text if text else None
+    except Exception as e:
+        logger.error("Gemini image description failed: %s", e)
         return None
 
 
@@ -731,6 +766,14 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     lead = conversations.get_lead(identifier)
     # Check for pending image to include in vision request
     image_data = _pending_images.pop(identifier, None)
+    # If Gemini described an image, inject description into the last user message for context
+    img_desc = _pending_image_descriptions.pop(identifier, None)
+    if img_desc and history:
+        for i in range(len(history) - 1, -1, -1):
+            if history[i]["role"] == "user":
+                history[i] = dict(history[i])
+                history[i]["content"] = f"[El cliente envió una imagen que muestra: {img_desc}] {history[i]['content']}"
+                break
     ai_response = ai.get_reply(history, lead=lead, image=image_data)
 
     if ai_response is None:
@@ -1123,6 +1166,7 @@ def _enrich_fb_post_url(text: str) -> str:
 # Temporary storage for user-sent images pending AI processing.
 # Key: phone/sender_id, Value: {"data": bytes, "mime": str}
 _pending_images: dict = {}
+_pending_image_descriptions: dict = {}  # sender_id -> str (Gemini description)
 
 def _send_meta_message(recipient_id: str, text: str):
     """Send a reply via Meta Graph API (Facebook Messenger / Instagram Direct)."""
@@ -1532,6 +1576,12 @@ def receive_meta_message():
                     img_url = img_att.get("payload", {}).get("url", "")
                     if img_url:
                         _download_meta_image(sender_id, img_url)
+                        # Describe image with Gemini so DeepSeek has context
+                        img_data = _pending_images.get(sender_id)
+                        if img_data:
+                            desc = _describe_image_gemini(img_data["data"], img_data.get("mime", "image/jpeg"))
+                            if desc:
+                                _pending_image_descriptions[sender_id] = desc
                 if not message.get("text") and img_att:
                     mid_img = message.get("mid", "")
                     if mid_img:
@@ -1563,15 +1613,36 @@ def receive_meta_message():
                 text = message["text"].strip()
                 # Detect Facebook post URLs and fetch post context
                 text = _enrich_fb_post_url(text)
-                # Detect Instagram story replies — download story image for vision
+                # Detect Instagram story replies — describe story image with Gemini
                 reply_to = message.get("reply_to", {})
                 story = reply_to.get("story", {})
                 if story and text:
                     story_url = story.get("url", "")
+                    story_description = None
                     if story_url and sender_id:
                         logger.info("Meta (instagram) story reply from %s — downloading story image", sender_id)
-                        _download_meta_image(sender_id, story_url)
-                    text = f"[El cliente respondió a una historia de Instagram] {text}"
+                        try:
+                            headers = {}
+                            if PAGE_ACCESS_TOKEN:
+                                headers["Authorization"] = f"Bearer {PAGE_ACCESS_TOKEN}"
+                            img_resp = requests.get(story_url, headers=headers, timeout=15)
+                            if img_resp.status_code == 404 and PAGE_ACCESS_TOKEN:
+                                img_resp = requests.get(story_url, timeout=15)
+                            img_resp.raise_for_status()
+                            img_bytes = img_resp.content
+                            img_mime = img_resp.headers.get("content-type", "image/jpeg")
+                            # Also store for vision pipeline (fallback)
+                            _pending_images[sender_id] = {"data": img_bytes, "mime": img_mime}
+                            # Describe with Gemini
+                            story_description = _describe_image_gemini(img_bytes, img_mime)
+                            if story_description:
+                                logger.info("Story described for %s: %s", sender_id, story_description[:100])
+                        except Exception as e:
+                            logger.error("Failed to download story image for %s: %s", sender_id, e)
+                    if story_description:
+                        text = f"[El cliente respondió a una historia de Instagram que mostraba: {story_description}] {text}"
+                    else:
+                        text = f"[El cliente respondió a una historia de Instagram] {text}"
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
                     channel = "facebook" if obj_type == "page" else "instagram"
