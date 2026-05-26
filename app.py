@@ -766,13 +766,22 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     lead = conversations.get_lead(identifier)
     # Check for pending image to include in vision request
     image_data = _pending_images.pop(identifier, None)
-    # If Gemini described an image, inject description into the last user message for context
+    # If Gemini described an image/story, inject description into the last user message
     img_desc = _pending_image_descriptions.pop(identifier, None)
     if img_desc and history:
         for i in range(len(history) - 1, -1, -1):
             if history[i]["role"] == "user":
                 history[i] = dict(history[i])
-                history[i]["content"] = f"[El cliente envió una imagen que muestra: {img_desc}] {history[i]['content']}"
+                content = history[i]["content"]
+                # Enrich existing story tag with the description
+                if "[El cliente respondió a una historia de Instagram]" in content:
+                    content = content.replace(
+                        "[El cliente respondió a una historia de Instagram]",
+                        f"[El cliente respondió a una historia de Instagram que mostraba: {img_desc}]",
+                    )
+                else:
+                    content = f"[El cliente envió una imagen que muestra: {img_desc}] {content}"
+                history[i]["content"] = content
                 break
     ai_response = ai.get_reply(history, lead=lead, image=image_data)
 
@@ -1456,6 +1465,38 @@ def _download_meta_image(sender_id: str, img_url: str):
         logger.error("Failed to download Meta image for %s: %s", sender_id, e)
 
 
+def _download_and_describe_meta_image(sender_id: str, img_url: str):
+    """Download a Meta image and describe it with Gemini (runs in background thread)."""
+    _download_meta_image(sender_id, img_url)
+    img_data = _pending_images.get(sender_id)
+    if img_data:
+        desc = _describe_image_gemini(img_data["data"], img_data.get("mime", "image/jpeg"))
+        if desc:
+            _pending_image_descriptions[sender_id] = desc
+            logger.info("Image described for %s: %s", sender_id, desc[:100])
+
+
+def _describe_story_async(sender_id: str, story_url: str):
+    """Download an IG story image and describe it with Gemini (runs in background thread)."""
+    try:
+        headers = {}
+        if PAGE_ACCESS_TOKEN:
+            headers["Authorization"] = f"Bearer {PAGE_ACCESS_TOKEN}"
+        resp = requests.get(story_url, headers=headers, timeout=15)
+        if resp.status_code == 404 and PAGE_ACCESS_TOKEN:
+            resp = requests.get(story_url, timeout=15)
+        resp.raise_for_status()
+        img_bytes = resp.content
+        img_mime = resp.headers.get("content-type", "image/jpeg")
+        _pending_images[sender_id] = {"data": img_bytes, "mime": img_mime}
+        desc = _describe_image_gemini(img_bytes, img_mime)
+        if desc:
+            _pending_image_descriptions[sender_id] = desc
+            logger.info("Story described for %s: %s", sender_id, desc[:100])
+    except Exception as e:
+        logger.error("Failed to download/describe story for %s: %s", sender_id, e)
+
+
 def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
     if DASHBOARD_PLAN == "starter":
@@ -1575,13 +1616,11 @@ def receive_meta_message():
                 if img_att and sender_id:
                     img_url = img_att.get("payload", {}).get("url", "")
                     if img_url:
-                        _download_meta_image(sender_id, img_url)
-                        # Describe image with Gemini so DeepSeek has context
-                        img_data = _pending_images.get(sender_id)
-                        if img_data:
-                            desc = _describe_image_gemini(img_data["data"], img_data.get("mime", "image/jpeg"))
-                            if desc:
-                                _pending_image_descriptions[sender_id] = desc
+                        threading.Thread(
+                            target=_download_and_describe_meta_image,
+                            args=(sender_id, img_url),
+                            daemon=True,
+                        ).start()
                 if not message.get("text") and img_att:
                     mid_img = message.get("mid", "")
                     if mid_img:
@@ -1613,36 +1652,18 @@ def receive_meta_message():
                 text = message["text"].strip()
                 # Detect Facebook post URLs and fetch post context
                 text = _enrich_fb_post_url(text)
-                # Detect Instagram story replies — describe story image with Gemini
+                # Detect Instagram story replies — describe story image with Gemini (async)
                 reply_to = message.get("reply_to", {})
                 story = reply_to.get("story", {})
                 if story and text:
                     story_url = story.get("url", "")
-                    story_description = None
                     if story_url and sender_id:
-                        logger.info("Meta (instagram) story reply from %s — downloading story image", sender_id)
-                        try:
-                            headers = {}
-                            if PAGE_ACCESS_TOKEN:
-                                headers["Authorization"] = f"Bearer {PAGE_ACCESS_TOKEN}"
-                            img_resp = requests.get(story_url, headers=headers, timeout=15)
-                            if img_resp.status_code == 404 and PAGE_ACCESS_TOKEN:
-                                img_resp = requests.get(story_url, timeout=15)
-                            img_resp.raise_for_status()
-                            img_bytes = img_resp.content
-                            img_mime = img_resp.headers.get("content-type", "image/jpeg")
-                            # Also store for vision pipeline (fallback)
-                            _pending_images[sender_id] = {"data": img_bytes, "mime": img_mime}
-                            # Describe with Gemini
-                            story_description = _describe_image_gemini(img_bytes, img_mime)
-                            if story_description:
-                                logger.info("Story described for %s: %s", sender_id, story_description[:100])
-                        except Exception as e:
-                            logger.error("Failed to download story image for %s: %s", sender_id, e)
-                    if story_description:
-                        text = f"[El cliente respondió a una historia de Instagram que mostraba: {story_description}] {text}"
-                    else:
-                        text = f"[El cliente respondió a una historia de Instagram] {text}"
+                        threading.Thread(
+                            target=_describe_story_async,
+                            args=(sender_id, story_url),
+                            daemon=True,
+                        ).start()
+                    text = f"[El cliente respondió a una historia de Instagram] {text}"
                 if sender_id and text:
                     logger.info("Meta (%s) message from %s: %s", obj_type, sender_id, text)
                     channel = "facebook" if obj_type == "page" else "instagram"
