@@ -921,10 +921,10 @@ class TestAI:
     @patch("ai.time.sleep")
     @patch("ai.client.chat.completions.create", side_effect=Exception("boom"))
     @patch("ai.build_system_prompt", return_value="SYS")
-    def test_get_reply_returns_fallback_after_retries(self, mock_prompt, mock_create, mock_sleep):
+    def test_get_reply_returns_none_after_retries(self, mock_prompt, mock_create, mock_sleep):
         import ai
         resp = ai.get_reply([{"role": "user", "content": "hola"}])
-        assert "problema técnico" in resp
+        assert resp is None
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

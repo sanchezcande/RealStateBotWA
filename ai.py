@@ -384,4 +384,4 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
             if attempt < max_retries:
                 time.sleep(0.4 + attempt * 0.4)
                 continue
-            return "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos."
+            return None

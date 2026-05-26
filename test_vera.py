@@ -55,7 +55,7 @@ def evaluar(response: str, test: dict) -> list:
     r = response
 
     # Fallback técnico de la API: no evaluar contenido
-    if "hubo un problema técnico" in r.lower():
+    if r is None or "hubo un problema técnico" in r.lower():
         return ["WARN: respuesta técnica (fallback API)"]
 
     # Signos de apertura (¿ ¡) — JAMÁS deben aparecer
@@ -1250,12 +1250,19 @@ def run_test(t: dict) -> dict:
             response = f"ERROR: {e}"
 
         # If response is not the technical fallback, stop retrying
-        if "hubo un problema técnico" not in response.lower():
+        if response is not None and "hubo un problema técnico" not in response.lower():
             break
 
         # Soft backoff to avoid hammering the API
         time.sleep(0.6 + attempt * 0.6)
 
+    if response is None:
+        return {
+            "nombre": t["nombre"],
+            "categoria": t["categoria"],
+            "response": "None (AI failure)",
+            "issues": ["FALLO: AI devolvió None tras retries"],
+        }
     if response.startswith("ERROR:"):
         return {
             "nombre": t["nombre"],

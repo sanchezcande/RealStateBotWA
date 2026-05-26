@@ -552,14 +552,16 @@ def _flush(phone: str, gen: int):
     combined = " / ".join(texts) if len(texts) > 1 else texts[0]
     if len(texts) > 1:
         logger.info("Combined %d messages from %s: %s", len(texts), phone, combined)
-    try:
-        _reply(phone, combined)
-    except Exception as e:
-        logger.error("Unhandled error in _reply for %s: %s", phone, e, exc_info=True)
+    for _attempt in range(2):
         try:
-            whatsapp.send_message(phone, "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos.")
-        except Exception:
-            pass
+            _reply(phone, combined)
+            break
+        except Exception as e:
+            logger.error("Error in _reply for %s (attempt %d/2): %s", phone, _attempt + 1, e, exc_info=True)
+            if _attempt == 0:
+                import time as _time; _time.sleep(1)
+            else:
+                logger.error("All retries exhausted for %s — no error message sent to user", phone)
 
 
 def _extract_operation(text: str):
@@ -718,6 +720,10 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
     # Check for pending image to include in vision request
     image_data = _pending_images.pop(identifier, None)
     ai_response = ai.get_reply(history, lead=lead, image=image_data)
+
+    if ai_response is None:
+        logger.error("AI returned None for %s — skipping reply (no error message sent to user)", identifier)
+        return
 
     clean_response = lead_qualifier.process(identifier, ai_response, channel=channel)
     clean_response = visit_scheduler.process(identifier, clean_response)
@@ -1591,14 +1597,16 @@ def _flush_meta(key, gen: int):
         sender_id = payload["sender_id"]
         channel = payload["channel"]
     combined = " / ".join(texts) if len(texts) > 1 else texts[0]
-    try:
-        _reply_meta(sender_id, combined, channel)
-    except Exception as e:
-        logger.error("Unhandled error in _reply_meta for %s: %s", sender_id, e, exc_info=True)
+    for _attempt in range(2):
         try:
-            _send_meta_message(sender_id, "Lo siento, hubo un problema técnico. Por favor intentá de nuevo en unos segundos.")
-        except Exception:
-            pass
+            _reply_meta(sender_id, combined, channel)
+            break
+        except Exception as e:
+            logger.error("Error in _reply_meta for %s (attempt %d/2): %s", sender_id, _attempt + 1, e, exc_info=True)
+            if _attempt == 0:
+                import time as _time; _time.sleep(1)
+            else:
+                logger.error("All retries exhausted for %s (%s) — no error message sent to user", sender_id, channel)
 
 
 
@@ -1749,7 +1757,7 @@ def health_deepseek():
         # Simple call with minimal payload; returns quickly if reachable.
         import ai
         resp = ai.get_reply([{"role": "user", "content": "ping"}])
-        if "problema técnico" in resp.lower():
+        if resp is None:
             return jsonify({"status": "degraded", "error": "DeepSeek fallback response"}), 503
         return jsonify({"status": "ok"}), 200
     except Exception as e:
