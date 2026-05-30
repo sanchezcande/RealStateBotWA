@@ -103,7 +103,12 @@ DIRECCIÓN: solo la del listado. Si está vacía, "la dirección exacta te la co
 NUNCA inventes datos que no están en el listado.
 NUNCA preguntes algo que el cliente ya dijo. Revisá el historial COMPLETO antes de responder.
 NUNCA preguntes algo que ya se respondió en la conversación — ni vos ni el asesor. Si en mensajes anteriores ya se habló de precios de alquiler, YA SABÉS que es alquiler. Si ya se mencionó un nombre, YA LO SABÉS. Leé todo el historial y no repitas preguntas.
-PRIMER MENSAJE CRITICO: Cuando el cliente escribe por primera vez, LEE TODO lo que dice antes de preguntar nada. Si dice "quiero alquilar un departamento" ya tenés operación Y tipo — NO preguntes ninguna de las dos. Si dice "somos 3 personas" ya sabés cuántos son — NO preguntes. Extraé TODA la info del primer mensaje antes de hacer cualquier pregunta.
+PRIMER MENSAJE — REGLA CRITICA (alta prioridad):
+- ANTES de responder el primer mensaje, LISTÁ mentalmente TODA la info que el cliente ya dio: operación, tipo, cantidad de personas, zona, nombre, propiedad específica, mascotas, presupuesto.
+- Si dice "para dos personas" → YA SABÉS que son 2 personas. PROHIBIDO preguntar "para cuántas personas?".
+- Si dice "quiero alquilar un departamento" → YA TENÉS operación Y tipo. PROHIBIDO preguntar ninguna de las dos.
+- Si pregunta "sigue disponible?" o "permiten mascotas?" sin decir operación → INFERÍ ALQUILER (nadie pregunta mascotas para comprar). Respondé su pregunta directo, NO preguntes operación.
+- REGLA: por cada pregunta que vayas a hacer, verificá que la respuesta NO esté ya en los mensajes del cliente. Si está, NO la hagas.
 ACCIONES FALLIDAS: si algo que hiciste no funcionó (fotos que no llegan, callback que no pasó, link que no abre), JAMAS repitas la misma acción idéntica. Ofrecé una alternativa: otro formato, otro canal, una visita, o derivá al asesor.
 NUNCA digas que una propiedad "ya no está disponible" o "no está" si hay una en el listado con dirección parecida. El cliente puede decir "avenida Perón" y en el listado figurar "PERON 234" — es la misma. Buscá coincidencias parciales en la dirección antes de decir que no existe.
 
@@ -332,7 +337,19 @@ def get_reply(messages: list, lead: dict = None, image: dict = None) -> str:
         # Prepend context directly into the last user message — DeepSeek ignores extra system messages
         # but reliably reads the content it needs to respond to.
         no_name_rule = " | Ya tenés el nombre, NO lo pidas de nuevo" if (is_meta and has_name) else ""
-        reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + no_name_rule + " | REGLA ABSOLUTA: JAMÁS uses ¿ ni ¡ en tu respuesta, solo signos de cierre ? y ! | FOTOS: si el cliente pide fotos, OBLIGATORIO copiar la URL https://drive.google.com/... del listado en tu respuesta — sin la URL no se envían]\n"
+        # Extract info the user already provided in all messages to prevent redundant questions
+        all_user_text = " ".join(m["content"] for m in messages if m["role"] == "user").lower()
+        already_said = []
+        import re as _re2
+        persons_match = _re2.search(r'(?:para\s+)?(\d+|dos|tres|cuatro|cinco|una)\s*persona', all_user_text)
+        if persons_match:
+            already_said.append(f"CANTIDAD DE PERSONAS YA DICHA: '{persons_match.group(0)}' — NO preguntar cuántas personas")
+        if any(w in all_user_text for w in ("mascota", "perro", "gato", "permiten")):
+            already_said.append("PREGUNTÓ POR MASCOTAS — inferir ALQUILER, responder su pregunta directo")
+        already_rule = " | ".join(already_said) if already_said else ""
+        if already_rule:
+            already_rule = " | " + already_rule
+        reminder_prefix = "[Contexto confirmado de esta charla: " + " | ".join(reminder_lines) + no_name_rule + already_rule + " | REGLA ABSOLUTA: JAMÁS uses ¿ ni ¡ en tu respuesta, solo signos de cierre ? y ! | FOTOS: si el cliente pide fotos, OBLIGATORIO copiar la URL https://drive.google.com/... del listado en tu respuesta — sin la URL no se envían | ANTES DE PREGUNTAR ALGO: verificá que la respuesta no esté ya en los mensajes del cliente]\n"
         last_msg = messages[-1].copy()
         last_msg["content"] = reminder_prefix + last_msg["content"]
         full_messages = (

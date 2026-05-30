@@ -620,6 +620,12 @@ def _extract_operation(text: str):
         return "comprar"
     if any(w in t for w in ("vender", "vendo", "venta", "sell")):
         return "vender"
+    # Implicit rental signals — nobody asks these when buying
+    rental_signals = ("mascotas", "mascota", "perro", "gato", "permiten",
+                      "garantía", "garantia", "recibo de sueldo", "expensas",
+                      "mensual", "por mes", "mudarse", "mudarme", "mudar")
+    if any(w in t for w in rental_signals):
+        return "alquilar"
     return None
 
 
