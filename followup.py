@@ -79,6 +79,10 @@ def _send_followup(phone: str, channel: str, msg: str) -> bool:
 
 def _check_inactive_leads():
     """Check for conversations inactive for FOLLOWUP_DAYS+ days and send follow-up."""
+    import os
+    if os.environ.get("BOT_PAUSED", "").lower() in ("true", "1", "yes"):
+        logger.info("Bot paused globally — skipping follow-ups")
+        return
     try:
         if not analytics.acquire_lock("followup", ttl_seconds=60 * 60):
             logger.info("Follow-up lock not acquired; skipping this run")

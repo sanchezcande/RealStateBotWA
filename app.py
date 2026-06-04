@@ -759,6 +759,11 @@ def _process_reply(identifier: str, user_text: str, channel: str, send_fn,
             conversations.update_lead(identifier, name=name)
             logger.info("Name extracted for %s: %s", identifier, name)
 
+    # Global bot pause (set BOT_PAUSED=true in Railway env vars to stop auto-replies)
+    if os.environ.get("BOT_PAUSED", "").lower() in ("true", "1", "yes"):
+        logger.info("Bot paused globally — message from %s stored, no auto-reply", identifier)
+        return
+
     # If human agent has taken over, don't auto-reply but lead info is already extracted above
     if conversations.is_agent_takeover(identifier):
         logger.info("AI paused for %s (agent takeover) — message stored, no auto-reply", identifier)
