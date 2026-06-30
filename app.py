@@ -1510,6 +1510,10 @@ def _describe_story_async(sender_id: str, story_url: str):
 
 def _reply_meta(sender_id: str, user_text: str, channel: str):
     """Run the AI pipeline for a Facebook/Instagram message and reply."""
+    # HARD BLOCK: Instagram/Facebook auto-replies disabled until re-enabled
+    logger.info("Meta auto-reply BLOCKED (hard-coded) — message from %s stored, no reply sent", sender_id)
+    return
+
     if DASHBOARD_PLAN == "starter":
         logger.info("Meta message ignored — Starter plan does not include FB/IG channels.")
         return
